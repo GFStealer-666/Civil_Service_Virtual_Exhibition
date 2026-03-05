@@ -84,10 +84,15 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
         {
             var mouseDelta = mouse.delta.ReadValue();
 
-            var y = InvertY ? -mouseDelta.y : mouseDelta.y;
-            var lookRotationDelta = new Vector2(y, mouseDelta.x);
+            float pitch = InvertY ? -mouseDelta.y : mouseDelta.y;
+            float yaw = mouseDelta.x;
+
+            var lookRotationDelta = new Vector2(pitch, yaw);
+            
             lookRotationDelta *= LookSensitivity / 60f;
             _lookRotationAccumulator.Accumulate(lookRotationDelta);
+
+            Debug.Log($"Mouse Delta: {mouseDelta}, Look Rotation Delta: {lookRotationDelta}, Accumulated Look Rotation: {_lookRotationAccumulator}");
         }
 
         if (keyboard != null)

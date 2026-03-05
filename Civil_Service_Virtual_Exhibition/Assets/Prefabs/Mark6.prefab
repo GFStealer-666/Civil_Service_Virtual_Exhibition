@@ -1199,6 +1199,8 @@ MonoBehaviour:
   GroundDeceleration: 30
   AirAcceleration: 25
   AirDeceleration: 1.3
+  PitchClamp: 60
+  CameraSmooth: 10
 --- !u!114 &5075135918779959626
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1211,6 +1213,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69852aee737674a4fa8f97e722ca3834, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  InvertY: 0
 --- !u!114 &6149213628172701618
 MonoBehaviour:
   m_ObjectHideFlags: 0
