@@ -28,9 +28,7 @@ PluginImporter:
     second:
       enabled: 1
       settings:
-        AndroidSharedLibraryType: Executable
-        CPU: X86
-        Is16KbAligned: false
+        CPU: x86
   - first:
       Any: 
     second:

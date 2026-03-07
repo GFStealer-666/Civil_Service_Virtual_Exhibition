@@ -1,0 +1,6 @@
+<linker>
+    <assembly fullname="Fusion.Runtime" preserve="all"/>
+    <assembly fullname="Fusion.Sockets" preserve="all"/>
+    <assembly fullname="PhotonRealtime" preserve="all"/>
+    <assembly fullname="Assembly-CSharp" preserve="all"/>
+</linker>

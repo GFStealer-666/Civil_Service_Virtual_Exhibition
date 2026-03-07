@@ -22,7 +22,6 @@ PluginImporter:
         Exclude OSXUniversal: 1
         Exclude PS4: 0
         Exclude PS5: 0
-        Exclude Ounce: 0
         Exclude Switch: 0
         Exclude VisionOS: 0
         Exclude WebGL: 1
@@ -51,11 +50,6 @@ PluginImporter:
         CPU: AnyCPU
         DefaultValueInitialized: true
         OS: AnyOS
-  - first:
-      Nintendo Switch: Ounce
-    second:
-      enabled: 1
-      settings: {}
   - first:
       Nintendo Switch: Switch
     second:

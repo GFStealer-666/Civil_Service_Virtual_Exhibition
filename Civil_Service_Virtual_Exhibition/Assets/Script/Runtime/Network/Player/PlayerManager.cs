@@ -17,7 +17,7 @@ public static class PlayerManager
         _tempSpawnPlayers.AddRange(runner.ActivePlayers);
 
         // 2. Get all player objects with component of type T.
-        runner.GetAllBehaviours<Player>(_tempSpawnedPlayers);
+        runner.GetAllBehaviours(_tempSpawnedPlayers);
 
         for (int i = 0; i < _tempSpawnedPlayers.Count; ++i)
         {
