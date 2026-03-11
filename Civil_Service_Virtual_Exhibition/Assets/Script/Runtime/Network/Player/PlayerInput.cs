@@ -6,7 +6,8 @@ using Fusion.Addons.SimpleKCC;
 public enum InputButton
 {
     Jump,
-    Interact
+    Interact,
+    Sprint
 }
 
 public struct NetworkedInput : INetworkInput
@@ -88,6 +89,7 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
 
             _accumulatedInput.Buttons.Set(InputButton.Jump, keyboard.spaceKey.isPressed);
             _accumulatedInput.Buttons.Set(InputButton.Interact, keyboard.eKey.isPressed);
+            _accumulatedInput.Buttons.Set(InputButton.Sprint,   keyboard.leftShiftKey.isPressed);
         }
 
         rawMove = rawMove.normalized;

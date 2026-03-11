@@ -9,6 +9,8 @@ TagManager:
   - Metal
   - Water
   - Mud
+  - CinemachineTarget
+  - LocalPlayer
   layers:
   - Default
   - TransparentFX

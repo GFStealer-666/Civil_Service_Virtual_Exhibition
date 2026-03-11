@@ -1,7 +1,8 @@
+using System.Collections;
+using System.Collections.Generic;
 using Fusion;
 using UnityEngine;
-using System.Collections.Generic;
-using System.Collections;
+
 public class Gameplay : NetworkBehaviour
 {
     [Header("Player Prefabs")]
@@ -9,41 +10,45 @@ public class Gameplay : NetworkBehaviour
     public Player FemalePlayerPrefab;
 
     [Header("Fetch Settings")]
-    [SerializeField] private float profileFetchTimeout = 3f;
-    [SerializeField] private float mockFetchDelay = 1f;
+    [SerializeField] private float profileFetchTimeout = 5f;
 
     [SerializeField] private List<Player> _spawnedPlayers = new(16);
+    private readonly List<PlayerRef> _profilesToRemove = new(16);
     private readonly Dictionary<PlayerRef, PendingPlayerProfile> _pendingProfiles = new();
     private readonly List<Transform> _recentSpawnPoints = new(4);
 
     private class PendingPlayerProfile
     {
-        public PlayerRef PlayerRef;
-        public bool IsFetchStarted;
-        public bool IsFetchCompleted;
-        public bool IsSpawned;
-        public string PlayerName;
+        public PlayerRef  PlayerRef;
+        public bool       IsFetchStarted;
+        public bool       IsFetchCompleted;
+        public bool       IsSpawned;
+        public string     PlayerName;
         public PlayerGender PlayerGender;
-        public float FetchStartTime;
+        public float      FetchStartTime;
     }
 
     public override void Spawned()
     {
         Debug.Log($"[Gameplay] Spawned | IsServer={Runner.IsServer} | GameMode={Runner.GameMode}");
-        if (Runner.IsServer)
+
+#if UNITY_SERVER
+        // Dedicated server: set tick rate and return — no local player
+        if (Runner.GameMode == GameMode.Server)
         {
             Application.targetFrameRate =
                 TickRate.Resolve(Runner.Config.Simulation.TickRateSelection).Server;
+            Debug.Log("[Gameplay] Running as dedicated server — skipping local player setup.");
+            return;
         }
+#endif
 
         if (Runner.GameMode == GameMode.Shared)
         {
             throw new System.NotSupportedException(
-                "[Gameplay] This doesn't support Shared Mode, please start the game as Server, Host or Client."
+                "[Gameplay] Shared Mode is not supported. Use Server, Host, or Client."
             );
         }
-
-        Debug.Log($"[Gameplay] Spawned | Mode={Runner.Mode} | GameMode={Runner.GameMode} | IsServer={Runner.IsServer} | HasStateAuthority={HasStateAuthority}");
     }
 
     public override void FixedUpdateNetwork()
@@ -58,16 +63,15 @@ public class Gameplay : NetworkBehaviour
     private void RegisterPendingPlayer(PlayerRef playerRef)
     {
         if (_pendingProfiles.ContainsKey(playerRef))
-        {
             return;
-        }
+
         _pendingProfiles[playerRef] = new PendingPlayerProfile
         {
-            PlayerRef = playerRef,
-            IsFetchStarted = false,
+            PlayerRef        = playerRef,
+            IsFetchStarted   = false,
             IsFetchCompleted = false,
-            IsSpawned = false,
-            FetchStartTime = Time.time
+            IsSpawned        = false,
+            FetchStartTime   = Time.time
         };
 
         Debug.Log($"[Gameplay] Registered pending player: {playerRef}");
@@ -75,9 +79,11 @@ public class Gameplay : NetworkBehaviour
 
     private void ProcessPendingProfiles()
     {
-        foreach (var keyValuePair in _pendingProfiles)
+        _profilesToRemove.Clear();
+
+        foreach (var kvp in _pendingProfiles)
         {
-            PendingPlayerProfile profile = keyValuePair.Value;
+            PendingPlayerProfile profile = kvp.Value;
 
             if (profile.IsSpawned)
                 continue;
@@ -86,38 +92,54 @@ public class Gameplay : NetworkBehaviour
             {
                 profile.IsFetchStarted = true;
                 profile.FetchStartTime = Time.time;
-                StartCoroutine(FetchPlayerProfileMock(profile));
-                Debug.Log($"[Gameplay] Started profile fetch for {profile.PlayerRef}");
+                StartCoroutine(WaitForProfileRPC(profile));
+                Debug.Log($"[Gameplay] Waiting for profile RPC: {profile.PlayerRef}");
             }
             else if (profile.IsFetchCompleted)
             {
-                SpawnResolvedPlayer(profile);
+                // Don't remove here — collect it first
+                _profilesToRemove.Add(kvp.Key);
             }
             else if (Time.time - profile.FetchStartTime > profileFetchTimeout)
             {
-
-                // default fallback when fetching current profile is failed
-
-                profile.PlayerName = $"Guest_{profile.PlayerRef.PlayerId}";
-                profile.PlayerGender = PlayerGender.Male;
+                profile.PlayerName       = $"Guest_{profile.PlayerRef.PlayerId}";
+                profile.PlayerGender     = PlayerGender.Male;
                 profile.IsFetchCompleted = true;
-
-                Debug.LogWarning($"[Gameplay] Profile fetch timeout for {profile.PlayerRef}, using fallback profile.");
+                Debug.LogWarning($"[Gameplay] Profile timeout for {profile.PlayerRef}");
             }
+        }
+
+        // Safe to modify now — iteration is finished
+        foreach (var playerRef in _profilesToRemove)
+        {
+            if (_pendingProfiles.TryGetValue(playerRef, out var profile))
+                SpawnResolvedPlayer(profile);
         }
     }
 
-    private IEnumerator FetchPlayerProfileMock(PendingPlayerProfile profile)
+    /// Waits for the client's RPC_SubmitProfile to arrive and set ProfileReady on
+    /// the player object. Profile data is NOT read here — it comes via the RPC.
+    /// This coroutine just spawns a temporary placeholder so the player object exists
+    /// for the RPC to land on, then the profile is applied via the RPC itself.
+
+    private IEnumerator WaitForProfileRPC(PendingPlayerProfile profile)
     {
-        // Replace this later with real UnityWebRequest
-        yield return new WaitForSeconds(mockFetchDelay);
+        // Spawn with a default profile first so the NetworkObject exists
+        // The RPC will update it once the client sends their data
+        profile.PlayerName   = $"Guest_{profile.PlayerRef.PlayerId}";
+        profile.PlayerGender = PlayerGender.Male;
 
-        profile.PlayerName = $"User_{profile.PlayerRef.PlayerId}";
-        profile.PlayerGender = Random.value > 0.5f ? PlayerGender.Male : PlayerGender.Female;
+        // Short wait to give the RPC a chance to arrive before first spawn
+        float waited = 0f;
+        while (waited < 1.5f)
+        {
+            waited += Runner.DeltaTime;
+            yield return null;
+        }
+
         profile.IsFetchCompleted = true;
-
-        Debug.Log($"[Gameplay] Mock profile ready for {profile.PlayerRef} | Name={profile.PlayerName} | Gender={profile.PlayerGender}");
     }
+
     private void SpawnResolvedPlayer(PendingPlayerProfile profile)
     {
         if (!Runner.IsRunning)
@@ -128,7 +150,7 @@ public class Gameplay : NetworkBehaviour
 
         if (MalePlayerPrefab == null || FemalePlayerPrefab == null)
         {
-            Debug.LogError("[Gameplay] MalePlayerPrefab or FemalePlayerPrefab is null.");
+            Debug.LogError("[Gameplay] Player prefabs not assigned.");
             return;
         }
 
@@ -154,29 +176,20 @@ public class Gameplay : NetworkBehaviour
         Runner.SetPlayerObject(profile.PlayerRef, player.Object);
 
         if (!_spawnedPlayers.Contains(player))
-        {
             _spawnedPlayers.Add(player);
-        }
 
-        PlayerProfile playerProfile = player.GetComponent<PlayerProfile>();
-        if (playerProfile != null)
-        {
-            playerProfile.ApplyProfile(profile.PlayerName, profile.PlayerGender);
-            profile.IsSpawned = true; // add this incase we going to need json log file later on
-        }
-        else
-        {
-            Debug.LogError($"[Gameplay] Spawned player {profile.PlayerRef} has no PlayerProfile component.");
-        }
-
+        profile.IsSpawned = true;
         _pendingProfiles.Remove(profile.PlayerRef);
 
-        Debug.Log($"[Gameplay] Spawned player {profile.PlayerRef} | Name={profile.PlayerName} | Gender={profile.PlayerGender}");
+        // PlayerProfile data is set by RPC_SubmitProfile in PlayerProfile.cs
+
+
+        Debug.Log($"[Gameplay] Spawned player {profile.PlayerRef} | Name={profile.PlayerName}");
     }
 
     private void DespawnPlayer(PlayerRef playerRef, Player player)
     {
-        Debug.Log($"[Gameplay] DespawnPlayer called for {playerRef}");
+        Debug.Log($"[Gameplay] DespawnPlayer: {playerRef}");
 
         if (_pendingProfiles.TryGetValue(playerRef, out var profile))
         {
@@ -205,17 +218,13 @@ public class Gameplay : NetworkBehaviour
         for (int i = 0, offset = Random.Range(0, spawnPoints.Length); i < spawnPoints.Length; i++)
         {
             spawnPoint = spawnPoints[(offset + i) % spawnPoints.Length].transform;
-
             if (!_recentSpawnPoints.Contains(spawnPoint))
                 break;
         }
 
         _recentSpawnPoints.Add(spawnPoint);
-
         if (_recentSpawnPoints.Count > 3)
-        {
             _recentSpawnPoints.RemoveAt(0);
-        }
 
         return spawnPoint;
     }

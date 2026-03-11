@@ -11,6 +11,7 @@ public class Player : NetworkBehaviour
 
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 4f;
+    [SerializeField] private float sprintSpeed = 7f;
     [SerializeField] private float jumpForce = 6f;
     [SerializeField] private float upGravity = 15f;
     [SerializeField] private float downGravity = 30f;
@@ -19,7 +20,8 @@ public class Player : NetworkBehaviour
     [SerializeField] private float airAcceleration = 15f;
     [SerializeField] private float airDeceleration = 1.3f;
     [SerializeField] private float rotationSharpness = 12f;
-
+    [Header("Settings")]
+    [SerializeField] private bool allowJump = true;
     [Networked] private NetworkButtons PreviousButtons { get; set; }
     [Networked] private int JumpCount { get; set; }
     [Networked] private Vector3 MoveVelocity { get; set; }
@@ -39,11 +41,28 @@ public class Player : NetworkBehaviour
 
     public override void Spawned()
     {
-        name = BuildPlayerName();
+        name         = BuildPlayerName();
         _hasAnimator = animator != null;
         AssignAnimationIDs();
-    }
 
+        if (HasInputAuthority)
+        {
+            gameObject.tag = "LocalPlayer";
+            GetComponent<PlayerProfile>()?.SendProfileToServer();
+
+            var ui      = FindFirstObjectByType<AppearanceCustomizeUI>();
+            var profile = GetComponent<PlayerProfile>();
+            var mapping = GetComponent<AppearanceSlotMapping>();
+            var appearance = GetComponent<PlayerAppearance>();
+
+            if (ui != null && profile != null && mapping != null)
+            {
+                ui.Initialize(profile, mapping, appearance);
+            }
+            else 
+                Debug.Log("[Player] UI Components is null");
+        }
+    }
     public override void FixedUpdateNetwork()
     {
         if (GetInput(out NetworkedInput input))
@@ -102,20 +121,21 @@ public class Player : NetworkBehaviour
         Vector3 moveDirection = input.WorldMoveDirection;
         MotionSpeedNetworked = moveDirection.magnitude;
 
-        Debug.Log($"[{name}] HasInputAuthority={HasInputAuthority}, HasStateAuthority={HasStateAuthority}, MoveDir={moveDirection}, Motion={MotionSpeedNetworked}");
-
         UpdateGravity();
         RotateBodyToward(moveDirection);
 
         float jumpImpulse = ConsumeJumpInput(input);
-        MovePlayer(moveDirection * moveSpeed, jumpImpulse);
+
+        bool isSprinting = input.Buttons.IsSet(InputButton.Sprint);
+        float currentSpeed = isSprinting ? sprintSpeed : moveSpeed;
+
+        MovePlayer(moveDirection * currentSpeed, jumpImpulse);
 
         if (kcc.HasJumped)
             JumpCount++;
 
         PreviousButtons = input.Buttons;
     }
-
     private void RotateBodyToward(Vector3 moveDirection)
     {
         if (moveDirection.sqrMagnitude <= 0.0001f)
@@ -139,6 +159,8 @@ public class Player : NetworkBehaviour
 
     private float ConsumeJumpInput(NetworkedInput input)
     {
+        if (!allowJump) return 0f;
+
         bool jumpPressed = input.Buttons.WasPressed(PreviousButtons, InputButton.Jump);
         return (jumpPressed && kcc.IsGrounded) ? jumpForce : 0f;
     }
@@ -158,7 +180,7 @@ public class Player : NetworkBehaviour
         IsGroundedNetworked = kcc.IsGrounded;
         SpeedNetworked = MoveVelocity.magnitude;
 
-        Debug.Log($"[{name}] SpeedNetworked={SpeedNetworked}, Grounded={IsGroundedNetworked}, JumpCount={JumpCount}");
+        //Debug.Log($"[{name}] SpeedNetworked={SpeedNetworked}, Grounded={IsGroundedNetworked}, JumpCount={JumpCount}");
     }
 
     private float CalculateAcceleration(Vector3 desiredVelocity)
