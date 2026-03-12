@@ -23,7 +23,7 @@ public class StatusOverlay : MonoBehaviour
     [SerializeField] private Button     errorOkButton;     // "ตกลง"
 
     [Header("Timing")]
-    [SerializeField] private float successAutoDismissSeconds = 1.8f;
+    [SerializeField] private float successAutoDismissSeconds = 10f;
 
     private Action _onErrorDismissed;
 
@@ -85,7 +85,7 @@ public class StatusOverlay : MonoBehaviour
     private IEnumerator AutoDismiss(float delay, Action callback)
     {
         yield return new WaitForSeconds(delay);
-        Hide();
+
         callback?.Invoke();
     }
 }

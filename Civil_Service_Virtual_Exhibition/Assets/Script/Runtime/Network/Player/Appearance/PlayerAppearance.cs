@@ -83,8 +83,8 @@ public class PlayerAppearance : NetworkBehaviour
         {
             _uiSeeded = true;
 
-            var ui = FindFirstObjectByType<AppearanceCustomizeUI>();
-            ui?.RefreshSlotColors();
+            // var ui = FindFirstObjectByType<AppearanceCustomizeUI>();
+            // ui?.RefreshSlotColors();
 
             Debug.Log("[PlayerAppearance] UI slot colors refreshed.");
         }

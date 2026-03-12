@@ -1,4 +1,6 @@
+using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class RoomPortal : MonoBehaviour
 {
@@ -7,67 +9,65 @@ public class RoomPortal : MonoBehaviour
 
     [Header("UI")]
     [SerializeField] private GameObject promptUI;
-    [SerializeField] private GameObject loadingScene;
-
+    [SerializeField] private GameObject loadingSceneUI;
     [Header("Detection")]
-    [SerializeField] private Vector3 detectionSize = Vector3.one;
-    [SerializeField] private LayerMask playerLayerMask;  
+    [SerializeField] private Vector3   detectionSize = Vector3.one;
+    [SerializeField] private LayerMask playerLayerMask;
 
     private bool _playerInRange = false;
+    private bool _travelStarted = false;
 
     private void Update()
     {
-        // Poll for overlap every frame on Agent layer
+        if (_travelStarted) return;
+
+        DetectPlayer();
+
+        if (_playerInRange)
+            BeginTravel();
+    }
+
+    private void DetectPlayer()
+    {
         Collider[] hits = Physics.OverlapBox(
-            transform.position,
-            detectionSize * 0.5f,
-            transform.rotation,
-            playerLayerMask
-        );
+            transform.position, detectionSize * 0.5f,
+            transform.rotation, playerLayerMask);
 
         bool found = false;
         foreach (var hit in hits)
-        {
-            //Debug.Log(hit.tag);
-            if (hit.transform.root.CompareTag("LocalPlayer"))
-            {
-                Debug.Log("Found player");
-                found = true;
-                break;
-            }
-        }
+            if (hit.transform.root.CompareTag("LocalPlayer")) { found = true; break; }
 
-        // Entered range
         if (found && !_playerInRange)
         {
+            Debug.Log($" [RoomPortal] {this.name} detect player");
             _playerInRange = true;
             if (promptUI != null) promptUI.SetActive(true);
         }
-
-        // Left range
-        if (!found && _playerInRange)
+        else if (!found && _playerInRange)
         {
             _playerInRange = false;
             if (promptUI != null) promptUI.SetActive(false);
         }
-
-        // Travel on E press
-        if (_playerInRange)
-        {
-            if (!string.IsNullOrEmpty(destinationScene))
-            {
-                loadingScene.gameObject.SetActive(true);
-                RoomTravelManager.Instance.TravelToRoom(destinationScene);
-            }
-                
-            else
-                Debug.LogWarning("[RoomPortal] destinationScene is not set.");
-        }
     }
 
+    private async void BeginTravel()
+    {
+        if (string.IsNullOrEmpty(destinationScene))
+        {
+            Debug.LogWarning("[RoomPortal] destinationScene not set.");
+            return;
+        }
+        loadingSceneUI.SetActive(true);
+        _travelStarted = true;
+        if (promptUI  != null) promptUI.SetActive(false);
+
+        await NetworkLauncher.Instance.StartSession(destinationScene);
+
+        _travelStarted = false;
+    }
     private void OnDrawGizmosSelected()
     {
-        Gizmos.color = Color.cyan;
+        Gizmos.color  = Color.cyan;
         Gizmos.matrix = transform.localToWorldMatrix;
         Gizmos.DrawWireCube(Vector3.zero, detectionSize);
     }

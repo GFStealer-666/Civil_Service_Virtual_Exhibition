@@ -35,7 +35,17 @@ public class LocalPlayerData : MonoBehaviour
         for (int i = 0; i < count; i++)
             _colors[i] = Color.clear;
     }
+    public void RandomizeAppearance()
+    {
+        var outfit = Gender == PlayerGender.Male
+            ? MaleOutfitPalette.GetRandomOutfit()
+            : FemaleOutfitPalette.GetRandomOutfit();
 
+        foreach (var kvp in outfit)
+            SetColor(kvp.Key, kvp.Value);
+
+        Debug.Log($"[LocalPlayerData] Appearance randomized for {Gender} ");
+    }
     public void SetColor(AppearanceSlot slot, Color color)
     {
         _colors[(int)slot] = color;

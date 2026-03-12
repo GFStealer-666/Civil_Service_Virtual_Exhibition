@@ -103,6 +103,7 @@ public class RegisterHandler : BaseHandler
         string gender   = genderSetup != null ? genderSetup.GetSelectedGender() : "male";
 
         if (password != confirm) { overlay.ShowError("รหัสผ่านไม่ตรงกัน"); return; }
+        
 
         StartCoroutine(DoRegister(email, charName, password, firstName, lastName, phone, department, gender));
     }

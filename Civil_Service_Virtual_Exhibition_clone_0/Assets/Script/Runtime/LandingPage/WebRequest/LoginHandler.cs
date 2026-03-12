@@ -81,7 +81,8 @@ public class LoginHandler : BaseHandler
                 if (res.success && !string.IsNullOrEmpty(res.data?.player.characterName))
                     guestName = res.data.player.characterName;
 
-                EnterMainScene(guestName, "male", "", isGuest: true);
+                string gender = Random.Range(0, 2) == 0 ? "male" : "female"; // random 0/1
+                EnterMainScene(guestName, gender, "", isGuest: true);
             },
             onError: _ => SetButtons(true));
     }

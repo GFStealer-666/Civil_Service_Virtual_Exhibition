@@ -5,8 +5,8 @@ using TMPro;
 
 public class AppearanceSlotUI : MonoBehaviour
 {
-    [SerializeField] private Button   slotButton;
-    [SerializeField] private Image    colorPreview;
+    [SerializeField] private Button slotButton;
+    [SerializeField] private Image colorPreview;
     [SerializeField] private TMP_Text slotLabel;
 
     public AppearanceSlot           Slot { get; private set; }

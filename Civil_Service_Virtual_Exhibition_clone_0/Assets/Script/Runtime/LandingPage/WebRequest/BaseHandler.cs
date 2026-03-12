@@ -46,8 +46,10 @@ public abstract class BaseHandler : MonoBehaviour
         data.Organization = department;
         data.IsGuest      = isGuest;
         data.Gender       = gender == "female" ? PlayerGender.Female : PlayerGender.Male;
-
-        overlay.ShowSuccess(() =>
-            UnityEngine.SceneManagement.SceneManager.LoadScene(api.mainSceneName));
+        data.RandomizeAppearance();
+        overlay.ShowSuccess(async () =>
+        {
+            await NetworkLauncher.Instance.StartSession(api.mainSceneName);
+        });
     }
 }

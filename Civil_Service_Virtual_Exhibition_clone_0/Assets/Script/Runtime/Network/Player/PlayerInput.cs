@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections;
 using Fusion;
 using Fusion.Addons.SimpleKCC;
 
@@ -22,6 +23,7 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
 {
     [SerializeField] private float lookSensitivity = 1.5f;
     [SerializeField] private bool invertY = false;
+    private NetworkEvents events;
 
     private NetworkedInput _accumulatedInput;
     private readonly Vector2Accumulator _lookRotationAccumulator = new Vector2Accumulator(0.02f, true);
@@ -34,12 +36,27 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
             return;
         }
 
-        var networkEvents = Runner.GetComponent<NetworkEvents>();
-        if (networkEvents != null)
-            networkEvents.OnInput.AddListener(OnInput);
+        // Runner can be null if this component is on a child object
+        // Find the runner from the root NetworkObject instead
+        var networkObject = GetComponentInParent<NetworkObject>();
+        if (networkObject == null)
+        {
+            Debug.LogError("[PlayerInput] No NetworkObject found in parent.");
+            return;
+        }
 
+        var networkEvents = networkObject.Runner.GetComponent<NetworkEvents>();
+        if (networkEvents == null)
+        {
+            Debug.LogError("[PlayerInput] NetworkEvents missing on Runner.");
+            return;
+        }
+
+        networkEvents.OnInput.AddListener(OnInput);
         Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        Cursor.visible   = false;
+
+        Debug.Log("[PlayerInput] Input registered.");
     }
 
     public override void Despawned(NetworkRunner runner, bool hasState)

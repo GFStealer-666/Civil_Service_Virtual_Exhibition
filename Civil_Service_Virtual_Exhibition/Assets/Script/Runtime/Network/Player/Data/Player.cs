@@ -48,7 +48,7 @@ public class Player : NetworkBehaviour
         if (HasInputAuthority)
         {
             gameObject.tag = "LocalPlayer";
-            GetComponent<PlayerProfile>()?.SendProfileToServer();
+            GetComponent<PlayerProfile>()?.ApplyLocalProfile();
 
             var ui      = FindFirstObjectByType<AppearanceCustomizeUI>();
             var profile = GetComponent<PlayerProfile>();
@@ -79,39 +79,31 @@ public class Player : NetworkBehaviour
 
     public override void Render()
     {
-        if (!_hasAnimator)
-            return;
+        if (!_hasAnimator) return;
 
         bool jumpStartedThisFrame = _visibleJumpCount < JumpCount;
 
         if (HasStateAuthority)
         {
-            // Local player: use immediate local values for responsiveness
             animator.SetBool(_animIDGrounded, kcc.IsGrounded);
             animator.SetBool(_animIDFreeFall, !kcc.IsGrounded);
             animator.SetFloat(_animIDSpeed, kcc.RealSpeed);
             animator.SetFloat(_animIDMotionSpeed, MoveVelocity.magnitude > 0.01f ? 1f : 0f);
-
-            if (jumpStartedThisFrame)
-                animator.SetBool(_animIDJump, true);
-
-            if (!kcc.IsGrounded)
-                animator.SetBool(_animIDJump, false);
         }
         else
         {
-            // Remote players / proxies: use networked values
+            // Use interpolated speed for smoother animation on remote players
             animator.SetBool(_animIDGrounded, IsGroundedNetworked);
             animator.SetBool(_animIDFreeFall, !IsGroundedNetworked);
-            animator.SetFloat(_animIDSpeed, SpeedNetworked);
-            animator.SetFloat(_animIDMotionSpeed, MotionSpeedNetworked);
-
-            if (jumpStartedThisFrame)
-                animator.SetBool(_animIDJump, true);
-
-            if (!IsGroundedNetworked)
-                animator.SetBool(_animIDJump, false);
+            animator.SetFloat(_animIDSpeed,        SpeedNetworked,       0.15f, Time.deltaTime);
+            animator.SetFloat(_animIDMotionSpeed,  MotionSpeedNetworked, 0.15f, Time.deltaTime);
         }
+
+        if (jumpStartedThisFrame)
+            animator.SetBool(_animIDJump, true);
+
+        if (!IsGroundedNetworked)
+            animator.SetBool(_animIDJump, false);
 
         _visibleJumpCount = JumpCount;
     }

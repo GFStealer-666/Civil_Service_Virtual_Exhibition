@@ -13,10 +13,10 @@ public static class PlayerManager
         _tempSpawnPlayers.Clear();
         _tempSpawnedPlayers.Clear();
 
-        // 1. Get all connected players, marking them as pending spawn.
+        // Get all connected players, marking them as pending spawn.
         _tempSpawnPlayers.AddRange(runner.ActivePlayers);
 
-        // 2. Get all player objects with component of type T.
+        // et all player objects with component of type T.
         runner.GetAllBehaviours(_tempSpawnedPlayers);
 
         for (int i = 0; i < _tempSpawnedPlayers.Count; ++i)
@@ -24,10 +24,10 @@ public static class PlayerManager
             Player    player    = _tempSpawnedPlayers[i];
             PlayerRef playerRef = player.Object.InputAuthority;
 
-            // 3. Remove PlayerRef of existing player object from pending spawn list.
+            // Remove PlayerRef of existing player object from pending spawn list.
             _tempSpawnPlayers.Remove(playerRef);
 
-            // 4. If a player is not valid (disconnected) execute the despawn callback.
+            //If a player is not valid (disconnected) execute the despawn callback.
             if (runner.IsPlayerValid(playerRef) == false)
             {
                 try
@@ -41,7 +41,7 @@ public static class PlayerManager
             }
         }
 
-        // 5. Execute spawn callback for all players pending spawn (recently connected).
+        // Execute spawn callback for all players pending spawn (recently connected).
         for (int i = 0; i < _tempSpawnPlayers.Count; ++i)
         {
             try
@@ -54,7 +54,7 @@ public static class PlayerManager
             }
         }
 
-        // 6. Cleanup
+        // Cleanup
         _tempSpawnPlayers.Clear();
         _tempSpawnedPlayers.Clear();
     }

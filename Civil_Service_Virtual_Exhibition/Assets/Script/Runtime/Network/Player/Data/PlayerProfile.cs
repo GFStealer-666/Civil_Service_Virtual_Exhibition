@@ -2,125 +2,84 @@ using System;
 using Fusion;
 using UnityEngine;
 
-public enum PlayerGender
-{
-    Male   = 0,
-    Female = 1,
-}
+public enum PlayerGender { Male = 0, Female = 1 }
 
 public enum AppearanceSlot
 {
-    // ── Shared ──
-    Hair        = 0,
-    Eyebrow     = 1,
-    Shoes       = 2,
-    Skin        = 3,
-
-    // ── Male only ──
-    Shirt       = 4,
-    Pants       = 5,
-    Suit        = 6,
-    SuitButtons = 7,
-    Belt        = 8,
-    Belthead    = 9,
-
-    // ── Female only ──
-    Earring     = 10,
-    ShirtInner  = 11,
-    Skirt       = 12,
-
+    Hair = 0, Eyebrow = 1, Shoes = 2, Skin = 3,
+    Shirt = 4, Pants = 5, Suit = 6, SuitButtons = 7, Belt = 8, Belthead = 9,
+    Earring = 10, ShirtInner = 11, Skirt = 12,
 }
+
 public class PlayerProfile : NetworkBehaviour
 {
-    // Slot count must match or exceed AppearanceSlot enum length
     private const int SlotCapacity = 32;
 
-    [Networked, Capacity(24)]
-    public string PlayerName { get => default; set { } }
+    [Networked, Capacity(24)] public string       PlayerName   { get => default; set { } }
+    [Networked]               public PlayerGender  Gender       { get; set; }
+    [Networked]               public NetworkBool   ProfileReady { get; set; }
 
-    [Networked] public PlayerGender Gender       { get; set; }
-    [Networked] public NetworkBool  ProfileReady { get; set; }
-
-    // Single networked array replaces all individual Color fields
-    // Adding a new slot = just add to enum, no new [Networked] field needed
     [Networked, Capacity(SlotCapacity)]
     public NetworkArray<Color> AppearanceColors { get; }
 
-    public Color GetColor(AppearanceSlot slot)
-    {
-        return AppearanceColors[(int)slot];
-    }
+    public Color GetColor(AppearanceSlot slot) => AppearanceColors[(int)slot];
 
-    private void SetColorInternal(AppearanceSlot slot, Color color)
+    /// <summary>
+    /// In Shared mode we are always StateAuthority for our own player object,
+    /// so we write directly — no RPC needed.
+    /// </summary>
+    public void ApplyLocalProfile()
     {
-        AppearanceColors.Set((int)slot, color);
-    }
+        // Only the owning client should write their own profile
+        if (!HasStateAuthority) return;
 
-    public void SendProfileToServer()
-    {
-        var local = LocalPlayerData.Instance; // fall back
-
+        var local = LocalPlayerData.Instance;
         if (local == null)
         {
-            Debug.LogWarning("[PlayerProfile] LocalPlayerData not found — using fallback.");
-            RPC_SubmitProfile("Guest", PlayerGender.Male);
+            Debug.LogWarning("[PlayerProfile] LocalPlayerData missing — applying fallback.");
+            ApplyFallbackProfile();  
             return;
         }
 
-        RPC_SubmitProfile(local.PlayerName, local.Gender);
+        PlayerName   = local.PlayerName;
+        Gender       = local.Gender;
+        ProfileReady = true;
 
-        // Send each color individually
-        // This avoids large RPC payloads and works with any slot count
+        int count = Enum.GetValues(typeof(AppearanceSlot)).Length;
+        for (int i = 0; i < count; i++)
+            AppearanceColors.Set(i, local.GetColor((AppearanceSlot)i));
+
+        Debug.Log($"[PlayerProfile] Profile applied | Name={PlayerName} | Gender={Gender}");
+    }
+
+    private void ApplyFallbackProfile()
+    {
+        PlayerName = "Guest";
+        // Gender     = UnityEngine.Random.Range(0,2) == 0 ? PlayerGender.Male : PlayerGender.Female;
+        Gender = PlayerGender.Female;
+        var outfit = MaleOutfitPalette.GetRandomOutfit();
+
         int count = Enum.GetValues(typeof(AppearanceSlot)).Length;
         for (int i = 0; i < count; i++)
         {
             AppearanceSlot slot = (AppearanceSlot)i;
-            RPC_UpdateColor(slot, local.GetColor(slot));
-        }
-    }
 
-    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
-    private void RPC_SubmitProfile(string name, PlayerGender gender)
-    {
-        PlayerName   = name;
-        Gender       = gender;
+            // Use outfit color if available, otherwise white
+            Color color = outfit.TryGetValue(slot, out var c) ? c : Color.white;
+            AppearanceColors.Set(i, color);
+        }
+
         ProfileReady = true;
 
-        Debug.Log($"[PlayerProfile] Profile set | Name={PlayerName} | Gender={Gender}");
-        var gameplay = FindAnyObjectByType<Gameplay>();
-        if (gameplay != null)
-        {
-            gameplay.OnProfileReceived(Object.InputAuthority, name, gender);
-        }
-        else
-        {
-            Debug.Log("[PlayerProfile] Gameplay is null");
-        }
-            
+        Debug.Log("[PlayerProfile] Fallback profile applied with random outfit.");
     }
+
     public void ChangeColor(AppearanceSlot slot, Color color)
     {
-        if (!HasInputAuthority)
-            return;
-
-        // Persist locally so color survives room travel
-        LocalPlayerData.Instance?.SetColor(slot, color);
-
-        RPC_UpdateColor(slot, color);
-    }
-
-    [Rpc(RpcSources.InputAuthority, RpcTargets.StateAuthority)]
-    private void RPC_UpdateColor(AppearanceSlot slot, Color color)
-    {
-        SetColorInternal(slot, color);
-    }
-
-    // Legacy fallback
-    public void ApplyProfile(string playerName, PlayerGender gender)
-    {
         if (!HasStateAuthority) return;
-        PlayerName   = playerName;
-        Gender       = gender;
-        ProfileReady = true;
+
+        // Persist so the color survives room travel via LocalPlayerData
+        LocalPlayerData.Instance?.SetColor(slot, color);
+        AppearanceColors.Set((int)slot, color);
     }
 }
