@@ -1,11 +1,10 @@
 // RegisterHandler.cs
 using System.Collections;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TMPro;
 
-public class RegisterHandler : MonoBehaviour
+public class RegisterHandler : BaseHandler
 {
     [Header("Fields")]
     [SerializeField] private TMP_InputField emailInput;
@@ -20,114 +19,121 @@ public class RegisterHandler : MonoBehaviour
     [SerializeField] private Toggle         termsToggle;
     [SerializeField] private Button         submitBtn;
     [SerializeField] private Button         backBtn;
-    [SerializeField] private TMP_Text       errorText;
-    [SerializeField] private GameObject     loadingOverlay;
 
     [Header("Navigation")]
     [SerializeField] private LandingPageManager pageManager;
 
-    [Header("API")]
-    [SerializeField] private string apiBaseUrl         = "https://thaicivil.mxrth.co/api/game";
-    [SerializeField] private string registerEndpoint   = "/register";
-    [SerializeField] private string mainSceneName      = "MainScene";
+    private const int PlaceholderIndex = 0;
 
     private void Start()
     {
-        submitBtn .onClick.AddListener(OnRegisterClicked);
-        backBtn.onClick.AddListener(pageManager.ShowLogin);
-        ClearError();
+        submitBtn.onClick.AddListener(OnRegisterClicked);
+        backBtn  .onClick.AddListener(pageManager.ShowLogin);
+
+        emailInput          .onValueChanged.AddListener(_ => RefreshSubmitButton());
+        characterNameInput  .onValueChanged.AddListener(_ => RefreshSubmitButton());
+        passwordInput       .onValueChanged.AddListener(_ => RefreshSubmitButton());
+        confirmPasswordInput.onValueChanged.AddListener(_ => RefreshSubmitButton());
+        firstNameInput      .onValueChanged.AddListener(_ => RefreshSubmitButton());
+        lastNameInput       .onValueChanged.AddListener(_ => RefreshSubmitButton());
+        phoneInput          .onValueChanged.AddListener(_ => RefreshSubmitButton());
+        departmentDropdown  .onValueChanged.AddListener(_ => RefreshSubmitButton());
+        genderDropdown      .onValueChanged.AddListener(_ => RefreshSubmitButton());
+        termsToggle         .onValueChanged.AddListener(_ => RefreshSubmitButton());
+
+        RefreshSubmitButton();
+    }
+
+    private bool AllFieldsFilled()
+    {
+        return !string.IsNullOrEmpty(emailInput.text.Trim())
+            && !string.IsNullOrEmpty(characterNameInput.text.Trim())
+            && !string.IsNullOrEmpty(passwordInput.text)
+            && !string.IsNullOrEmpty(confirmPasswordInput.text)
+            && !string.IsNullOrEmpty(firstNameInput.text.Trim())
+            && !string.IsNullOrEmpty(lastNameInput.text.Trim())
+            && !string.IsNullOrEmpty(phoneInput.text.Trim())
+            && departmentDropdown.value != PlaceholderIndex
+            && genderDropdown.value     != PlaceholderIndex
+            && termsToggle.isOn;
+    }
+
+    private void RefreshSubmitButton()
+    {
+        submitBtn.interactable = AllFieldsFilled();
+    }
+    private static void InjectPlaceholder(TMP_Dropdown dropdown, string label)
+    {
+        // Remove any existing placeholder we may have added before (idempotent)
+        if (dropdown.options.Count > 0 && dropdown.options[0].text == label)
+            return;
+
+        dropdown.options.Insert(0, new TMP_Dropdown.OptionData(label));
+        dropdown.value         = 0;
+        dropdown.captionText.text = label;
+
+        // Grey out the placeholder visually via a custom ItemTemplate trick —
+        // the simplest Unity-friendly way is tinting the caption when index == 0
+        dropdown.onValueChanged.AddListener(i =>
+        {
+            if (dropdown.captionText == null) return;
+            dropdown.captionText.color = i == 0
+                ? new Color(0.6f, 0.6f, 0.6f)   // grey placeholder
+                : Color.black;                    // normal selected colour
+        });
+
+        // Apply grey immediately on start
+        if (dropdown.captionText != null)
+            dropdown.captionText.color = new Color(0.6f, 0.6f, 0.6f);
     }
 
     private void OnRegisterClicked()
     {
-        string email    = emailInput.text.Trim();
-        string charName = characterNameInput.text.Trim();
-        string password = passwordInput.text;
-        string confirm  = confirmPasswordInput.text;
-        string firstName = firstNameInput.text.Trim();
-        string lastName  = lastNameInput.text.Trim();
-        string phone     = phoneInput.text.Trim();
+        string email      = emailInput.text.Trim();
+        string charName   = characterNameInput.text.Trim();
+        string password   = passwordInput.text;
+        string confirm    = confirmPasswordInput.text;
+        string firstName  = firstNameInput.text.Trim();
+        string lastName   = lastNameInput.text.Trim();
+        string phone      = phoneInput.text.Trim();
         string department = departmentDropdown.options[departmentDropdown.value].text;
 
-        // Convert dropdown to API value
-        int genderIndex = genderDropdown.value;
-        string gender = genderIndex == 1 ? "female" : "male";  // 0=placeholder/male, 1=ชาย, 2=หญิง — adjust to your order
+        // Delegate to the component that owns gender logic
+        var genderSetup = genderDropdown.GetComponent<GenderDropdownSetup>();
+        string gender   = genderSetup != null ? genderSetup.GetSelectedGender() : "male";
 
-        if (string.IsNullOrEmpty(email))    { ShowError("กรุณากรอกอีเมล"); return; }
-        if (string.IsNullOrEmpty(charName)) { ShowError("กรุณากรอกชื่อตัวละคร"); return; }
-        if (string.IsNullOrEmpty(password)) { ShowError("กรุณากรอกรหัสผ่าน"); return; }
-        if (password != confirm)            { ShowError("รหัสผ่านไม่ตรงกัน"); return; }
-        if (!termsToggle.isOn)              { ShowError("กรุณายอมรับเงื่อนไขการใช้งาน"); return; }
+        if (password != confirm) { overlay.ShowError("รหัสผ่านไม่ตรงกัน"); return; }
 
-        StartCoroutine(RegisterRequest(email, charName, password, firstName, lastName, phone, department, gender));
+        StartCoroutine(DoRegister(email, charName, password, firstName, lastName, phone, department, gender));
     }
 
-    private IEnumerator RegisterRequest(
+    private IEnumerator DoRegister(
         string email, string charName, string password,
         string firstName, string lastName, string phone,
         string department, string gender)
     {
-        SetLoading(true);
+        submitBtn.interactable = false;
 
-        var body = JsonUtility.ToJson(new RegisterRequestBody
+        string body = JsonUtility.ToJson(new RegisterRequestBody
         {
-            email         = email,
-            characterName = charName,
-            password      = password,
-            firstName     = firstName,
-            lastName      = lastName,
-            department    = department,
-            phone         = phone,
-            gender        = gender        // "male" or "female"
+            email = email, characterName = charName, password = password,
+            firstName = firstName, lastName = lastName,
+            department = department, phone = phone, gender = gender
         });
 
-        using var req = APIHelper.PostJson(apiBaseUrl + registerEndpoint, body);
-        Debug.Log($"[RegisterHandler] + {req}");
-        yield return req.SendWebRequest();
-
-        SetLoading(false);
-
-        if (req.result != UnityEngine.Networking.UnityWebRequest.Result.Success)
-        {
-            Debug.Log("[Register Handler] : Unable to connect to server");
-            ShowError("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่");
-            yield break;
-        }
-
-        var response = JsonUtility.FromJson<BaseResponse>(req.downloadHandler.text);
-        if (!response.success)
-        {
-            Debug.Log($"[Register Handler] Failed to register : {response.message}");
-            ShowError(string.IsNullOrEmpty(response.message) ? "สมัครสมาชิกไม่สำเร็จ" : response.message);
-            yield break;
-        }
-
-        var data          = LocalPlayerData.Instance;
-        data.PlayerName   = charName;
-        data.Organization = department;
-        data.IsGuest      = false;
-        data.Gender       = gender == "female" ? PlayerGender.Female : PlayerGender.Male;
-
-        SceneManager.LoadScene(mainSceneName);
-    }
-
-    private void SetLoading(bool active)
-    {
-        if (loadingOverlay != null) loadingOverlay.SetActive(active);
-        submitBtn.interactable = !active;
-    }
-
-    private void ShowError(string msg)
-    {
-        if (errorText == null) return;
-        errorText.text = msg;
-        errorText.gameObject.SetActive(true);
-    }
-
-    public void ClearError()
-    {
-        if (errorText == null) return;
-        errorText.text = "";
-        errorText.gameObject.SetActive(false);
+        yield return PostRequest(api.RegisterUrl, body,
+            onSuccess: json =>
+            {
+                var res = JsonUtility.FromJson<BaseResponse>(json);
+                if (!res.success)
+                {
+                    overlay.ShowError(
+                        string.IsNullOrEmpty(res.message) ? "สมัครสมาชิกไม่สำเร็จ" : res.message,
+                        onDismissed: () => submitBtn.interactable = AllFieldsFilled());
+                    return;
+                }
+                EnterMainScene(charName, gender, department, isGuest: false);
+            },
+            onError: _ => submitBtn.interactable = AllFieldsFilled());
     }
 }

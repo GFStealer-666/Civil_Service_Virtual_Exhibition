@@ -25,12 +25,12 @@ public class OrganizationDropdownSetup : MonoBehaviour
         dropdown.onValueChanged.AddListener(_ => UpdateLabelColor(dropdown));
     }
 
-    private void UpdateLabelColor(TMP_Dropdown dropdown)
+        private void UpdateLabelColor(TMP_Dropdown dropdown)
     {
         if (dropdown.captionText == null) return;
         dropdown.captionText.color = dropdown.value == 0
-            ? new Color(0.6f, 0.6f, 0.6f, 1f)
-            : new Color(0.2f, 0.2f, 0.2f, 1f);
+            ? new Color(0.35f, 0.35f, 0.35f, 1f)  
+            : new Color(0.15f, 0.15f, 0.15f, 1f);
     }
 
     private static List<string> DefaultOrganizations() => new()

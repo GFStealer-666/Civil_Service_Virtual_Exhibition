@@ -1,4 +1,3 @@
-// LandingPageManager.cs — navigation only
 using UnityEngine;
 
 public class LandingPageManager : MonoBehaviour
@@ -8,34 +7,27 @@ public class LandingPageManager : MonoBehaviour
     [SerializeField] private GameObject loginPanel;
     [SerializeField] private GameObject registerPanel;
     [SerializeField] private GameObject forgotPasswordPanel;
+    [SerializeField] private GameObject termOfServicePanel;
+    private GameObject[] _allPanels;
 
-    [Header("Handlers")]
-    [SerializeField] private LoginHandler          loginHandler;
-    [SerializeField] private RegisterHandler       registerHandler;
-    [SerializeField] private ForgotPasswordHandler forgotHandler;
-
-    [Header("Starter Links")]
-    [SerializeField] private TMProLinkButton starterRegisterBtn;
-    [SerializeField] private TMProLinkButton starterGuestBtn;
+    private void Awake()
+    {
+        _allPanels = new[] { starterPanel, loginPanel, registerPanel, forgotPasswordPanel };
+    }
 
     private void Start()
     {
-        starterRegisterBtn.onLinkClicked.AddListener(ShowRegister);
-        starterGuestBtn   .onLinkClicked.AddListener(() => loginHandler.OnGuestClicked());
-
         ShowStarter();
     }
 
-    public void ShowStarter()        => SwitchPanel(starterPanel);
-    public void ShowLogin()          => SwitchPanel(loginPanel);
-    public void ShowRegister()       => SwitchPanel(registerPanel);
-    public void ShowForgotPassword() => SwitchPanel(forgotPasswordPanel);
-
-    private void SwitchPanel(GameObject target)
+    public void ShowStarter()        => SwitchTo(starterPanel);
+    public void ShowLogin()          => SwitchTo(loginPanel);
+    public void ShowRegister()       => SwitchTo(registerPanel);
+    public void ShowForgotPassword() => SwitchTo(forgotPasswordPanel);
+    public void ShowTermOfService() => SwitchTo(termOfServicePanel);
+    private void SwitchTo(GameObject target)
     {
-        starterPanel       .SetActive(starterPanel        == target);
-        loginPanel         .SetActive(loginPanel          == target);
-        registerPanel      .SetActive(registerPanel       == target);
-        forgotPasswordPanel.SetActive(forgotPasswordPanel == target);
+        foreach (var p in _allPanels)
+            p.SetActive(p == target);
     }
 }

@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using Fusion;
 using UnityEngine;
@@ -9,25 +8,8 @@ public class Gameplay : NetworkBehaviour
     public Player MalePlayerPrefab;
     public Player FemalePlayerPrefab;
 
-    [Header("Fetch Settings")]
-    [SerializeField] private float profileFetchTimeout = 30f;
-
     [SerializeField] private List<Player> _spawnedPlayers = new(16);
-    private readonly List<PlayerRef> _profilesToRemove = new(16);
-    private readonly Dictionary<PlayerRef, PendingPlayerProfile> _pendingProfiles = new();
     private readonly List<Transform> _recentSpawnPoints = new(4);
-
-    private class PendingPlayerProfile
-    {
-        public PlayerRef    PlayerRef;
-        public bool         IsFetchStarted;
-        public bool         IsFetchCompleted;
-        public bool         IsSpawned;
-        public string       PlayerName;
-        public PlayerGender PlayerGender;
-    }
-
-    // ── Lifecycle ─────────────────────────────────────────────────────────────
 
     public override void Spawned()
     {
@@ -38,11 +20,10 @@ public class Gameplay : NetworkBehaviour
         {
             Application.targetFrameRate =
                 TickRate.Resolve(Runner.Config.Simulation.TickRateSelection).Server;
-            Debug.Log("[Gameplay] Running as dedicated server — skipping local player setup.");
+            Debug.Log("[Gameplay] Dedicated server — skipping local player setup.");
             return;
         }
 #endif
-
         if (Runner.GameMode == GameMode.Shared)
             throw new System.NotSupportedException("[Gameplay] Shared Mode is not supported.");
     }
@@ -50,111 +31,58 @@ public class Gameplay : NetworkBehaviour
     public override void FixedUpdateNetwork()
     {
         if (!HasStateAuthority) return;
-
-        PlayerManager.UpdatePlayerConnections(Runner, RegisterPendingPlayer, DespawnPlayer);
-        ProcessPendingProfiles();
+        PlayerManager.UpdatePlayerConnections(Runner, SpawnPlayer, DespawnPlayer);
     }
 
-    // ── Pending player registration ───────────────────────────────────────────
-
-    private void RegisterPendingPlayer(PlayerRef playerRef)
+    /// <summary>
+    /// Called by PlayerManager when a PlayerRef has no Player object yet.
+    /// For the local player we have gender immediately from LocalPlayerData.
+    /// For remote players we spawn Male by default — OnProfileReceived will
+    /// respawn with the correct prefab once the client's RPC arrives (usually
+    /// within the same second, not 30 seconds).
+    /// </summary>
+    private void SpawnPlayer(PlayerRef playerRef)
     {
-        if (_pendingProfiles.ContainsKey(playerRef)) return;
+        PlayerGender gender = PlayerGender.Male;
 
-        var profile = new PendingPlayerProfile
-        {
-            PlayerRef        = playerRef,
-            IsFetchStarted   = false,
-            IsFetchCompleted = false,
-            IsSpawned        = false,
-        };
-
-        // ✅ Host's local player: read directly, no RPC needed
         if (playerRef == Runner.LocalPlayer && LocalPlayerData.Instance != null)
-        {
-            profile.PlayerName       = LocalPlayerData.Instance.PlayerName;
-            profile.PlayerGender     = LocalPlayerData.Instance.Gender;
-            profile.IsFetchCompleted = true;
-            Debug.Log($"[Gameplay] Local player profile pre-loaded: {profile.PlayerName} | {profile.PlayerGender}");
-        }
+            gender = LocalPlayerData.Instance.Gender;
 
-        _pendingProfiles[playerRef] = profile;
-        Debug.Log($"[Gameplay] Registered pending player: {playerRef}");
-    }
-    private void ProcessPendingProfiles()
-    {
-        _profilesToRemove.Clear();
-
-        foreach (var kvp in _pendingProfiles)
-        {
-            PendingPlayerProfile profile = kvp.Value;
-
-            if (profile.IsSpawned) continue;
-
-            if (!profile.IsFetchStarted)
-            {
-                profile.IsFetchStarted = true;
-                StartCoroutine(WaitForProfileRPC(profile));
-                Debug.Log($"[Gameplay] Waiting for profile RPC: {profile.PlayerRef}");
-            }
-            else if (profile.IsFetchCompleted)
-            {
-                _profilesToRemove.Add(kvp.Key);
-            }
-        }
-
-        foreach (var playerRef in _profilesToRemove)
-        {
-            if (_pendingProfiles.TryGetValue(playerRef, out var profile))
-                SpawnResolvedPlayer(profile);
-        }
+        SpawnWithGender(playerRef, gender);
     }
 
+    /// <summary>
+    /// Called by PlayerProfile.RPC_SubmitProfile after the player is already
+    /// spawned and has sent its real profile to the server.
+    /// Only respawns if the prefab gender doesn't match the profile gender.
+    /// </summary>
     public void OnProfileReceived(PlayerRef playerRef, string playerName, PlayerGender gender)
     {
-        if (_pendingProfiles.TryGetValue(playerRef, out var profile))
+        var netObj = Runner.GetPlayerObject(playerRef);
+        if (netObj == null)
         {
-            profile.PlayerName       = playerName;
-            profile.PlayerGender     = gender;
-            profile.IsFetchCompleted = true;
-            Debug.Log($"[Gameplay] Profile received | {playerRef} | Name={playerName} | Gender={gender}");
+            Debug.LogWarning($"[Gameplay] OnProfileReceived: no object for {playerRef} yet — ignoring.");
             return;
         }
 
-        // Already spawned — check for gender mismatch and respawn if needed
-        SpawnPlayerWithCorrectGender(playerRef, playerName, gender);
-    }
+        var profile = netObj.GetComponent<PlayerProfile>();
+        if (profile == null) return;
 
-    private IEnumerator WaitForProfileRPC(PendingPlayerProfile profile)
-    {
-        // Already resolved (e.g. local player on Host)
-        if (profile.IsFetchCompleted)
-            yield break;
-
-        float elapsed = 0f;
-        while (!profile.IsFetchCompleted && elapsed < profileFetchTimeout)
+        if (profile.Gender == gender)
         {
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        if (!profile.IsFetchCompleted)
-        {
-            Debug.LogWarning($"[Gameplay] Profile fetch timed out for {profile.PlayerRef} — using fallback.");
-            profile.PlayerName       = $"Player_{profile.PlayerRef.PlayerId}";
-            profile.PlayerGender     = PlayerGender.Male;
-            profile.IsFetchCompleted = true;
-        }
-    }
-    // ── Spawn / Despawn ───────────────────────────────────────────────────────
-
-    private void SpawnResolvedPlayer(PendingPlayerProfile profile)
-    {
-        if (!Runner.IsRunning)
-        {
-            Debug.LogWarning($"[Gameplay] Runner not running, cannot spawn {profile.PlayerRef}");
+            Debug.Log($"[Gameplay] {playerRef} gender matches — no respawn needed.");
             return;
         }
+
+        Debug.Log($"[Gameplay] Gender mismatch for {playerRef} — respawning as {gender}.");
+        _spawnedPlayers.Remove(netObj.GetComponent<Player>());
+        Runner.Despawn(netObj);
+        SpawnWithGender(playerRef, gender);
+    }
+
+    private void SpawnWithGender(PlayerRef playerRef, PlayerGender gender)
+    {
+        if (!Runner.IsRunning) return;
 
         if (MalePlayerPrefab == null || FemalePlayerPrefab == null)
         {
@@ -162,78 +90,25 @@ public class Gameplay : NetworkBehaviour
             return;
         }
 
+        Player    prefab     = gender == PlayerGender.Female ? FemalePlayerPrefab : MalePlayerPrefab;
         Transform spawnPoint = GetSpawnPoint();
-        Player    prefab     = profile.PlayerGender == PlayerGender.Female
-            ? FemalePlayerPrefab
-            : MalePlayerPrefab;
-        Debug.Log(prefab.name);
-        Player player = Runner.Spawn(prefab, spawnPoint.position, spawnPoint.rotation, profile.PlayerRef);
 
+        Player player = Runner.Spawn(prefab, spawnPoint.position, spawnPoint.rotation, playerRef);
         if (player == null)
         {
-            Debug.LogError($"[Gameplay] Spawn failed for {profile.PlayerRef}");
+            Debug.LogError($"[Gameplay] Spawn failed for {playerRef}");
             return;
         }
 
-        Runner.SetPlayerObject(profile.PlayerRef, player.Object);
-
-        if (!_spawnedPlayers.Contains(player))
-            _spawnedPlayers.Add(player);
-
-        profile.IsSpawned = true;
-        _pendingProfiles.Remove(profile.PlayerRef);
-
-        Debug.Log($"[Gameplay] Spawned {profile.PlayerRef} | Name={profile.PlayerName} | Gender={profile.PlayerGender}");
+        Runner.SetPlayerObject(playerRef, player.Object);
+        _spawnedPlayers.Add(player);
+        Debug.Log($"[Gameplay] Spawned {playerRef} | Gender={gender}");
     }
 
-    private void SpawnPlayerWithCorrectGender(PlayerRef playerRef, string playerName, PlayerGender gender)
-    {
-        var existing = Runner.GetPlayerObject(playerRef);
-        if (existing == null) return;
-
-        Player existingPlayer = existing.GetComponent<Player>();
-        if (existingPlayer == null) return;
-
-        var existingProfile = existing.GetComponent<PlayerProfile>();
-        if (existingProfile == null) return;
-
-        bool genderMismatch = existingProfile.Gender != gender;
-        if (!genderMismatch)
-        {
-            Debug.Log($"[Gameplay] Gender matches for {playerRef} — no respawn needed");
-            return;
-        }
-
-        Debug.Log($"[Gameplay] Gender mismatch — respawning {playerRef} as {gender}");
-
-        Transform spawnPoint = GetSpawnPoint();
-        Player    prefab     = gender == PlayerGender.Female ? FemalePlayerPrefab : MalePlayerPrefab;
-
-        _spawnedPlayers.Remove(existingPlayer);
-        Runner.Despawn(existing);
-
-        Player newPlayer = Runner.Spawn(prefab, spawnPoint.position, spawnPoint.rotation, playerRef);
-        if (newPlayer == null)
-        {
-            Debug.LogError($"[Gameplay] Respawn failed for {playerRef}");
-            return;
-        }
-
-        Runner.SetPlayerObject(playerRef, newPlayer.Object);
-        _spawnedPlayers.Add(newPlayer);
-
-        Debug.Log($"[Gameplay] Respawned {playerRef} | Name={playerName} | Gender={gender}");
-    }
 
     private void DespawnPlayer(PlayerRef playerRef, Player player)
     {
         Debug.Log($"[Gameplay] DespawnPlayer: {playerRef}");
-
-        if (_pendingProfiles.TryGetValue(playerRef, out var profile))
-        {
-            profile.IsSpawned = false;
-            _pendingProfiles.Remove(playerRef);
-        }
 
         if (player != null)
         {
