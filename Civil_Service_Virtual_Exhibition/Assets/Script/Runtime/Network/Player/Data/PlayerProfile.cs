@@ -41,10 +41,16 @@ public class PlayerProfile : NetworkBehaviour
             return;
         }
 
-        PlayerName   = local.PlayerName;
-        Gender       = local.Gender;
-        ProfileReady = true;
+        PlayerName = local.PlayerName;
+        Gender = local.Gender;
 
+        // ensure colors exist
+        if (!local.HasColor(AppearanceSlot.Shirt))
+        {
+            Debug.Log("[PlayerProfile] No saved colors — generating outfit.");
+            local.RandomizeAppearance();
+        }
+        ProfileReady = true;
         int count = Enum.GetValues(typeof(AppearanceSlot)).Length;
         for (int i = 0; i < count; i++)
             AppearanceColors.Set(i, local.GetColor((AppearanceSlot)i));
@@ -57,7 +63,8 @@ public class PlayerProfile : NetworkBehaviour
         PlayerName = "Guest";
         // Gender     = UnityEngine.Random.Range(0,2) == 0 ? PlayerGender.Male : PlayerGender.Female;
         Gender = PlayerGender.Female;
-        var outfit = MaleOutfitPalette.GetRandomOutfit();
+        var outfit = Gender == PlayerGender.Male ? MaleOutfitPalette.GetRandomOutfit() : 
+        FemaleOutfitPalette.GetRandomOutfit();
 
         int count = Enum.GetValues(typeof(AppearanceSlot)).Length;
         for (int i = 0; i < count; i++)

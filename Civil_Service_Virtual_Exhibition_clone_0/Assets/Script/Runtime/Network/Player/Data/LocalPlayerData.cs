@@ -34,6 +34,8 @@ public class LocalPlayerData : MonoBehaviour
 
         for (int i = 0; i < count; i++)
             _colors[i] = Color.clear;
+
+        RandomizeAppearance();
     }
     public void RandomizeAppearance()
     {
