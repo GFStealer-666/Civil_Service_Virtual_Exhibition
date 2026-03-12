@@ -87,6 +87,16 @@ public class PlayerProfile : NetworkBehaviour
         ProfileReady = true;
 
         Debug.Log($"[PlayerProfile] Profile set | Name={PlayerName} | Gender={Gender}");
+        var gameplay = FindAnyObjectByType<Gameplay>();
+        if (gameplay != null)
+        {
+            gameplay.OnProfileReceived(Object.InputAuthority, name, gender);
+        }
+        else
+        {
+            Debug.Log("[PlayerProfile] Gameplay is null");
+        }
+            
     }
     public void ChangeColor(AppearanceSlot slot, Color color)
     {

@@ -2074,7 +2074,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1267197700
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2094,7 +2094,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -32.67041, y: -18.371002}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1267197701
@@ -2524,7 +2524,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2357bda40153d1640b388bc7f5bbf150, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MalePlayerPrefab: {fileID: 8221447348966359789, guid: 012ad2ea7b5e2134e87eac4674d9db4d, type: 3}
+  MalePlayerPrefab: {fileID: 8221447348966359789, guid: 601a90c35df294b45b176ecd76318679, type: 3}
   FemalePlayerPrefab: {fileID: 8221447348966359789, guid: 012ad2ea7b5e2134e87eac4674d9db4d, type: 3}
   profileFetchTimeout: 3
   _spawnedPlayers: []

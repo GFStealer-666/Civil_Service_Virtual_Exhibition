@@ -12,11 +12,18 @@ public class LocalPlayerData : MonoBehaviour
     public bool         IsGuest      = false;
     private Color[] _colors;
 
+
     private void Awake()
     {
-        if (Instance != null) { Destroy(gameObject); return; }
+        // Auto-create and persist if not already existing
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        DontDestroyOnLoad(gameObject); // ← critical
         InitializeDefaults();
     }
 

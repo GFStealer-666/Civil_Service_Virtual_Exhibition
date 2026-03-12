@@ -25,42 +25,45 @@ public static class APIHelper
         return req;
     }
 }
+// Models.cs — shared data models across all handlers
+[System.Serializable] public class LoginRequestBody { public string email, password; }
 
-[System.Serializable]
-public class LoginRequestBody
-{
-    public string email;
-    public string password;
-}
-
-[System.Serializable]
-public class RegisterRequestBody
+[System.Serializable] public class RegisterRequestBody
 {
     public string email;
     public string characterName;
     public string password;
     public string firstName;
     public string lastName;
+    public string department;       
     public string phone;
-    public string organization;
+    public string gender;          
+}
+[System.Serializable]
+public class LoginData
+{
+    public PlayerData player;
+    public string     token;
+    public string     expiresAt;
+}
+[System.Serializable] public class ForgotPasswordRequestBody { public string email; }
+[System.Serializable] public class BaseResponse  { public bool success; public string message; }
+[System.Serializable] public class LoginResponse : BaseResponse { public LoginData data; }
+[System.Serializable]
+public class PlayerData
+{
+    public string id;
+    public string email;
+    public string characterName;
+    public string firstName;
+    public string lastName;
+    public string department;
+    public string phone;
     public string gender;
+    public bool   isAnonymous;
 }
-
-
 [System.Serializable]
-public class LoginResponse
-{
-    public bool        success;
-    public string      message;
-    public UserPayload data;
-}
-
-[System.Serializable]
-public class RegisterResponse
-{
-    public bool   success;
-    public string message;
-}
+public class RegisterResponse : BaseResponse { }
 
 [System.Serializable]
 public class UserPayload
