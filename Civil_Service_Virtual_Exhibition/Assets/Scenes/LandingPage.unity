@@ -17837,6 +17837,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   runnerPrefab: {fileID: 3095207314023402545, guid: c12a75a40c6d20741bb5e98bcc32e9bc, type: 3}
+  capacityConfig: {fileID: 11400000, guid: 18a6a8c9fba3cde4a87e39eeb105255c, type: 2}
 --- !u!4 &2035772209
 Transform:
   m_ObjectHideFlags: 0
