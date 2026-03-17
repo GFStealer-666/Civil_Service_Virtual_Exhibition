@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Threading.Tasks;
 using UnityEngine;
 
@@ -7,33 +6,23 @@ public class RoomPortal : MonoBehaviour
     [Header("Room Config")]
     [SerializeField] private RoomDefinition roomDefinition;
 
-    [Header("UI")]
-    [SerializeField] private GameObject promptUI;
+    [Header("Detection")]
+    [SerializeField] private Vector3 detectionSize = new Vector3(2f, 2f, 2f);
+    [SerializeField] private LayerMask playerLayerMask;
+
+    [Header("Travel UI")]
     [SerializeField] private GameObject loadingSceneUI;
     [SerializeField] private GameObject roomFullUI;
 
-    [Header("Detection")]
-    [SerializeField] private Vector3 detectionSize = Vector3.one;
-    [SerializeField] private LayerMask playerLayerMask;
-
     [Header("Behavior")]
-    [SerializeField] private bool autoTravelOnEnter = true;
     [SerializeField] private float retryDelay = 0.5f;
 
-    private bool _playerInRange;
     private bool _travelStarted;
+    private float _nextAllowedTravelTime;
 
-    private void Update()
-    {
-        DetectPlayer();
+    public RoomDefinition RoomDefinition => roomDefinition;
 
-        if (!_travelStarted && _playerInRange && autoTravelOnEnter)
-        {
-            _ = BeginTravelAsync();
-        }
-    }
-
-    private void DetectPlayer()
+    public bool IsLocalPlayerInRange()
     {
         Collider[] hits = Physics.OverlapBox(
             transform.position,
@@ -42,30 +31,22 @@ public class RoomPortal : MonoBehaviour
             playerLayerMask
         );
 
-        bool found = false;
-
         foreach (var hit in hits)
         {
             if (hit.transform.root.CompareTag("LocalPlayer"))
-            {
-                found = true;
-                break;
-            }
+                return true;
         }
 
-        if (found != _playerInRange)
-        {
-            _playerInRange = found;
-
-            if (promptUI != null)
-                promptUI.SetActive(_playerInRange);
-        }
+        return false;
     }
 
-    private async Task BeginTravelAsync()
+    public async Task<bool> TryTravelAsync()
     {
         if (_travelStarted)
-            return;
+            return false;
+
+        if (Time.time < _nextAllowedTravelTime)
+            return false;
 
         _travelStarted = true;
 
@@ -77,22 +58,21 @@ public class RoomPortal : MonoBehaviour
 
         bool joined = await NetworkLauncher.Instance.JoinBestRoom(roomDefinition);
 
-        if (!joined)
-        {
-            if (roomFullUI != null)
-                roomFullUI.SetActive(true);
-        }
+        if (!joined && roomFullUI != null)
+            roomFullUI.SetActive(true);
 
         if (loadingSceneUI != null)
             loadingSceneUI.SetActive(false);
 
-        StartCoroutine(ResetTravelFlag());
+        _travelStarted = false;
+        _nextAllowedTravelTime = Time.time + retryDelay;
+
+        return joined;
     }
 
-    private IEnumerator ResetTravelFlag()
+    public Vector3 GetWorldPosition()
     {
-        yield return new WaitForSeconds(retryDelay);
-        _travelStarted = false;
+        return transform.position;
     }
 
     private void OnDrawGizmosSelected()

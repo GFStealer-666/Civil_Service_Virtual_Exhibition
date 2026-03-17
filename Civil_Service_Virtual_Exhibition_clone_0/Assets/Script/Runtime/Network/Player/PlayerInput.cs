@@ -105,7 +105,7 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
             if (keyboard.dKey.isPressed) rawMove += Vector2.right;
 
             _accumulatedInput.Buttons.Set(InputButton.Jump, keyboard.spaceKey.isPressed);
-            _accumulatedInput.Buttons.Set(InputButton.Interact, keyboard.eKey.isPressed);
+            _accumulatedInput.Buttons.Set(InputButton.Interact, keyboard.fKey.isPressed);
             _accumulatedInput.Buttons.Set(InputButton.Sprint,   keyboard.leftShiftKey.isPressed);
         }
 
