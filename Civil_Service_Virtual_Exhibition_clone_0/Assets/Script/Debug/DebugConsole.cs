@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 public class DebugConsole : MonoBehaviour
 {
-    private List<string> _logs = new(20);
+    private List<string> _logs = new(15);
     private GUIStyle _style;
 
     void OnEnable() => Application.logMessageReceived += OnLog;

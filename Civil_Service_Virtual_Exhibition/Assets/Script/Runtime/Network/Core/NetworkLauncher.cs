@@ -1,124 +1,199 @@
+using System;
+using System.Threading.Tasks;
 using Fusion;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using System.Threading.Tasks;
-using System;
 
 [DefaultExecutionOrder(-1000)]
 public class NetworkLauncher : MonoBehaviour
 {
     public static NetworkLauncher Instance;
 
-    [SerializeField] private NetworkRunner       runnerPrefab;
-    [SerializeField] private RoomCapacityConfig  capacityConfig;  
+    [Header("Runner")]
+    [SerializeField] private NetworkRunner runnerPrefab;
 
-    public bool IsSessionRunning => _runner != null && _runner.IsRunning;
+    [Header("Debug")]
+    [SerializeField] private bool verboseLogs = true;
+
+    public NetworkRunner Runner => _runner;
+    public bool IsRunning => _runner != null && _runner.IsRunning;
     public NetworkEvents NetworkEvents { get; private set; }
 
-    public event Action<string> OnSessionJoined;
-    public event Action         OnSessionFailed;
+    public event Action<string, string> OnRoomJoined; // sceneName, sessionName
+    public event Action<string> OnRoomJoinFailed;     // reason
 
     private NetworkRunner _runner;
-    private const int MaxOverflowRooms = 10;
 
-    void Awake()
+    private void Awake()
     {
-        if (Instance != null) { Destroy(gameObject); return; }
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         Instance = this;
         DontDestroyOnLoad(gameObject);
     }
 
-    public async Task StartSession(string scenePath)
+    /// <summary>
+    /// Join or create the first available instance:
+    /// scene_0, scene_1, scene_2 ...
+    /// Oldest available = lowest index first.
+    /// </summary>
+    public async Task<bool> JoinBestRoom(RoomDefinition roomDefinition)
     {
-        int maxPlayers = capacityConfig != null
-            ? capacityConfig.GetMaxPlayers(scenePath)
-            : 0;
-
-        for (int attempt = 1; attempt <= MaxOverflowRooms; attempt++)
+        if (roomDefinition == null)
         {
-            string sessionName = attempt == 1
-                ? scenePath
-                : $"{scenePath}_{attempt}";
+            Fail("RoomDefinition is null.");
+            return false;
+        }
 
-            bool joined = await TryJoinSession(scenePath, sessionName, maxPlayers);
+        if (string.IsNullOrWhiteSpace(roomDefinition.sceneName))
+        {
+            Fail("RoomDefinition.sceneName is empty.");
+            return false;
+        }
+
+        int sceneBuildIndex = GetBuildIndexByName(roomDefinition.sceneName);
+        if (sceneBuildIndex < 0)
+        {
+            Fail($"Scene '{roomDefinition.sceneName}' is not in Build Settings.");
+            return false;
+        }
+
+        int maxInstances = Mathf.Max(1, roomDefinition.maxSubRooms);
+
+        for (int index = 0; index < maxInstances; index++)
+        {
+            string sessionName = BuildSessionName(roomDefinition.sceneName, index);
+
+            bool joined = await TryJoinOrCreateRoom(
+                sceneName: roomDefinition.sceneName,
+                sceneBuildIndex: sceneBuildIndex,
+                sessionName: sessionName,
+                maxPlayers: Mathf.Max(1, roomDefinition.maxPlayersPerRoom)
+            );
 
             if (joined)
             {
-                Debug.Log($"[NetworkLauncher] Joined '{sessionName}' (slot {attempt})");
-                OnSessionJoined?.Invoke(sessionName);
-                return;
-            }
+                if (verboseLogs)
+                    Debug.Log($"[NetworkLauncher] Joined room instance '{sessionName}'.");
 
-            Debug.Log($"[NetworkLauncher] Slot {attempt} full, trying next...");
+                OnRoomJoined?.Invoke(roomDefinition.sceneName, sessionName);
+                return true;
+            }
         }
 
-        Debug.LogError("[NetworkLauncher] All overflow slots full.");
-        OnSessionFailed?.Invoke();
+        Fail($"All instances are full for room '{roomDefinition.sceneName}'.");
+        return false;
     }
 
-    private async Task<bool> TryJoinSession(string scenePath, string sessionName, int maxPlayers)
+    /// <summary>
+    /// Used for the first entry after login, e.g. MainLobby.
+    /// </summary>
+    public async Task<bool> JoinInitialRoom(RoomDefinition roomDefinition)
+    {
+        return await JoinBestRoom(roomDefinition);
+    }
+
+    private async Task<bool> TryJoinOrCreateRoom(string sceneName, int sceneBuildIndex, string sessionName, int maxPlayers)
     {
         await ShutdownRunner();
 
         _runner = Instantiate(runnerPrefab);
-        _runner.name = "NetworkRunner";
-        DontDestroyOnLoad(_runner.gameObject);
+        _runner.name = $"NetworkRunner_{sessionName}";
         _runner.ProvideInput = true;
-        NetworkEvents = _runner.GetComponent<NetworkEvents>();
+        DontDestroyOnLoad(_runner.gameObject);
 
-        int buildIndex = GetBuildIndexByName(scenePath);
-        if (buildIndex < 0)
+        NetworkEvents = _runner.GetComponent<NetworkEvents>();
+        var sceneManager = _runner.GetComponent<NetworkSceneManagerDefault>();
+
+        if (sceneManager == null)
         {
-            Debug.LogError($"[NetworkLauncher] Scene not in Build Settings: {scenePath}");
+            Fail("NetworkSceneManagerDefault is missing on runner prefab.");
             await ShutdownRunner();
             return false;
         }
 
         var args = new StartGameArgs
         {
-            GameMode     = GameMode.Shared,
-            SessionName  = sessionName,
-            Scene        = SceneRef.FromIndex(buildIndex),
-            SceneManager = _runner.GetComponent<NetworkSceneManagerDefault>()
+            GameMode = GameMode.Shared,
+            SessionName = sessionName,
+            Scene = SceneRef.FromIndex(sceneBuildIndex),
+            SceneManager = sceneManager,
+            PlayerCount = maxPlayers,
+            IsVisible = true,
+            IsOpen = true
         };
 
-        if (maxPlayers > 0)
-            args.PlayerCount = maxPlayers;
+        if (verboseLogs)
+            Debug.Log($"[NetworkLauncher] StartGame => Scene='{sceneName}', Session='{sessionName}', Capacity={maxPlayers}");
 
         var result = await _runner.StartGame(args);
 
-        if (result.Ok) return true;
+        if (result.Ok)
+            return true;
 
-        bool isFull = result.ShutdownReason == ShutdownReason.GameNotFound
-                   || result.ShutdownReason == ShutdownReason.DisconnectedByPluginLogic;
-
-        if (!isFull)
-        {
-            Debug.LogError($"[NetworkLauncher] Unexpected failure: {result.ShutdownReason}");
-        }
-            
+        // For your flow, failed join/create here is treated as "try next slot".
+        if (verboseLogs)
+            Debug.LogWarning($"[NetworkLauncher] Failed '{sessionName}' => {result.ShutdownReason}");
 
         await ShutdownRunner();
         return false;
     }
 
+    public async Task ShutdownCurrentRoom()
+    {
+        await ShutdownRunner();
+    }
+
     private async Task ShutdownRunner()
     {
-        if (_runner == null) return;
-        if (_runner.IsRunning) await _runner.Shutdown();
-        Destroy(_runner.gameObject);
-        _runner       = null;
+        if (_runner == null)
+            return;
+
+        try
+        {
+            if (_runner.IsRunning)
+                await _runner.Shutdown();
+        }
+        catch (Exception e)
+        {
+            Debug.LogException(e);
+        }
+
+        if (_runner != null)
+            Destroy(_runner.gameObject);
+
+        _runner = null;
         NetworkEvents = null;
     }
+
+    public static string BuildSessionName(string sceneName, int index)
+    {
+        return $"{sceneName}_{index}";
+    }
+
     private static int GetBuildIndexByName(string sceneName)
     {
         int count = SceneManager.sceneCountInBuildSettings;
+
         for (int i = 0; i < count; i++)
         {
             string path = SceneUtility.GetScenePathByBuildIndex(i);
             string name = System.IO.Path.GetFileNameWithoutExtension(path);
-            if (name == sceneName) return i;
+
+            if (name == sceneName)
+                return i;
         }
+
         return -1;
+    }
+
+    private void Fail(string message)
+    {
+        Debug.LogError($"[NetworkLauncher] {message}");
+        OnRoomJoinFailed?.Invoke(message);
     }
 }

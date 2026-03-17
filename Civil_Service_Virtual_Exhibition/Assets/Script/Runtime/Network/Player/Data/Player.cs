@@ -5,6 +5,7 @@ using Fusion.Addons.SimpleKCC;
 [DefaultExecutionOrder(-5)]
 public class Player : NetworkBehaviour
 {
+    [Networked] public string CurrentRoom { get; set; }
     [Header("Components")]
     [SerializeField] private SimpleKCC kcc;
     [SerializeField] private Animator animator;

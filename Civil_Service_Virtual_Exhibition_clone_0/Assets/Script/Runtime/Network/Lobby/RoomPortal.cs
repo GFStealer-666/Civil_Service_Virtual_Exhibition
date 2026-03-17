@@ -1,40 +1,36 @@
+using System.Collections;
 using System.Threading.Tasks;
 using UnityEngine;
 
 public class RoomPortal : MonoBehaviour
 {
-    [Header("Destination")]
-    [SerializeField] private string destinationScene;
+    [Header("Room Config")]
+    [SerializeField] private RoomDefinition roomDefinition;
 
     [Header("UI")]
     [SerializeField] private GameObject promptUI;
     [SerializeField] private GameObject loadingSceneUI;
-    [SerializeField] private GameObject allRoomsFullUI;   // shown only when all 10 overflow slots full (very rare)
+    [SerializeField] private GameObject roomFullUI;
 
     [Header("Detection")]
-    [SerializeField] private Vector3   detectionSize = Vector3.one;
+    [SerializeField] private Vector3 detectionSize = Vector3.one;
     [SerializeField] private LayerMask playerLayerMask;
 
-    private bool _playerInRange  = false;
-    private bool _travelStarted  = false;
+    [Header("Behavior")]
+    [SerializeField] private bool autoTravelOnEnter = true;
+    [SerializeField] private float retryDelay = 0.5f;
 
-    private void OnEnable()
-    {
-        if (NetworkLauncher.Instance == null) return;
-        NetworkLauncher.Instance.OnSessionFailed += HandleAllRoomsFull;
-    }
-
-    private void OnDisable()
-    {
-        if (NetworkLauncher.Instance == null) return;
-        NetworkLauncher.Instance.OnSessionFailed -= HandleAllRoomsFull;
-    }
+    private bool _playerInRange;
+    private bool _travelStarted;
 
     private void Update()
     {
-        if (_travelStarted) return;
         DetectPlayer();
-        if (_playerInRange) BeginTravel();
+
+        if (!_travelStarted && _playerInRange && autoTravelOnEnter)
+        {
+            _ = BeginTravelAsync();
+        }
     }
 
     private void DetectPlayer()
@@ -43,9 +39,11 @@ public class RoomPortal : MonoBehaviour
             transform.position,
             detectionSize * 0.5f,
             transform.rotation,
-            playerLayerMask);
+            playerLayerMask
+        );
 
         bool found = false;
+
         foreach (var hit in hits)
         {
             if (hit.transform.root.CompareTag("LocalPlayer"))
@@ -55,55 +53,51 @@ public class RoomPortal : MonoBehaviour
             }
         }
 
-        if (found && !_playerInRange)
+        if (found != _playerInRange)
         {
-            _playerInRange = true;
-            if (promptUI != null) promptUI.SetActive(true);
-            Debug.Log($"[RoomPortal] {name}: player in range");
-        }
-        else if (!found && _playerInRange)
-        {
-            _playerInRange = false;
-            if (promptUI != null) promptUI.SetActive(false);
+            _playerInRange = found;
+
+            if (promptUI != null)
+                promptUI.SetActive(_playerInRange);
         }
     }
-    private async void BeginTravel()
+
+    private async Task BeginTravelAsync()
     {
-        if (string.IsNullOrEmpty(destinationScene))
-        {
-            Debug.LogWarning($"[RoomPortal] {name}: destinationScene not set.");
+        if (_travelStarted)
             return;
-        }
 
         _travelStarted = true;
-        if (promptUI       != null) promptUI.SetActive(false);
-        if (loadingSceneUI != null) loadingSceneUI.SetActive(true);
 
-        // Portal hands off to NetworkLauncher — no capacity knowledge here
-        await NetworkLauncher.Instance.StartSession(destinationScene);
+        if (loadingSceneUI != null)
+            loadingSceneUI.SetActive(true);
 
-        // If IsSessionRunning is false, OnSessionFailed already fired
-        if (!NetworkLauncher.Instance.IsSessionRunning)
+        if (roomFullUI != null)
+            roomFullUI.SetActive(false);
+
+        bool joined = await NetworkLauncher.Instance.JoinBestRoom(roomDefinition);
+
+        if (!joined)
         {
-            if (loadingSceneUI != null) loadingSceneUI.SetActive(false);
+            if (roomFullUI != null)
+                roomFullUI.SetActive(true);
         }
-    }
-    // Worst case fallback
-    private void HandleAllRoomsFull()
-    {
-        if (loadingSceneUI != null) loadingSceneUI.SetActive(false);
-        if (allRoomsFullUI != null) allRoomsFullUI.SetActive(true);
 
-        Invoke(nameof(ResetPortal), 3f);
+        if (loadingSceneUI != null)
+            loadingSceneUI.SetActive(false);
+
+        StartCoroutine(ResetTravelFlag());
     }
-    private void ResetPortal()
+
+    private IEnumerator ResetTravelFlag()
     {
-        if (allRoomsFullUI != null) allRoomsFullUI.SetActive(false);
+        yield return new WaitForSeconds(retryDelay);
         _travelStarted = false;
     }
+
     private void OnDrawGizmosSelected()
     {
-        Gizmos.color  = Color.cyan;
+        Gizmos.color = Color.cyan;
         Gizmos.matrix = transform.localToWorldMatrix;
         Gizmos.DrawWireCube(Vector3.zero, detectionSize);
     }
