@@ -8,7 +8,6 @@ public abstract class BaseHandler : MonoBehaviour
     [Header("Shared")]
     [SerializeField] protected ApiConfig api;
     [SerializeField] protected StatusOverlay overlay;
-
     /// <summary>
     /// Runs a POST, drives the overlay states, then calls back.
     /// onSuccess receives the raw JSON string.
@@ -36,17 +35,36 @@ public abstract class BaseHandler : MonoBehaviour
     }
 
     /// <summary>Loads initial room after storing player data.</summary>
-    protected void EnterMainScene(string name, string gender, string department, bool isGuest)
+    protected void EnterMainScene(PlayerData player)
     {
         var data = LocalPlayerData.Instance;
-        data.PlayerName = name;
-        data.Organization = department;
-        data.IsGuest = isGuest;
-        data.Gender = gender == "female" ? PlayerGender.Female : PlayerGender.Male;
-        data.RandomizeAppearance();
-
-        overlay.ShowSuccess(() =>
+        if (data == null)
         {
+            overlay.ShowError("LocalPlayerData is missing.");
+            return;
+        }
+
+        data.SetContact(player.email, player.phone);
+        data.PlayerName = string.IsNullOrWhiteSpace(player.characterName) 
+            ? $"{player.firstName} {player.lastName}".Trim()
+            : player.characterName;
+
+        data.Organization = player.department ?? "";
+        data.IsGuest = player.isAnonymous;
+        data.Gender = ParseGender(player.gender);
+
+        if (!data.HasInitializedAppearance)
+        {
+            data.RandomizeAppearance();
+            data.HasInitializedAppearance = true;
+        }
+
+        overlay.ShowLogin(
+            "เข้าสู่ระบบสำเร็จ",
+            "กรุณารอสักครู่" , 
+        () =>
+        {
+            
             StartCoroutine(StartNetworkFlow());
         });
     }
@@ -92,5 +110,14 @@ public abstract class BaseHandler : MonoBehaviour
             overlay.ShowError("Room is full or unavailable.");
             yield break;
         }
+    }
+    private PlayerGender ParseGender(string gender)
+    {
+        if (string.IsNullOrWhiteSpace(gender))
+            return PlayerGender.Male;
+
+        return gender.Trim().ToLowerInvariant() == "female"
+            ? PlayerGender.Female
+            : PlayerGender.Male;
     }
 }

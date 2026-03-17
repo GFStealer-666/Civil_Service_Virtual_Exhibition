@@ -133,8 +133,32 @@ public class RegisterHandler : BaseHandler
                         onDismissed: () => submitBtn.interactable = AllFieldsFilled());
                     return;
                 }
-                EnterMainScene(charName, gender, department, isGuest: false);
+
+                overlay.ShowRegister(
+                    "สมัครสมาชิกสำเร็จ",
+                    "กรุณาเข้าสู่ระบบ",
+                    () =>
+                    {
+                        ClearRegisterForm();
+                        pageManager.ShowLogin();
+                    });
             },
             onError: _ => submitBtn.interactable = AllFieldsFilled());
+    }
+    private void ClearRegisterForm()
+    {
+        emailInput.text = "";
+        characterNameInput.text = "";
+        passwordInput.text = "";
+        confirmPasswordInput.text = "";
+        firstNameInput.text = "";
+        lastNameInput.text = "";
+        phoneInput.text = "";
+
+        departmentDropdown.value = PlaceholderIndex;
+        genderDropdown.value = PlaceholderIndex;
+        termsToggle.isOn = false;
+
+        RefreshSubmitButton();
     }
 }

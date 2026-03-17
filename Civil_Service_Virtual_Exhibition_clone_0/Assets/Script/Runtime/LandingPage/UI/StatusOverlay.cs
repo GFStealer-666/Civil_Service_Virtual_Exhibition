@@ -1,4 +1,3 @@
-
 using System;
 using System.Collections;
 using UnityEngine;
@@ -10,17 +9,20 @@ public class StatusOverlay : MonoBehaviour
     public enum State { Loading, Success, Error }
 
     [Header("Root")]
-    [SerializeField] private GameObject  panelRoot;      // the white card
+    [SerializeField] private GameObject panelRoot;
 
     [Header("State Objects")]
-    [SerializeField] private GameObject loadingState;   // gold clock card
-    [SerializeField] private GameObject successState;   // green tick card
-    [SerializeField] private GameObject errorState;     // red X card
+    [SerializeField] private GameObject loadingState;
+    [SerializeField] private GameObject successState;
+    [SerializeField] private GameObject errorState;
 
+    [Header("Success State Wiring")]
+    [SerializeField] private TMP_Text successTitleText;
+    [SerializeField] private TMP_Text successSubtitleText;
     [Header("Error State Wiring")]
-    [SerializeField] private TMP_Text   errorTitleText;    // "เข้าสู่ระบบล้มเหลว"
-    [SerializeField] private TMP_Text   errorSubtitleText; // dynamic message
-    [SerializeField] private Button     errorOkButton;     // "ตกลง"
+    [SerializeField] private TMP_Text errorTitleText;
+    [SerializeField] private TMP_Text errorSubtitleText;
+    [SerializeField] private Button errorOkButton;
 
     [Header("Timing")]
     [SerializeField] private float successAutoDismissSeconds = 3f;
@@ -35,43 +37,72 @@ public class StatusOverlay : MonoBehaviour
 
     public void ShowLoading()
     {
+        StopAllCoroutines();
         SetVisible(true);
         Apply(State.Loading);
     }
 
-    /// <summary>Show success card, then auto-dismiss and run <paramref name="onDone"/>.</summary>
-    public void ShowSuccess(Action onDone = null)
+    // No auto dismiss
+    public void ShowLogin(string title, string subtitle, Action onDone = null)
     {
-        SetVisible(true);   // ← add this
+        StopAllCoroutines();
+        SetVisible(true);
         Apply(State.Success);
+
+        if (successTitleText != null)
+            successTitleText.text = title;
+
+        if (successSubtitleText != null)
+            successSubtitleText.text = subtitle;
+
+        onDone?.Invoke();
+    }
+
+    // With Auto dismiss
+    public void ShowRegister(string title, string subtitle, Action onDone = null)
+    {
+        StopAllCoroutines();
+        SetVisible(true);
+        Apply(State.Success);
+
+        if (successTitleText != null)
+            successTitleText.text = title;
+
+        if (successSubtitleText != null)
+            successSubtitleText.text = subtitle;
+
         StartCoroutine(AutoDismiss(successAutoDismissSeconds, onDone));
     }
 
     public void ShowError(string message, Action onDismissed = null)
     {
-        SetVisible(true);   // ← add this
+        StopAllCoroutines();
+        SetVisible(true);
         Apply(State.Error);
-        if (errorSubtitleText != null) errorSubtitleText.text = message;
+
+        if (errorSubtitleText != null)
+            errorSubtitleText.text = message;
+
         _onErrorDismissed = onDismissed;
     }
 
     public void Hide()
     {
+        StopAllCoroutines();
         SetVisible(false);
     }
-
-    // ── Private ─────────────────────────────────────────────────
 
     private void Apply(State state)
     {
         loadingState.SetActive(state == State.Loading);
         successState.SetActive(state == State.Success);
-        errorState  .SetActive(state == State.Error);
+        errorState.SetActive(state == State.Error);
     }
 
     private void SetVisible(bool show)
     {
-        if (panelRoot      != null) panelRoot     .SetActive(show);
+        if (panelRoot != null)
+            panelRoot.SetActive(show);
     }
 
     private void DismissError()
@@ -86,6 +117,7 @@ public class StatusOverlay : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
 
+        Hide();
         callback?.Invoke();
     }
 }

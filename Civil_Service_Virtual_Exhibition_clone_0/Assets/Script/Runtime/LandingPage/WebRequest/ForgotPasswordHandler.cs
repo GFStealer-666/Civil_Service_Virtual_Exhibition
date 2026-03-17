@@ -46,7 +46,7 @@ public class ForgotPasswordHandler : BaseHandler
                     return;
                 }
                 // Show success, then go back to login after dismiss
-                overlay.ShowSuccess(() =>
+                overlay.ShowLogin(() =>
                 {
                     submitBtn.interactable = true;
                     pageManager.ShowLogin();

@@ -60,7 +60,7 @@ public class LoginHandler : BaseHandler
                     return;
                 }
                 var p = res.data.player;
-                EnterMainScene(p.characterName, p.gender, p.department, p.isAnonymous);
+                EnterMainScene(p);
             },
             onError: _ => SetButtons(true));
     }
@@ -76,13 +76,33 @@ public class LoginHandler : BaseHandler
         yield return PostRequest(api.AnonymousUrl, "{}",
             onSuccess: json =>
             {
-                string guestName = "Guest_" + Random.Range(1000, 9999);
                 var res = JsonUtility.FromJson<LoginResponse>(json);
-                if (res.success && !string.IsNullOrEmpty(res.data?.player.characterName))
-                    guestName = res.data.player.characterName;
+                if (!res.success)
+                {
+                    overlay.ShowError(
+                        string.IsNullOrEmpty(res.message)
+                            ? "ไม่สามารถเข้าใช้งานแบบ Guest ได้"
+                            : res.message);
+                    SetButtons(true);
+                    return;
+                }
 
-                string gender = Random.Range(0, 2) == 0 ? "male" : "female"; // random 0/1
-                EnterMainScene(guestName, gender, "", isGuest: true);
+                var player = res.data != null ? res.data.player : null;
+                if (player == null)
+                    player = new PlayerData();
+
+                if (string.IsNullOrWhiteSpace(player.characterName))
+                    player.characterName = "Guest_" + Random.Range(1000, 9999);
+
+                if (string.IsNullOrWhiteSpace(player.gender))
+                    player.gender = PlayerGender.Male.ToString();
+
+                player.isAnonymous = true;
+                player.department ??= "";
+                player.email ??= "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อคอิน";
+                player.phone ??= "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อคอิน";
+
+                EnterMainScene(player);
             },
             onError: _ => SetButtons(true));
     }

@@ -10,6 +10,16 @@ public class LocalPlayerData : MonoBehaviour
     public PlayerGender Gender       = PlayerGender.Male;
     public string       Organization = "";
     public bool         IsGuest      = false;
+    [Space]
+    [Header("Contact")]
+    public string Email = "";
+    public string PhoneNumber = "";
+
+    [Space]
+    [Header("Local Settings")]
+    [Range(0f, 1f)] public float BgmVolume = 1f;
+    [Range(0f, 1f)] public float EffectVolume = 1f;
+    public bool HasInitializedAppearance = false;
     private Color[] _colors;
 
 
@@ -61,5 +71,27 @@ public class LocalPlayerData : MonoBehaviour
     public bool HasColor(AppearanceSlot slot)
     {
         return _colors[(int)slot] != Color.clear;
+    }
+
+    public void SetContact(string email, string phoneNumber)
+    {
+        Email = email ?? "";
+        PhoneNumber = phoneNumber ?? "";
+    }
+
+    public void SetAudioSettings(float bgmVolume, float effectVolume)
+    {
+        BgmVolume = Mathf.Clamp01(bgmVolume);
+        EffectVolume = Mathf.Clamp01(effectVolume);
+    }
+
+    public void SetBgmVolume(float value)
+    {
+        BgmVolume = Mathf.Clamp01(value);
+    }
+
+    public void SetEffectVolume(float value)
+    {
+        EffectVolume = Mathf.Clamp01(value);
     }
 }
