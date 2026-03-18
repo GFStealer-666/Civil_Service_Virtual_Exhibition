@@ -122,7 +122,7 @@ public class StatusOverlay : MonoBehaviour
     }
     private IEnumerator AnimateSuccessDots()
     {
-        if (successTitleText == null || string.IsNullOrEmpty(_animatedBaseTitle))
+        if (successSubtitleText == null || string.IsNullOrEmpty(_animatedBaseTitle))
             yield break;
 
         int dotCount = 0;
@@ -130,14 +130,17 @@ public class StatusOverlay : MonoBehaviour
         while (true)
         {
             string dots = new string('.', dotCount);
-            successTitleText.text = _animatedBaseTitle + dots;
+            successSubtitleText.text = _animatedBaseTitle + dots;
 
             yield return new WaitForSeconds(loadingDotInterval);
 
             dotCount++;
 
-            if (dotCount > 4)
+            if (dotCount > 3)
+            {
                 dotCount = 0;
+            }
+                
         }
     }
     private IEnumerator AutoDismiss(float delay, Action callback)

@@ -174,6 +174,8 @@ public class RoomChatUI : MonoBehaviour
         if (messageInput != null)
             messageInput.DeactivateInputField();
 
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
         SetOpenState(false);
     }
 
