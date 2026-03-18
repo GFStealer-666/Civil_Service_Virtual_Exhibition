@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   questionsPerSession: 10
   isTimeLimited: 1
-  sessionTimeLimitSeconds: 100
+  sessionTimeLimitSeconds: 5
   shuffleQuestionOrder: 1
   shuffleChoiceOrder: 1
   scorePerCorrectAnswer: 100

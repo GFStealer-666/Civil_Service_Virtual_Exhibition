@@ -176,7 +176,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7875095434959379956}
-  - {fileID: 7722918288367141261}
+  - {fileID: 6958253713299824928}
   - {fileID: 6768339016824831814}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -302,6 +302,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e5231fd303bc47b489c8d87f2b96487f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _CurrentRoom: 
   kcc: {fileID: 3066180157366126008}
   animator: {fileID: 4592874414901667046}
   moveSpeed: 3
@@ -679,6 +680,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5373868534132147544, guid: 1fb3a9e5bf97bea4d8d35acd9bb597ea, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6321668099368772879, guid: 1fb3a9e5bf97bea4d8d35acd9bb597ea, type: 3}
       propertyPath: m_Name
       value: Visitor_Female
@@ -688,8 +693,8 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1fb3a9e5bf97bea4d8d35acd9bb597ea, type: 3}
---- !u!4 &7722918288367141261 stripped
+--- !u!4 &6958253713299824928 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 4696743501493315061, guid: 1fb3a9e5bf97bea4d8d35acd9bb597ea, type: 3}
+  m_CorrespondingSourceObject: {fileID: 5373868534132147544, guid: 1fb3a9e5bf97bea4d8d35acd9bb597ea, type: 3}
   m_PrefabInstance: {fileID: 3027402013666174072}
   m_PrefabAsset: {fileID: 0}

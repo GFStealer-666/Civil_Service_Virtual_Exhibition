@@ -32,6 +32,56 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: f_Servant_Belt
+    second: {fileID: 2100000, guid: 9732088122f53aa41a6c690be4829c0c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: f_Servant_BeltHead
+    second: {fileID: 2100000, guid: 1e6fbd6a0785f5b4c8e92887f986da5c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: f_Servant_Buttons
+    second: {fileID: 2100000, guid: d7569fd9ce86ef440a4e3aae1452726a, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: f_Servant_Colortag
+    second: {fileID: 2100000, guid: e18afbce272251641912bc67b877dca1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: f_Servant_Hair
+    second: {fileID: 2100000, guid: ad5053195be815e4ca91693b5858b2ea, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: f_Servant_HairWrist
+    second: {fileID: 2100000, guid: 8ce2d8e53c9dd354f8bba16be731a3ec, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: f_Servant_Nametag
+    second: {fileID: 2100000, guid: 57ebf01276a969847b552f858fb693d0, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: f_Servant_Shirt
+    second: {fileID: 2100000, guid: 05fd5136aaf6904468eddb9b3a167987, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: f_Servant_ShoulderPad
+    second: {fileID: 2100000, guid: 7c1d37a25de409741bcae07fea196ca1, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: f_Servant_Skirt
+    second: {fileID: 2100000, guid: b58377aa3ac4b264cb9ca2081074619b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: f_Shirt
     second: {fileID: 2100000, guid: 1734fc6724fdf9746a8a21f9918ba93f, type: 2}
   - first:

@@ -26,9 +26,10 @@ public class StatusOverlay : MonoBehaviour
 
     [Header("Timing")]
     [SerializeField] private float successAutoDismissSeconds = 3f;
-
+    [SerializeField] private float loadingDotInterval = 0.5f;
     private Action _onErrorDismissed;
-
+    private Coroutine _successTypingCoroutine;
+    private string _animatedBaseTitle;
     private void Awake()
     {
         errorOkButton.onClick.AddListener(DismissError);
@@ -46,14 +47,20 @@ public class StatusOverlay : MonoBehaviour
     public void ShowSuccessNoDismiss(string title, string subtitle, Action onDone = null)
     {
         StopAllCoroutines();
+        _successTypingCoroutine = null;
+
         SetVisible(true);
         Apply(State.Success);
+
+        _animatedBaseTitle = title;
 
         if (successTitleText != null)
             successTitleText.text = title;
 
         if (successSubtitleText != null)
             successSubtitleText.text = subtitle;
+
+        _successTypingCoroutine = StartCoroutine(AnimateSuccessDots());
 
         onDone?.Invoke();
     }
@@ -89,6 +96,7 @@ public class StatusOverlay : MonoBehaviour
     public void Hide()
     {
         StopAllCoroutines();
+        _successTypingCoroutine = null;
         SetVisible(false);
     }
 
@@ -112,7 +120,26 @@ public class StatusOverlay : MonoBehaviour
         _onErrorDismissed = null;
         cb?.Invoke();
     }
+    private IEnumerator AnimateSuccessDots()
+    {
+        if (successTitleText == null || string.IsNullOrEmpty(_animatedBaseTitle))
+            yield break;
 
+        int dotCount = 0;
+
+        while (true)
+        {
+            string dots = new string('.', dotCount);
+            successTitleText.text = _animatedBaseTitle + dots;
+
+            yield return new WaitForSeconds(loadingDotInterval);
+
+            dotCount++;
+
+            if (dotCount > 4)
+                dotCount = 0;
+        }
+    }
     private IEnumerator AutoDismiss(float delay, Action callback)
     {
         yield return new WaitForSeconds(delay);

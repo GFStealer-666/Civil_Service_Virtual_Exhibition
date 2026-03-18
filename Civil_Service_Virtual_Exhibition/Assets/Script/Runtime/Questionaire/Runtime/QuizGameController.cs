@@ -47,7 +47,7 @@ public class QuizGameController : MonoBehaviour
     {
         if (ui != null)
         {
-            ui.ShowStart();
+            // ui.ShowStart();
         }
     }
 

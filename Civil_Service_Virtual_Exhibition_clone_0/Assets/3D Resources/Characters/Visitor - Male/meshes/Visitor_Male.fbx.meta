@@ -42,6 +42,46 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
+      name: m_Servant_Belt
+    second: {fileID: 2100000, guid: f8d8a339b61efcb4bbb308fef990b41b, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: m_Servant_BeltHead
+    second: {fileID: 2100000, guid: 992c00519d9ecc04ca154579c6553d72, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: m_Servant_Buttons
+    second: {fileID: 2100000, guid: 3ef16ab1e367c4c4f828249787998ec7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: m_Servant_Colortag
+    second: {fileID: 2100000, guid: 5782901aa89da614db278ea51729f320, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: m_Servant_Nametag
+    second: {fileID: 2100000, guid: 4caadaa42e903164295263c2b4f7f923, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: m_Servant_Pants
+    second: {fileID: 2100000, guid: aa1a030cd4adfa947988b83c074f998f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: m_Servant_Shirt
+    second: {fileID: 2100000, guid: 153901e9d6bcef84da193a32a7a0056c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: m_Servant_ShoulderPad
+    second: {fileID: 2100000, guid: 1c7a67f5fed11384ca757a87a39099fe, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
       name: m_ShirtInner
     second: {fileID: 2100000, guid: 27be7789d0866c7449d65a2eb19be48c, type: 2}
   - first:
