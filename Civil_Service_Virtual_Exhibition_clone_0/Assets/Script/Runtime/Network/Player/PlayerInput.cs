@@ -23,7 +23,7 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
     [Header("Desktop Look")]
     [SerializeField] private float lookSensitivity = 1.5f;
     [SerializeField] private bool invertY = false;
-
+    public static bool GameplayInputBlocked;
     private NetworkedInput _accumulatedInput;
     private readonly Vector2Accumulator _lookRotationAccumulator = new Vector2Accumulator(0.02f, true);
 
@@ -112,7 +112,13 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
             Cursor.lockState = locked ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = locked;
         }
-
+         if (GameplayInputBlocked)
+        {
+            _accumulatedInput.WorldMoveDirection = Vector3.zero;
+            _accumulatedInput.LookRotationDelta = Vector2.zero;
+            _accumulatedInput.Buttons = default;
+            return;
+        }
         if (Cursor.lockState != CursorLockMode.Locked)
             return;
 

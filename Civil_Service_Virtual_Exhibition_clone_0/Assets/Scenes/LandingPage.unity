@@ -5286,6 +5286,7 @@ MonoBehaviour:
   errorSubtitleText: {fileID: 133628512}
   errorOkButton: {fileID: 1877639015}
   successAutoDismissSeconds: 1.8
+  loadingDotInterval: 0.5
 --- !u!1 &686652233
 GameObject:
   m_ObjectHideFlags: 0
@@ -16787,7 +16788,7 @@ MonoBehaviour:
   m_CharacterValidation: 0
   m_RegexValue: 
   m_GlobalPointSize: 14
-  m_CharacterLimit: 0
+  m_CharacterLimit: 10
   m_OnEndEdit:
     m_PersistentCalls:
       m_Calls: []
@@ -18757,6 +18758,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pivotOffset: {x: 0, y: 1.6, z: 0}
   distance: 3.5
+  minDistance: 2
+  maxDistance: 6
+  zoomSpeed: 0.02
   positionSmooth: 12
   rotationSmooth: 18
   lookSensitivity: 1.5
