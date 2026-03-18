@@ -46,7 +46,10 @@ public class ForgotPasswordHandler : BaseHandler
                     return;
                 }
                 // Show success, then go back to login after dismiss
-                overlay.ShowLogin(() =>
+                overlay.ShowSuccessDismiss(
+                   "ส่งลิ้งยืนยันไปทางอีเมล",
+                    "กรุณาเข้าสู่ระบบ",     
+                () =>
                 {
                     submitBtn.interactable = true;
                     pageManager.ShowLogin();

@@ -98,7 +98,7 @@ public class LoginHandler : BaseHandler
                     player.gender = PlayerGender.Male.ToString();
 
                 player.isAnonymous = true;
-                player.department ??= "";
+                player.department ??= "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อคอิน";
                 player.email ??= "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อคอิน";
                 player.phone ??= "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อคอิน";
 

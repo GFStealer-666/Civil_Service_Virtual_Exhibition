@@ -134,7 +134,7 @@ public class RegisterHandler : BaseHandler
                     return;
                 }
 
-                overlay.ShowRegister(
+                overlay.ShowSuccessDismiss(
                     "สมัครสมาชิกสำเร็จ",
                     "กรุณาเข้าสู่ระบบ",
                     () =>

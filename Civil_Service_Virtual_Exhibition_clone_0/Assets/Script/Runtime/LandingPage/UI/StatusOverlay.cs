@@ -43,7 +43,7 @@ public class StatusOverlay : MonoBehaviour
     }
 
     // No auto dismiss
-    public void ShowLogin(string title, string subtitle, Action onDone = null)
+    public void ShowSuccessNoDismiss(string title, string subtitle, Action onDone = null)
     {
         StopAllCoroutines();
         SetVisible(true);
@@ -59,7 +59,7 @@ public class StatusOverlay : MonoBehaviour
     }
 
     // With Auto dismiss
-    public void ShowRegister(string title, string subtitle, Action onDone = null)
+    public void ShowSuccessDismiss(string title, string subtitle, Action onDone = null)
     {
         StopAllCoroutines();
         SetVisible(true);

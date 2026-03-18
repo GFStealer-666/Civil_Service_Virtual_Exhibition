@@ -17,8 +17,8 @@ public class LocalPlayerData : MonoBehaviour
 
     [Space]
     [Header("Local Settings")]
-    [Range(0f, 1f)] public float BgmVolume = 1f;
-    [Range(0f, 1f)] public float EffectVolume = 1f;
+    [Range(0f, 1f)] public float BgmVolume = 0.5f;
+    [Range(0f, 1f)] public float EffectVolume = 0.5f;
     public bool HasInitializedAppearance = false;
     private Color[] _colors;
 

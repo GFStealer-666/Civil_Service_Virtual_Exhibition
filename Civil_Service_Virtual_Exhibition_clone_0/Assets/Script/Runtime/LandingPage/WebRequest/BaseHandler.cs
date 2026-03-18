@@ -59,7 +59,7 @@ public abstract class BaseHandler : MonoBehaviour
             data.HasInitializedAppearance = true;
         }
 
-        overlay.ShowLogin(
+        overlay.ShowSuccessNoDismiss(
             "เข้าสู่ระบบสำเร็จ",
             "กรุณารอสักครู่" , 
         () =>
