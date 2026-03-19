@@ -17,7 +17,7 @@ public class LandingPageManager : MonoBehaviour
 
     private void Start()
     {
-        ShowStarter();
+        //ShowStarter();
     }
 
     public void ShowStarter()        => SwitchTo(starterPanel);

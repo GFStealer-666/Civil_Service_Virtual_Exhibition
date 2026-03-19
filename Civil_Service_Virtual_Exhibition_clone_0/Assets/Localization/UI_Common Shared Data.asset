@@ -1,0 +1,100 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: UI_Common Shared Data
+  m_EditorClassIdentifier: 
+  m_TableCollectionName: UI_Common
+  m_TableCollectionNameGuidString: afae2447c51414f4a9f4ca66f0e28833
+  m_Entries:
+  - m_Id: 4630339584
+    m_Key: common.email_label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17913700352
+    m_Key: common.email_placeholder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 34653167616
+    m_Key: common.password_label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 52034363392
+    m_Key: common.password_placeholder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 68815773696
+    m_Key: common.confirm_password_label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 82401124352
+    m_Key: common.confirm_password_placeholder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 96967942144
+    m_Key: common.first_name_label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 110893031424
+    m_Key: common.first_name_placeholder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 127166930944
+    m_Key: common.last_name_label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 140454486016
+    m_Key: common.last_name_placeholder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 152437612544
+    m_Key: common.phone_label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 168740872192
+    m_Key: common.phone_placeholder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 689472102400
+    m_Key: common.gender_label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 183035060224
+    m_Key: common.gender_placeholder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 227326910464
+    m_Key: common.department_label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 240576716800
+    m_Key: common.department_placeholder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 254040432640
+    m_Key: common.accept_terms
+    m_Metadata:
+      m_Items: []
+  - m_Id: 258570280960
+    m_Key: common.or
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 2145689694914740257
+  references:
+    version: 2
+    RefIds:
+    - rid: 2145689694914740257
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1773953657085
