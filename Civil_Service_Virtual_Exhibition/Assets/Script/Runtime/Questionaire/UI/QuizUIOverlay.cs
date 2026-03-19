@@ -24,8 +24,6 @@ public class QuizUIOverlay : MonoBehaviour
 
     [Header("Result")]
     [SerializeField] private TMP_Text finalScoreText;
-    [SerializeField] private TMP_Text finalSummaryText;
-    [SerializeField] private Button retryButton;
     [SerializeField] private Button closeButton;
 
     private int _selectedChoiceIndex = -1;
@@ -49,11 +47,6 @@ public class QuizUIOverlay : MonoBehaviour
         if (confirmButton != null)
         {
             confirmButton.onClick.AddListener(HandleConfirmClicked);
-        }
-
-        if (retryButton != null)
-        {
-            retryButton.onClick.AddListener(() => RetryClicked?.Invoke());
         }
 
         if (closeButton != null)
@@ -134,6 +127,29 @@ public class QuizUIOverlay : MonoBehaviour
         }
     }
 
+    public void CloseAll()
+    {
+        Debug.Log("[QuizUIOverlay] CloseAll called");
+
+        if (startPanel != null)
+        {
+            startPanel.SetActive(false);
+            Debug.Log($"[QuizUIOverlay] startPanel active = {startPanel.activeSelf}");
+        }
+
+        if (questionPanel != null)
+        {
+            questionPanel.SetActive(false);
+            Debug.Log($"[QuizUIOverlay] questionPanel active = {questionPanel.activeSelf}");
+        }
+
+        if (resultPanel != null)
+        {
+            resultPanel.SetActive(false);
+            Debug.Log($"[QuizUIOverlay] resultPanel active = {resultPanel.activeSelf}");
+        }
+    }
+
     public void BindQuestion(QuizSessionQuestion question, int currentIndex, int totalCount)
     {
         _selectedChoiceIndex = -1;
@@ -190,16 +206,18 @@ public class QuizUIOverlay : MonoBehaviour
         SetConfirmInteractable(value && _selectedChoiceIndex >= 0);
     }
 
+    public void SetResult(int totalScore, int maxScore)
+    {
+        if (finalScoreText != null)
+        {
+            finalScoreText.text = $"{totalScore}/{maxScore}";
+        }
+    }
     public void SetResult(int totalScore, int correctCount, int totalQuestions)
     {
         if (finalScoreText != null)
         {
             finalScoreText.text = $"Score: {totalScore}";
-        }
-
-        if (finalSummaryText != null)
-        {
-            finalSummaryText.text = $"Correct {correctCount}/{totalQuestions}";
         }
     }
     public void ResetToggle()

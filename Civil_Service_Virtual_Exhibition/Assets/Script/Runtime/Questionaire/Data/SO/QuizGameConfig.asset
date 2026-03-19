@@ -17,6 +17,6 @@ MonoBehaviour:
   sessionTimeLimitSeconds: 5
   shuffleQuestionOrder: 1
   shuffleChoiceOrder: 1
-  scorePerCorrectAnswer: 100
+  scorePerCorrectAnswer: 10
   fallbackQuestions:
   - {fileID: 11400000, guid: 21ca411b64796f94f9f4056b165999d3, type: 2}

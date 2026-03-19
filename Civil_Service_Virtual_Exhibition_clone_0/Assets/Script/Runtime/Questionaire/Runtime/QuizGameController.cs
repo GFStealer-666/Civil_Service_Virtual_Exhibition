@@ -16,6 +16,7 @@ public class QuizGameController : MonoBehaviour
     private List<QuizSessionQuestion> _sessionQuestions = new List<QuizSessionQuestion>();
     private int _currentQuestionIndex;
     private int _score;
+    private int _maxScore;
     private int _correctCount;
 
     private float _remainingSessionTime;
@@ -29,7 +30,6 @@ public class QuizGameController : MonoBehaviour
 
         ui.StartClicked += HandleStartClicked;
         ui.ConfirmClicked += HandleConfirmClicked;
-        ui.RetryClicked += HandleRetryClicked;
         ui.CloseClicked += HandleCloseClicked;
     }
 
@@ -39,7 +39,6 @@ public class QuizGameController : MonoBehaviour
 
         ui.StartClicked -= HandleStartClicked;
         ui.ConfirmClicked -= HandleConfirmClicked;
-        ui.RetryClicked -= HandleRetryClicked;
         ui.CloseClicked -= HandleCloseClicked;
     }
 
@@ -77,11 +76,6 @@ public class QuizGameController : MonoBehaviour
     private void HandleStartClicked()
     {
         Debug.Log("[QuizGameController] Start quiz clicked");
-        StartNewSession();
-    }
-
-    private void HandleRetryClicked()
-    {
         StartNewSession();
     }
 
@@ -250,9 +244,9 @@ public class QuizGameController : MonoBehaviour
         _sessionEnded = true;
         _questionActive = false;
         _awaitingNextQuestion = false;
-
+        _maxScore = _sessionQuestions.Count * config.scorePerCorrectAnswer;
         ui.SetQuestionInteractable(false);
-        ui.SetResult(_score, _correctCount, _sessionQuestions.Count);
+        ui.SetResult(_score, _maxScore);
         ui.ShowResult();
     }
     private List<QuizSessionQuestion> PrepareSessionQuestions(List<QuizSessionQuestion> source)
