@@ -1,16 +1,13 @@
+using System.Collections;
 using System.Threading.Tasks;
 using UnityEngine;
 
-public class RoomPortal : MonoBehaviour
+public class RoomPortal : WorldInteractable
 {
     [Header("Room Config")]
     [SerializeField] private RoomDefinition roomDefinition;
 
-    [Header("Detection")]
-    [SerializeField] private Vector3 detectionSize = new Vector3(2f, 2f, 2f);
-    [SerializeField] private LayerMask playerLayerMask;
-
-    [Header("Travel UI")]
+    [Header("UI")]
     [SerializeField] private GameObject loadingSceneUI;
     [SerializeField] private GameObject roomFullUI;
 
@@ -18,35 +15,16 @@ public class RoomPortal : MonoBehaviour
     [SerializeField] private float retryDelay = 0.5f;
 
     private bool _travelStarted;
-    private float _nextAllowedTravelTime;
 
-    public RoomDefinition RoomDefinition => roomDefinition;
-
-    public bool IsLocalPlayerInRange()
+    public override bool CanInteract(GameObject interactor)
     {
-        Collider[] hits = Physics.OverlapBox(
-            transform.position,
-            detectionSize * 0.5f,
-            transform.rotation,
-            playerLayerMask
-        );
-
-        foreach (var hit in hits)
-        {
-            if (hit.transform.root.CompareTag("LocalPlayer"))
-                return true;
-        }
-
-        return false;
+        return !_travelStarted && roomDefinition != null && NetworkLauncher.Instance != null;
     }
 
-    public async Task<bool> TryTravelAsync()
+    public override async Task InteractAsync(GameObject interactor)
     {
         if (_travelStarted)
-            return false;
-
-        if (Time.time < _nextAllowedTravelTime)
-            return false;
+            return;
 
         _travelStarted = true;
 
@@ -56,29 +34,27 @@ public class RoomPortal : MonoBehaviour
         if (roomFullUI != null)
             roomFullUI.SetActive(false);
 
-        bool joined = await NetworkLauncher.Instance.JoinBestRoom(roomDefinition);
+        bool joined = false;
 
-        if (!joined && roomFullUI != null)
-            roomFullUI.SetActive(true);
+        try
+        {
+            joined = await NetworkLauncher.Instance.JoinBestRoom(roomDefinition);
 
-        if (loadingSceneUI != null)
-            loadingSceneUI.SetActive(false);
+            if (!joined && roomFullUI != null)
+                roomFullUI.SetActive(true);
+        }
+        finally
+        {
+            if (loadingSceneUI != null)
+                loadingSceneUI.SetActive(false);
 
+            StartCoroutine(ResetTravelFlag());
+        }
+    }
+
+    private IEnumerator ResetTravelFlag()
+    {
+        yield return new WaitForSeconds(retryDelay);
         _travelStarted = false;
-        _nextAllowedTravelTime = Time.time + retryDelay;
-
-        return joined;
-    }
-
-    public Vector3 GetWorldPosition()
-    {
-        return transform.position;
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        Gizmos.color = Color.cyan;
-        Gizmos.matrix = transform.localToWorldMatrix;
-        Gizmos.DrawWireCube(Vector3.zero, detectionSize);
     }
 }

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine.InputSystem;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -68,7 +69,15 @@ public class RoomChatUI : MonoBehaviour
 
     private void Update()
     {
-        if (Input.GetKeyDown(toggleKey))
+        Keyboard keyboard = Keyboard.current;
+        if (keyboard == null)
+            return;
+
+        bool enterPressed =
+            keyboard[Key.Enter].wasPressedThisFrame ||
+            keyboard[Key.NumpadEnter].wasPressedThisFrame;
+
+        if (enterPressed)
         {
             if (_isOpen && messageInput != null && messageInput.isFocused)
             {
@@ -76,13 +85,17 @@ public class RoomChatUI : MonoBehaviour
                 return;
             }
 
-            SetOpenState(!_isOpen);
+            OpenChat();
+            return;
         }
 
         if (!_isOpen)
+        {
+            PlayerInput.GameplayInputBlocked = false;
             return;
+        }
 
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (keyboard.escapeKey.wasPressedThisFrame)
         {
             CloseChat();
             return;
@@ -167,6 +180,15 @@ public class RoomChatUI : MonoBehaviour
     public void OpenChat()
     {
         SetOpenState(true);
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        if (messageInput != null)
+        {
+            messageInput.ActivateInputField();
+            messageInput.Select();
+        }
     }
 
     public void CloseChat()
@@ -174,9 +196,15 @@ public class RoomChatUI : MonoBehaviour
         if (messageInput != null)
             messageInput.DeactivateInputField();
 
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
         SetOpenState(false);
+
+        PlayerInput.GameplayInputBlocked = false;
+
+        if (!Application.isMobilePlatform)
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
     }
 
     private void SetOpenState(bool isOpen)

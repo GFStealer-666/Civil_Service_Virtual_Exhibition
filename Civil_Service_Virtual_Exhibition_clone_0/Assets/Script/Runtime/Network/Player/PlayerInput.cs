@@ -23,21 +23,11 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
     [Header("Desktop Look")]
     [SerializeField] private float lookSensitivity = 1.5f;
     [SerializeField] private bool invertY = false;
+
     public static bool GameplayInputBlocked;
+
     private NetworkedInput _accumulatedInput;
     private readonly Vector2Accumulator _lookRotationAccumulator = new Vector2Accumulator(0.02f, true);
-
-    private bool UseMobileInput
-    {
-        get
-        {
-            if (MobileInputState.Instance != null)
-                return MobileInputState.Instance.UseMobileInput;
-
-            return Application.isMobilePlatform;
-        }
-    }
-
     public override void Spawned()
     {
         if (!HasInputAuthority)
@@ -62,7 +52,7 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
 
         networkEvents.OnInput.AddListener(OnInput);
 
-        if (UseMobileInput)
+        if (InputModeResolver.UseMobileInput())
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
@@ -91,14 +81,14 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
         if (!HasInputAuthority)
             return;
 
-        if (UseMobileInput)
+        if (InputModeResolver.UseMobileInput())
         {
             ReadMobileInput();
         }
         else
         {
             ReadDesktopInput();
-        }
+}
     }
 
     private void ReadDesktopInput()
@@ -106,19 +96,21 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
         var keyboard = Keyboard.current;
         var mouse = Mouse.current;
 
-        if (keyboard != null && (keyboard.escapeKey.wasPressedThisFrame || keyboard.enterKey.wasPressedThisFrame))
+        if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame && !GameplayInputBlocked)
         {
             bool locked = Cursor.lockState == CursorLockMode.Locked;
             Cursor.lockState = locked ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = locked;
         }
-         if (GameplayInputBlocked)
+
+        if (GameplayInputBlocked)
         {
             _accumulatedInput.WorldMoveDirection = Vector3.zero;
             _accumulatedInput.LookRotationDelta = Vector2.zero;
             _accumulatedInput.Buttons = default;
             return;
         }
+
         if (Cursor.lockState != CursorLockMode.Locked)
             return;
 
@@ -142,7 +134,7 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
             if (keyboard.dKey.isPressed) rawMove += Vector2.right;
 
             _accumulatedInput.Buttons.Set(InputButton.Jump, keyboard.spaceKey.isPressed);
-            _accumulatedInput.Buttons.Set(InputButton.Interact, keyboard.eKey.isPressed);
+            _accumulatedInput.Buttons.Set(InputButton.Interact, keyboard.fKey.isPressed);;
             _accumulatedInput.Buttons.Set(InputButton.Sprint, keyboard.leftShiftKey.isPressed);
         }
 
@@ -151,6 +143,14 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
 
     private void ReadMobileInput()
     {
+        if (GameplayInputBlocked)
+        {
+            _accumulatedInput.WorldMoveDirection = Vector3.zero;
+            _accumulatedInput.LookRotationDelta = Vector2.zero;
+            _accumulatedInput.Buttons = default;
+            return;
+        }
+
         MobileInputState mobile = MobileInputState.Instance;
 
         if (mobile == null)

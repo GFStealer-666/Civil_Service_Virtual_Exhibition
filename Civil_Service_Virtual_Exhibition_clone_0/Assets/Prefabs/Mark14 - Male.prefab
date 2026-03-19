@@ -157,7 +157,7 @@ GameObject:
   - component: {fileID: 4909880482109869986}
   m_Layer: 8
   m_Name: Mark14 - Male
-  m_TagString: Player
+  m_TagString: LocalPlayer
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -275,7 +275,7 @@ MonoBehaviour:
     ColliderLayer: 8
     CollisionLayerMask:
       serializedVersion: 2
-      m_Bits: 1
+      m_Bits: 257
     ProxyInterpolationMode: 0
     MaxPenetrationSteps: 8
     CCDRadiusMultiplier: 0.75
