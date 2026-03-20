@@ -3,15 +3,15 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class ExhibitionOfficeCardUI : MonoBehaviour
+public class ExhibitionAgencyCardUI : MonoBehaviour
 {
     [SerializeField] private Button rootButton;
     [SerializeField] private Image backgroundImage;
     [SerializeField] private Image logoImage;
     [SerializeField] private TMP_Text titleText;
 
-    private ExhibitionOfficeData _data;
-    private Action<ExhibitionOfficeData> _onClicked;
+    private ExhibitionAgencyData _data;
+    private Action<ExhibitionAgencyData> _onClicked;
 
     private void Awake()
     {
@@ -25,7 +25,7 @@ public class ExhibitionOfficeCardUI : MonoBehaviour
             rootButton.onClick.RemoveListener(HandleClicked);
     }
 
-    public void Bind(ExhibitionOfficeData data, Action<ExhibitionOfficeData> onClicked)
+    public void Bind(ExhibitionAgencyData data, Action<ExhibitionAgencyData> onClicked)
     {
         _data = data;
         _onClicked = onClicked;
@@ -35,12 +35,12 @@ public class ExhibitionOfficeCardUI : MonoBehaviour
 
         if (backgroundImage != null)
         {
-            backgroundImage.sprite = data != null ? data.BackgroundSprite : null;
+            backgroundImage.sprite = data != null ? data.BackgroundSprite : default;
         }
 
         if (logoImage != null)
         {
-            logoImage.sprite = data != null ? data.LogoSprite : null;
+            logoImage.sprite = data != null ? data.LogoSprite : default;
         }
     }
 

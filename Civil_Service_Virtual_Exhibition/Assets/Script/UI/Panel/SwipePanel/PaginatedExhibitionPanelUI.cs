@@ -9,7 +9,7 @@ public class PaginatedExhibitionPanelUI : MonoBehaviour, IPointerDownHandler, IP
     [SerializeField] private RectTransform pageRoot;
     [SerializeField] private RectTransform dotRoot;
     [SerializeField] private RectTransform pagePrefab;
-    [SerializeField] private ExhibitionOfficeCardUI cardPrefab;
+    [SerializeField] private ExhibitionAgencyCardUI cardPrefab;
     [SerializeField] private PaginationDotUI dotPrefab;
     [SerializeField] private int itemsPerPage = 5;
 
@@ -19,16 +19,16 @@ public class PaginatedExhibitionPanelUI : MonoBehaviour, IPointerDownHandler, IP
 
     [Header("Preview")]
     [SerializeField] private bool buildPreviewOnStart = true;
-    [SerializeField] private List<ExhibitionOfficeData> previewItems = new List<ExhibitionOfficeData>();
+    [SerializeField] private List<ExhibitionAgencyData> previewItems = new List<ExhibitionAgencyData>();
 
     private readonly List<RectTransform> _pages = new List<RectTransform>();
     private readonly List<PaginationDotUI> _dots = new List<PaginationDotUI>();
-    private readonly List<ExhibitionOfficeData> _items = new List<ExhibitionOfficeData>();
+    private readonly List<ExhibitionAgencyData> _items = new List<ExhibitionAgencyData>();
 
     private Vector2 _pointerDownPosition;
     private int _currentPageIndex;
 
-    public event Action<ExhibitionOfficeData> ItemSelected;
+    public event Action<ExhibitionAgencyData> ItemSelected;
 
     public int CurrentPageIndex => _currentPageIndex;
     public int PageCount => Mathf.CeilToInt(_items.Count / (float)Mathf.Max(1, itemsPerPage));
@@ -39,7 +39,7 @@ public class PaginatedExhibitionPanelUI : MonoBehaviour, IPointerDownHandler, IP
             SetItems(previewItems);
     }
 
-    public void SetItems(IReadOnlyList<ExhibitionOfficeData> items)
+    public void SetItems(IReadOnlyList<ExhibitionAgencyData> items)
     {
         _items.Clear();
 
@@ -134,7 +134,7 @@ public class PaginatedExhibitionPanelUI : MonoBehaviour, IPointerDownHandler, IP
 
             for (int itemIndex = start; itemIndex < end; itemIndex++)
             {
-                ExhibitionOfficeCardUI card = Instantiate(cardPrefab, page);
+                ExhibitionAgencyCardUI card = Instantiate(cardPrefab, page);
                 card.name = $"Item_{itemIndex + 1}";
                 card.Bind(_items[itemIndex], HandleItemClicked);
             }
@@ -148,7 +148,7 @@ public class PaginatedExhibitionPanelUI : MonoBehaviour, IPointerDownHandler, IP
         SetPage(0);
     }
 
-    private void HandleItemClicked(ExhibitionOfficeData data)
+    private void HandleItemClicked(ExhibitionAgencyData data)
     {
         ItemSelected?.Invoke(data);
         Debug.Log($"[PaginatedExhibitionOfficePanelUI] Clicked item: {data.Title}");

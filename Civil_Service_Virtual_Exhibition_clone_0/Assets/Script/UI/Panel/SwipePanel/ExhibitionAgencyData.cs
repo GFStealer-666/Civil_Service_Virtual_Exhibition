@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 [Serializable]
-public class ExhibitionOfficeData
+public class ExhibitionAgencyData
 {
     public string Id;
     public string Title;
