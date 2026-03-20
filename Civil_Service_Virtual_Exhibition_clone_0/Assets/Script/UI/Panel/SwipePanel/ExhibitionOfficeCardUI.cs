@@ -41,7 +41,6 @@ public class ExhibitionOfficeCardUI : MonoBehaviour
         if (logoImage != null)
         {
             logoImage.sprite = data != null ? data.LogoSprite : null;
-            logoImage.enabled = logoImage.sprite != null;
         }
     }
 
