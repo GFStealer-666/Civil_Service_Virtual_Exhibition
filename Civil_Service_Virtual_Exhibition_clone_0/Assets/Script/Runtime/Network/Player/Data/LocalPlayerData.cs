@@ -6,6 +6,8 @@ public class LocalPlayerData : MonoBehaviour
     public static LocalPlayerData Instance { get; private set; }
 
     [Header("Profile")]
+    public string PlayerID = "";
+    public string PlayerToken = "";
     public string       PlayerName   = "Guest1";
     public PlayerGender Gender       = PlayerGender.Male;
     public string       Organization = "";

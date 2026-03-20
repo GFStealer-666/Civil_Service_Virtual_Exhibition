@@ -37,26 +37,27 @@ public abstract class BaseHandler : MonoBehaviour
     /// <summary>Loads initial room after storing player data.</summary>
     protected void EnterMainScene(PlayerData player)
     {
-        var data = LocalPlayerData.Instance;
-        if (data == null)
+        var localData = LocalPlayerData.Instance;
+        if (localData == null)
         {
             overlay.ShowError("LocalPlayerData is missing.");
             return;
         }
 
-        data.SetContact(player.email, player.phone);
-        data.PlayerName = string.IsNullOrWhiteSpace(player.characterName) 
+        localData.SetContact(player.email, player.phone);
+        localData.PlayerName = string.IsNullOrWhiteSpace(player.characterName) 
             ? $"{player.firstName} {player.lastName}".Trim()
             : player.characterName;
 
-        data.Organization = player.department ?? "";
-        data.IsGuest = player.isAnonymous;
-        data.Gender = ParseGender(player.gender);
-
-        if (!data.HasInitializedAppearance)
+        localData.Organization = player.department ?? "";
+        localData.IsGuest = player.isAnonymous;
+        localData.Gender = ParseGender(player.gender);   
+        localData.PlayerID = player.id;
+        localData.PlayerToken = player.token;
+        if (!localData.HasInitializedAppearance)
         {
-            data.RandomizeAppearance();
-            data.HasInitializedAppearance = true;
+            localData.RandomizeAppearance();
+            localData.HasInitializedAppearance = true;
         }
 
         overlay.ShowSuccessNoDismiss(
@@ -65,7 +66,7 @@ public abstract class BaseHandler : MonoBehaviour
         () =>
         {
             
-            StartCoroutine(StartNetworkFlow());
+            //StartCoroutine(StartNetworkFlow());
         });
     }
 

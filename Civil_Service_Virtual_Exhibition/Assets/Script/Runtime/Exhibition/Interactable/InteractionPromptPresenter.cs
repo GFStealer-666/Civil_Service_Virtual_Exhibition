@@ -6,20 +6,6 @@ public class InteractionPromptPresenter : MonoBehaviour
     [SerializeField] private InteractionPromptView promptView;
     [SerializeField] private bool forceMobilePromptInEditor;
 
-    private bool UseMobilePrompt
-    {
-        get
-        {
-            if (forceMobilePromptInEditor)
-                return true;
-
-            if (MobileInputState.Instance != null)
-                return MobileInputState.Instance.UseMobileInput;
-
-            return Application.isMobilePlatform;
-        }
-    }
-
     private void Update()
     {
         if (interactionService == null || promptView == null)
@@ -32,6 +18,7 @@ public class InteractionPromptPresenter : MonoBehaviour
             return;
         }
 
-        promptView.Show(interactable.GetPrompt(UseMobilePrompt), UseMobilePrompt);
+        bool useMobilePrompt = InputModeResolver.UseMobileInput(forceMobilePromptInEditor);
+        promptView.Show(interactable.GetPrompt(useMobilePrompt), useMobilePrompt);
     }
 }

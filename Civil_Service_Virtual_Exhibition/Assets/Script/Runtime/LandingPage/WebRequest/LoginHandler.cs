@@ -67,9 +67,9 @@ public class LoginHandler : BaseHandler
 
     // ── Guest ───────────────────────────────────────────────────
 
-    public void OnGuestClicked() => StartCoroutine(DoGuest());
+    public void OnGuestClicked() => StartCoroutine(GuestLogin());
 
-    private IEnumerator DoGuest()
+    private IEnumerator GuestLogin()
     {
         SetButtons(false);
 
@@ -77,6 +77,7 @@ public class LoginHandler : BaseHandler
             onSuccess: json =>
             {
                 var res = JsonUtility.FromJson<LoginResponse>(json);
+                Debug.Log($"[Login Handler] {json}");
                 if (!res.success)
                 {
                     overlay.ShowError(
@@ -86,7 +87,7 @@ public class LoginHandler : BaseHandler
                     SetButtons(true);
                     return;
                 }
-
+                // create dto 
                 var player = res.data != null ? res.data.player : null;
                 if (player == null)
                     player = new PlayerData();
@@ -97,6 +98,8 @@ public class LoginHandler : BaseHandler
                 if (string.IsNullOrWhiteSpace(player.gender))
                     player.gender = PlayerGender.Male.ToString();
 
+                player.id ??= res.data.player.id;
+                player.token ??= res.data.token;
                 player.isAnonymous = true;
                 player.department ??= "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อคอิน";
                 player.email ??= "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อคอิน";

@@ -53,6 +53,7 @@ public class LoginData
 public class PlayerData
 {
     public string id;
+    public string token; // important for request API
     public string email;
     public string characterName;
     public string firstName;
