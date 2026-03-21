@@ -11,6 +11,9 @@ public class QuizGameController : MonoBehaviour
 
     [Header("Flow")]
     [SerializeField] private float nextQuestionDelay = 0.75f;
+    [Header("Score")]
+    [SerializeField] private int scorePerCorrectAnswer = 10;
+    [SerializeField] private float remainingTimeMultiplier = 0.05f;
     [Header("Data Source")]
     [SerializeField] private bool useLocalFallbackOnly = false;
     private List<QuizSessionQuestion> _sessionQuestions = new List<QuizSessionQuestion>();
@@ -210,7 +213,6 @@ public class QuizGameController : MonoBehaviour
         if (isCorrect)
         {
             _correctCount++;
-            _score += config.scorePerCorrectAnswer;
         }
 
         StartCoroutine(ProceedToNextQuestionAfterDelay());
@@ -244,69 +246,94 @@ public class QuizGameController : MonoBehaviour
         _sessionEnded = true;
         _questionActive = false;
         _awaitingNextQuestion = false;
-        _maxScore = _sessionQuestions.Count * config.scorePerCorrectAnswer;
+        
+        _score = CalculateFinalScore();
+        _maxScore = CalculateMaxScore();
+
         ui.SetQuestionInteractable(false);
         ui.SetResult(_score, _maxScore);
         ui.ShowResult();
     }
     private List<QuizSessionQuestion> PrepareSessionQuestions(List<QuizSessionQuestion> source)
-{
-    List<QuizSessionQuestion> cloned = new List<QuizSessionQuestion>();
-
-    for (int i = 0; i < source.Count; i++)
     {
-        QuizSessionQuestion original = source[i];
-        QuizSessionQuestion copy = new QuizSessionQuestion
-        {
-            questionText = original.questionText,
-            correctChoiceIndex = original.correctChoiceIndex,
-            explanation = original.explanation
-        };
+        List<QuizSessionQuestion> cloned = new List<QuizSessionQuestion>();
 
-        for (int c = 0; c < original.choices.Count; c++)
+        for (int i = 0; i < source.Count; i++)
         {
-            QuizSessionChoice originalChoice = original.choices[c];
-            copy.choices.Add(new QuizSessionChoice
+            QuizSessionQuestion original = source[i];
+            QuizSessionQuestion copy = new QuizSessionQuestion
             {
-                text = originalChoice.text,
-                isCorrect = originalChoice.isCorrect
-            });
+                questionText = original.questionText,
+                correctChoiceIndex = original.correctChoiceIndex,
+                explanation = original.explanation
+            };
+
+            for (int c = 0; c < original.choices.Count; c++)
+            {
+                QuizSessionChoice originalChoice = original.choices[c];
+                copy.choices.Add(new QuizSessionChoice
+                {
+                    text = originalChoice.text,
+                    isCorrect = originalChoice.isCorrect
+                });
+            }
+
+            cloned.Add(copy);
         }
 
-        cloned.Add(copy);
-    }
-
-    if (config.shuffleQuestionOrder)
-    {
-        QuizSessionBuilder.Shuffle(cloned);
-    }
-
-    int takeCount = Mathf.Min(config.questionsPerSession, cloned.Count);
-    List<QuizSessionQuestion> finalList = new List<QuizSessionQuestion>();
-
-    for (int i = 0; i < takeCount; i++)
-    {
-        QuizSessionQuestion question = cloned[i];
-
-        if (config.shuffleChoiceOrder)
+        if (config.shuffleQuestionOrder)
         {
-            QuizSessionBuilder.Shuffle(question.choices);
+            QuizSessionBuilder.Shuffle(cloned);
+        }
 
-            for (int c = 0; c < question.choices.Count; c++)
+        int takeCount = Mathf.Min(config.questionsPerSession, cloned.Count);
+        List<QuizSessionQuestion> finalList = new List<QuizSessionQuestion>();
+
+        for (int i = 0; i < takeCount; i++)
+        {
+            QuizSessionQuestion question = cloned[i];
+
+            if (config.shuffleChoiceOrder)
             {
-                if (question.choices[c].isCorrect)
+                QuizSessionBuilder.Shuffle(question.choices);
+
+                for (int c = 0; c < question.choices.Count; c++)
                 {
-                    question.correctChoiceIndex = c;
-                    break;
+                    if (question.choices[c].isCorrect)
+                    {
+                        question.correctChoiceIndex = c;
+                        break;
+                    }
                 }
             }
+
+            finalList.Add(question);
         }
 
-        finalList.Add(question);
+        return finalList;
+    }
+    private int CalculateFinalScore()
+    {
+        float remainingTimeBonus = 0f;
+
+        if (config.isTimeLimited)
+        {
+            remainingTimeBonus = Mathf.Max(0f, _remainingSessionTime) * remainingTimeMultiplier;
+        }
+
+        float finalScore = (_correctCount * scorePerCorrectAnswer) + remainingTimeBonus;
+        return Mathf.RoundToInt(finalScore);
     }
 
-    return finalList;
-}
+    private int CalculateMaxScore()
+    {
+        float maxTimeBonus = config.isTimeLimited
+            ? config.sessionTimeLimitSeconds * remainingTimeMultiplier
+            : 0f;
+
+        float maxScore = (_sessionQuestions.Count * scorePerCorrectAnswer) + maxTimeBonus;
+        return Mathf.RoundToInt(maxScore);
+    }
 
     private void EndSession()
     {
@@ -319,7 +346,10 @@ public class QuizGameController : MonoBehaviour
         _questionActive = false;
         _awaitingNextQuestion = false;
 
-        ui.SetResult(_score, _correctCount, _sessionQuestions.Count);
+        _score = CalculateFinalScore();
+        _maxScore = CalculateMaxScore();
+
+        ui.SetResult(_score, _maxScore);
         ui.ShowResult();
     }
 }
