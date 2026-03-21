@@ -17,4 +17,5 @@ MonoBehaviour:
   registerEndpoint: /register
   anonymousEndpoint: /anonymous
   resetPasswordEndpoint: /reset-password
-  initialRoom: {fileID: 11400000, guid: 4d7b834e05af462409ce1010afb13ec1, type: 2}
+  weeklyQuizEndpoint: /api/quiz/weekly
+  initialRoom: {fileID: 11400000, guid: c03de5142ec7c954382d218fbc6341bb, type: 2}

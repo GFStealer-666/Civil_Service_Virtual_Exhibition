@@ -52,7 +52,7 @@ public class StatusOverlay : MonoBehaviour
         SetVisible(true);
         Apply(State.Success);
 
-        _animatedBaseTitle = title;
+        _animatedBaseTitle = subtitle;
 
         if (successTitleText != null)
             successTitleText.text = title;

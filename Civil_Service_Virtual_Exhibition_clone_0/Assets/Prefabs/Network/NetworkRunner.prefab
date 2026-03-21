@@ -132,6 +132,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   IsSceneTakeOverEnabled: 1
   LogSceneLoadErrors: 1
+  AddressableScenesLabel: FusionScenes
 --- !u!114 &6808256441503993390
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -171,4 +172,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   malePlayerPrefab: {fileID: 8221447348966359789, guid: 0a72d41368a74f44d980d1bed97ac204, type: 3}
   femalePlayerPrefab: {fileID: 8221447348966359789, guid: be1d4fcb57b5d2a44b941071e63e8525, type: 3}
-  fallbackSpawn: {fileID: 0}
+  fallbackSpawn: {fileID: 8584361967771860199, guid: be1d4fcb57b5d2a44b941071e63e8525, type: 3}
