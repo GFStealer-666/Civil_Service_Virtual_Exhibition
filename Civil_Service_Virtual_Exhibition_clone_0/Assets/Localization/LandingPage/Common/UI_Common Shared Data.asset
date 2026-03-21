@@ -87,6 +87,18 @@ MonoBehaviour:
     m_Key: common.or
     m_Metadata:
       m_Items: []
+  - m_Id: 556298697269248
+    m_Key: common.username_placeholder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 556465135640576
+    m_Key: common.username_label
+    m_Metadata:
+      m_Items: []
+  - m_Id: 559407225987072
+    m_Key: New Entry
+    m_Metadata:
+      m_Items: []
   m_Metadata:
     m_Items: []
   m_KeyGenerator:

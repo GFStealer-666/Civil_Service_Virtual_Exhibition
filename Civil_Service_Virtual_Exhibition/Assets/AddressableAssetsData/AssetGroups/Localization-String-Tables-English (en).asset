@@ -17,8 +17,32 @@ MonoBehaviour:
     m_SerializedData: []
   m_GUID: a98ec4719f213d84fb84145dd82e437b
   m_SerializeEntries:
+  - m_GUID: 103acfb91f90f8d4e99de0ff7c4d112d
+    m_Address: UI_ForgotPassword_en
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-en
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 8642b0abfdb310c4bb6c62b718d373a8
+    m_Address: UI_Login_en
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-en
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 986ee8d1b7f7c5b4ab1d4880e73f65fd
     m_Address: UI_Common_en
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-en
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9e1c6b484177173468e576fecb241d98
+    m_Address: UI_Landing_en
+    m_ReadOnly: 1
+    m_SerializedLabels:
+    - Locale-en
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: b19e0b314e65add41854a37378a826c1
+    m_Address: UI_Register_en
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-en

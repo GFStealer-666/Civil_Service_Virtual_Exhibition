@@ -90,6 +90,14 @@ MonoBehaviour:
     m_Localized: Gender
     m_Metadata:
       m_Items: []
+  - m_Id: 556298697269248
+    m_Localized: Please enter your username
+    m_Metadata:
+      m_Items: []
+  - m_Id: 556465135640576
+    m_Localized: Username
+    m_Metadata:
+      m_Items: []
   references:
     version: 2
     RefIds: []
