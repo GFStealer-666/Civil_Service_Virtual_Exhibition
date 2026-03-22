@@ -6,6 +6,7 @@ public class ExhibitionAudioManager : MonoBehaviour
     public static ExhibitionAudioManager Instance { get; private set; }
 
     private readonly List<ExhibitionAudioSource> _registeredSources = new List<ExhibitionAudioSource>();
+    private float? _temporaryBgmVolumeOverride;
 
     public float BgmVolume
     {
@@ -24,6 +25,10 @@ public class ExhibitionAudioManager : MonoBehaviour
             return LocalPlayerData.Instance.EffectVolume;
         }
     }
+
+    private float AppliedBgmVolume => _temporaryBgmVolumeOverride.HasValue
+        ? _temporaryBgmVolumeOverride.Value
+        : BgmVolume;
 
     private void Awake()
     {
@@ -73,6 +78,18 @@ public class ExhibitionAudioManager : MonoBehaviour
         ApplyAllVolumes();
     }
 
+    public void SetTemporaryBgmVolume(float value)
+    {
+        _temporaryBgmVolumeOverride = Mathf.Clamp01(value);
+        ApplyAllVolumes();
+    }
+
+    public void ClearTemporaryBgmVolume()
+    {
+        _temporaryBgmVolumeOverride = null;
+        ApplyAllVolumes();
+    }
+
     public void ApplyAllVolumes()
     {
         for (int i = _registeredSources.Count - 1; i >= 0; i--)
@@ -94,7 +111,7 @@ public class ExhibitionAudioManager : MonoBehaviour
         switch (source.Channel)
         {
             case ExhibitionAudioChannel.Bgm:
-                source.AudioSource.volume = BgmVolume;
+                source.AudioSource.volume = AppliedBgmVolume;
                 break;
 
             case ExhibitionAudioChannel.Effect:

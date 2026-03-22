@@ -21,7 +21,10 @@ public class LandingPageManager : MonoBehaviour
     }
 
     public void ShowStarter()        => SwitchTo(starterPanel);
-    public void ShowLogin()          => SwitchTo(loginPanel);
+    public void ShowLogin()
+    {
+        SwitchTo(loginPanel);
+    }
     public void ShowRegister()       => SwitchTo(registerPanel);
     public void ShowForgotPassword() => SwitchTo(forgotPasswordPanel);
     public void ShowTermOfService() => SwitchTo(termOfServicePanel);

@@ -110,8 +110,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -0.23249817}
-  m_SizeDelta: {x: 0, y: -28.462}
+  m_AnchoredPosition: {x: 0, y: 1.6246986}
+  m_SizeDelta: {x: 0, y: -24.7476}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5200757243446988370
 CanvasRenderer:
@@ -144,8 +144,8 @@ MonoBehaviour:
   m_text: "\u0E0A\u0E37\u0E48\u0E2D\u0E42\u0E04\u0E23\u0E07\u0E01\u0E32\u0E23\u0E17\u0E35\u0E48
     1"
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: c4fb6bbb0de5a7b41a3740f1ced946be, type: 2}
-  m_sharedMaterial: {fileID: -5387029399175791926, guid: c4fb6bbb0de5a7b41a3740f1ced946be, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: ed6d74153bdb7384a93e04b646b3d58f, type: 2}
+  m_sharedMaterial: {fileID: 4227903639315408252, guid: ed6d74153bdb7384a93e04b646b3d58f, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -169,12 +169,12 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 22.7
+  m_fontSize: 22
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 19.6
-  m_fontSizeMax: 22.7
+  m_fontSizeMin: 16
+  m_fontSizeMax: 22
   m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
@@ -224,8 +224,8 @@ GameObject:
   - component: {fileID: 5799563590404790173}
   - component: {fileID: 7747158851830414419}
   - component: {fileID: 4904688668045030011}
-  - component: {fileID: 4161773090989623663}
   - component: {fileID: 683915830799483565}
+  - component: {fileID: 3402964835713198484}
   m_Layer: 5
   m_Name: '[API] ProjectCardUI'
   m_TagString: Untagged
@@ -251,7 +251,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 475, y: 455}
+  m_SizeDelta: {x: 555, y: 455}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &4201711156578147330
 CanvasRenderer:
@@ -355,22 +355,6 @@ MonoBehaviour:
   m_FlexibleWidth: -1
   m_FlexibleHeight: -1
   m_LayoutPriority: 1
---- !u!114 &4161773090989623663
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2356731367757094460}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4cca1cdba9c6c054ca44122b9ad3034a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  rootButton: {fileID: 7747158851830414419}
-  backgroundImage: {fileID: 2622376652956584886}
-  logoImage: {fileID: 0}
-  titleText: {fileID: 350473867423092675}
 --- !u!114 &683915830799483565
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -384,6 +368,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_ShowMaskGraphic: 1
+--- !u!114 &3402964835713198484
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2356731367757094460}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 179e6563296d3b84d9f6d93f99918784, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rootButton: {fileID: 7747158851830414419}
+  backgroundImage: {fileID: 2622376652956584886}
+  titleText: {fileID: 350473867423092675}
 --- !u!1 &8122762578839375527
 GameObject:
   m_ObjectHideFlags: 0

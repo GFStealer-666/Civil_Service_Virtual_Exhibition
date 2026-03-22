@@ -37,7 +37,6 @@ public class LoginHandler : BaseHandler
             overlay.ShowError("กรุณากรอกอีเมลและรหัสผ่าน");
             return;
         }
-
         StartCoroutine(DoLogin(email, password));
     }
 

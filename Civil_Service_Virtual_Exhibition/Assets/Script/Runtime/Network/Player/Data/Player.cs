@@ -42,6 +42,7 @@ public class Player : NetworkBehaviour
 
     public override void Spawned()
     {
+        Debug.Log($"[Player] Spawned | InputAuthority={HasInputAuthority} | StateAuthority={HasStateAuthority} | CurrentRoom={CurrentRoom}");
         name         = BuildPlayerName();
         _hasAnimator = animator != null;
         AssignAnimationIDs();

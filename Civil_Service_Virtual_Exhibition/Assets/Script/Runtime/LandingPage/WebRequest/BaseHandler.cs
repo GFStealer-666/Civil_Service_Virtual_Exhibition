@@ -37,6 +37,19 @@ public abstract class BaseHandler : MonoBehaviour
     /// <summary>Loads initial room after storing player data.</summary>
     protected void EnterMainScene(PlayerData player)
     {
+                
+        GovernmentCatalogDownloader.EnsureExists().Download(
+            api,
+            dto =>
+            {
+                GovernmentCatalogStore.EnsureExists().SetData(dto);
+            },
+            error =>
+            {
+                Debug.LogError(error);
+            }
+        );
+        
         var localData = LocalPlayerData.Instance;
         if (localData == null)
         {

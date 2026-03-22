@@ -9,13 +9,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 56a393eb4fc3d0a4c858a241f93f6507, type: 3}
+  m_Script: {fileID: 11500000, guid: ee0132d0edb36d44e8d0dda2b571c927, type: 3}
   m_Name: MetaverseXR
   m_EditorClassIdentifier: 
-  baseUrl: https://thaicivil.mxrth.co/api/game
-  loginEndpoint: /login
-  registerEndpoint: /register
-  anonymousEndpoint: /anonymous
-  resetPasswordEndpoint: /reset-password
+  baseUrl: https://thaicivil.mxrth.co
+  loginEndpoint: /api/auth/login
+  registerEndpoint: /api/game/register
+  anonymousEndpoint: /api/game/anonymous
+  resetPasswordEndpoint: /api/auth/reset-password
   weeklyQuizEndpoint: /api/quiz/weekly
+  governmentCatalogEndpoint: /api/game/submissions/all
   initialRoom: {fileID: 11400000, guid: c03de5142ec7c954382d218fbc6341bb, type: 2}
