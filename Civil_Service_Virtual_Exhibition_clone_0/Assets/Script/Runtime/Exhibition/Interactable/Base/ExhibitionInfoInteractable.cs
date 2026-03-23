@@ -43,6 +43,7 @@ public class ExhibitionInfoInteractable : WorldInteractable
 
     void Update()
     {
+        
         ministryName.text =  GovernmentCatalogStore.Instance.FindMinistry(ministryKey).ministry.ToString();
         if (canvas == null)
             return;

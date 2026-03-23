@@ -19,7 +19,7 @@ public class ThirdPersonCameraFollow : MonoBehaviour
     [SerializeField] private bool invertY = false;
     [SerializeField] private float pitchMin = -30f;
     [SerializeField] private float pitchMax = 60f;
-
+    private bool IsCameraInputBlocked => PlayerInput.GameplayInputBlocked;
     private Player _targetPlayer;
     private float _yaw;
     private float _pitch;
@@ -88,6 +88,8 @@ public class ThirdPersonCameraFollow : MonoBehaviour
 
     private void ReadLookAndZoom()
     {
+        if (IsCameraInputBlocked)
+            return;
         if (UseMobileInput)
             ReadMobileLookAndZoom();
         else

@@ -55,6 +55,7 @@ public class QuizChoiceToggleView : MonoBehaviour
         {
             toggle.interactable = value;
         }
+        toggle.isOn = false;
     }
 
     public void SetOnWithoutNotify(bool value)

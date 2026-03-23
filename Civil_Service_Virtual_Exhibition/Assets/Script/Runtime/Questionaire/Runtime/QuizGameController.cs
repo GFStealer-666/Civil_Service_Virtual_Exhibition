@@ -8,7 +8,7 @@ public class QuizGameController : MonoBehaviour
     [SerializeField] private QuizGameConfigSO config;
     [SerializeField] private QuizQuestionRepository repository;
     [SerializeField] private QuizUIOverlay ui;
-
+    [SerializeField] private QuizLeaderboardController leaderboardController;
     [Header("Flow")]
     [SerializeField] private float nextQuestionDelay = 0.75f;
     [Header("Score")]
@@ -238,6 +238,11 @@ public class QuizGameController : MonoBehaviour
     }
     private void ForceEndSessionBecauseTimeExpired()
     {
+        leaderboardController?.HandleQuizFinished(
+            _correctCount,
+            _sessionQuestions.Count,
+            _score
+        );
         if (_sessionEnded)
         {
             return;
@@ -341,7 +346,11 @@ public class QuizGameController : MonoBehaviour
         {
             return;
         }
-
+        leaderboardController?.HandleQuizFinished(
+            _correctCount,
+            _sessionQuestions.Count,
+            _score
+        );
         _sessionEnded = true;
         _questionActive = false;
         _awaitingNextQuestion = false;

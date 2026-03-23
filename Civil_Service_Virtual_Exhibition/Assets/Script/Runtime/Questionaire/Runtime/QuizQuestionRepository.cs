@@ -40,10 +40,10 @@ public class QuizQuestionRepository : MonoBehaviour
         bool webSuccess = false;
         List<QuizSessionQuestion> webQuestions = null;
 
-        if (apiConfig != null && !string.IsNullOrWhiteSpace(apiConfig.WeeklyQuizUrl))
+        if (apiConfig != null && !string.IsNullOrWhiteSpace(apiConfig.GetQuizUrl))
         {
             yield return FetchFromWeb(
-                apiConfig.WeeklyQuizUrl,
+                apiConfig.GetQuizUrl,
                 questions =>
                 {
                     webSuccess = true;
@@ -115,7 +115,7 @@ public class QuizQuestionRepository : MonoBehaviour
         onSuccess?.Invoke(questions);
     }
 
-    private List<QuizSessionQuestion> ConvertRawJsonToSessionQuestions(string rawJson)
+   private List<QuizSessionQuestion> ConvertRawJsonToSessionQuestions(string rawJson)
     {
         QuizApiResponseDto dto = null;
 
@@ -129,45 +129,68 @@ public class QuizQuestionRepository : MonoBehaviour
             return null;
         }
 
-        if (dto == null || dto.questions == null || dto.questions.Length == 0)
+        if (dto == null)
         {
+            Debug.LogWarning("[QuizQuestionRepository] DTO is null.");
+            return null;
+        }
+
+        if (!dto.success)
+        {
+            Debug.LogWarning("[QuizQuestionRepository] API returned success = false.");
+            return null;
+        }
+
+        if (dto.data == null || dto.data.questions == null || dto.data.questions.Length == 0)
+        {
+            Debug.LogWarning("[QuizQuestionRepository] No questions found in dto.data.questions.");
             return null;
         }
 
         List<QuizSessionQuestion> result = new List<QuizSessionQuestion>();
 
-        for (int i = 0; i < dto.questions.Length; i++)
+        for (int i = 0; i < dto.data.questions.Length; i++)
         {
-            QuizApiQuestionDto source = dto.questions[i];
+            QuizApiQuestionDto source = dto.data.questions[i];
 
             if (source == null)
                 continue;
 
-            if (source.choices == null || source.choices.Length != 4)
+            if (source.choices == null)
             {
-                Debug.LogWarning($"[QuizQuestionRepository] Question {source.id} does not have exactly 4 choices.");
+                Debug.LogWarning($"[QuizQuestionRepository] Question {source.id} has null choices.");
                 continue;
             }
 
-            if (source.correctChoiceIndex < 0 || source.correctChoiceIndex >= source.choices.Length)
+            List<string> orderedChoices = new List<string>
             {
-                Debug.LogWarning($"[QuizQuestionRepository] Question {source.id} has invalid correctChoiceIndex.");
+                source.choices.a,
+                source.choices.b,
+                source.choices.c,
+                source.choices.d
+            };
+
+            int correctChoiceIndex = AnswerKeyToIndex(source.answer);
+
+            if (correctChoiceIndex < 0 || correctChoiceIndex >= orderedChoices.Count)
+            {
+                Debug.LogWarning($"[QuizQuestionRepository] Question {source.id} has invalid answer key: {source.answer}");
                 continue;
             }
 
             QuizSessionQuestion sessionQuestion = new QuizSessionQuestion
             {
-                questionText = source.questionText,
-                correctChoiceIndex = source.correctChoiceIndex,
-                explanation = source.explanation
+                questionText = source.question,
+                correctChoiceIndex = correctChoiceIndex,
+                explanation = string.Empty
             };
 
-            for (int c = 0; c < source.choices.Length; c++)
+            for (int c = 0; c < orderedChoices.Count; c++)
             {
                 sessionQuestion.choices.Add(new QuizSessionChoice
                 {
-                    text = source.choices[c],
-                    isCorrect = c == source.correctChoiceIndex
+                    text = orderedChoices[c],
+                    isCorrect = c == correctChoiceIndex
                 });
             }
 
@@ -215,6 +238,20 @@ public class QuizQuestionRepository : MonoBehaviour
         {
             Debug.LogWarning($"[QuizQuestionRepository] Cache parse error: {ex.Message}");
             return null;
+        }
+    }
+    private int AnswerKeyToIndex(string answerKey)
+    {
+        if (string.IsNullOrWhiteSpace(answerKey))
+            return -1;
+
+        switch (answerKey.Trim().ToLowerInvariant())
+        {
+            case "a": return 0;
+            case "b": return 1;
+            case "c": return 2;
+            case "d": return 3;
+            default: return -1;
         }
     }
 }
