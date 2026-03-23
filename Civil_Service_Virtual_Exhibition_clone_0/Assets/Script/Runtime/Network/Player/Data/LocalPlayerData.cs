@@ -38,7 +38,11 @@ public class LocalPlayerData : MonoBehaviour
         DontDestroyOnLoad(gameObject); // ← critical
         InitializeDefaults();
     }
-
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
     private void InitializeDefaults()
     {
         int count = Enum.GetValues(typeof(AppearanceSlot)).Length;
@@ -59,6 +63,28 @@ public class LocalPlayerData : MonoBehaviour
             SetColor(kvp.Key, kvp.Value);
 
         Debug.Log($"[LocalPlayerData] Appearance randomized for {Gender} ");
+    }
+    private void EnsureColorBuffer()
+    {
+        int count = Enum.GetValues(typeof(AppearanceSlot)).Length;
+
+        if (_colors == null || _colors.Length != count)
+            _colors = new Color[count];
+    }
+
+    public void ClearForSignOut()
+    {
+        PlayerName = string.Empty;
+        Organization = string.Empty;
+        IsGuest = false;
+        Gender = PlayerGender.Male;
+
+        EnsureColorBuffer();
+
+        for (int i = 0; i < _colors.Length; i++)
+            _colors[i] = Color.clear;
+
+        Debug.Log("[LocalPlayerData] Cleared for sign out.");
     }
     public void SetColor(AppearanceSlot slot, Color color)
     {
