@@ -9,8 +9,10 @@ public class GovernmentCatalogDownloader : MonoBehaviour
 
     public bool IsDownloading { get; private set; }
     public string LastError { get; private set; }
-    public ApiConfig apiConfig;
+
     private Coroutine _downloadRoutine;
+
+    private ApiService Api => ApiService.Instance;
 
     private void Awake()
     {
@@ -23,21 +25,21 @@ public class GovernmentCatalogDownloader : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
     }
-    void Start()
+
+    private void Start()
     {
-        GovernmentCatalogDownloader.EnsureExists().Download(
-            apiConfig,
+        Download(
             dto =>
             {
                 GovernmentCatalogStore.EnsureExists().SetData(dto);
             },
             error =>
             {
-                Debug.LogError(error);
+                Debug.LogError($"[GovernmentCatalogDownloader] {error}");
             }
         );
-        
     }
+
     public static GovernmentCatalogDownloader EnsureExists()
     {
         if (Instance != null)
@@ -47,24 +49,31 @@ public class GovernmentCatalogDownloader : MonoBehaviour
         return go.AddComponent<GovernmentCatalogDownloader>();
     }
 
-    public void Download(ApiConfig api, Action<GovernmentCatalogResponseDto> onSuccess, Action<string> onFail, string accessToken = null)
-    {   
-        if (api == null)
+    public void Download(
+        Action<GovernmentCatalogResponseDto> onSuccess,
+        Action<string> onFail,
+        string accessToken = null)
+    {
+        if (Api == null)
         {
-            onFail?.Invoke("ApiConfig is null.");
+            onFail?.Invoke("ApiService.Instance is null.");
             return;
         }
-        Debug.Log($"[GovernmentCatalogDownloader] {api.governmentCatalogEndpoint}");
-        if (string.IsNullOrWhiteSpace(api.GovernmentCatalogUrl))
+
+        if (string.IsNullOrWhiteSpace(Api.GovernmentCatalogUrl))
         {
             onFail?.Invoke("GovernmentCatalogUrl is empty.");
             return;
         }
 
+        Debug.Log($"[GovernmentCatalogDownloader] Downloading from: {Api.GovernmentCatalogUrl}");
+
         if (_downloadRoutine != null)
             StopCoroutine(_downloadRoutine);
 
-        _downloadRoutine = StartCoroutine(DownloadRoutine(api.GovernmentCatalogUrl, accessToken, onSuccess, onFail));
+        _downloadRoutine = StartCoroutine(
+            DownloadRoutine(Api.GovernmentCatalogUrl, accessToken, onSuccess, onFail)
+        );
     }
 
     private IEnumerator DownloadRoutine(
@@ -73,24 +82,20 @@ public class GovernmentCatalogDownloader : MonoBehaviour
         Action<GovernmentCatalogResponseDto> onSuccess,
         Action<string> onFail)
     {
-        Debug.Log("[Project Catalog] Catalog start downloading.");
+        Debug.Log("[GovernmentCatalogDownloader] Catalog download started.");
+
         IsDownloading = true;
         LastError = null;
 
-        using UnityWebRequest req = UnityWebRequest.Get(url);
-        req.downloadHandler = new DownloadHandlerBuffer();
-        req.SetRequestHeader("Accept", "application/json");
-
-        if (!string.IsNullOrWhiteSpace(accessToken))
-            req.SetRequestHeader("Authorization", $"Bearer {accessToken}");
-
-        yield return req.SendWebRequest();
+        using UnityWebRequest request = Api.Get(url, accessToken);
+        yield return request.SendWebRequest();
 
         IsDownloading = false;
+        _downloadRoutine = null;
 
-        if (req.result != UnityWebRequest.Result.Success)
+        if (request.result != UnityWebRequest.Result.Success)
         {
-            LastError = $"Download failed: {req.error}";
+            LastError = $"Download failed: {request.error}";
             onFail?.Invoke(LastError);
             yield break;
         }
@@ -99,7 +104,7 @@ public class GovernmentCatalogDownloader : MonoBehaviour
 
         try
         {
-            dto = JsonUtility.FromJson<GovernmentCatalogResponseDto>(req.downloadHandler.text);
+            dto = JsonUtility.FromJson<GovernmentCatalogResponseDto>(request.downloadHandler.text);
         }
         catch (Exception ex)
         {

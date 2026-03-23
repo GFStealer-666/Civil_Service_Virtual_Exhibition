@@ -4,12 +4,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
-
-// fetch down webrequest and translate data to local data 
+// Fetch quiz from API, cache raw JSON locally, then convert to session questions.
 public class QuizQuestionRepository : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private ApiConfig apiConfig;
     [SerializeField] private QuizGameConfigSO fallbackConfig;
 
     [Header("Cache")]
@@ -17,9 +15,12 @@ public class QuizQuestionRepository : MonoBehaviour
 
     private const string CachePlayerPrefsKey = "quiz_cache_envelope_v1";
 
+    private ApiService Api => ApiService.Instance;
+
     public IEnumerator LoadQuestions(
         Action<List<QuizSessionQuestion>> onSuccess,
-        Action onFailedCompletely)
+        Action onFailedCompletely,
+        string accessToken = null)
     {
         QuizCacheEnvelope cache = LoadCacheEnvelope();
 
@@ -40,15 +41,20 @@ public class QuizQuestionRepository : MonoBehaviour
         bool webSuccess = false;
         List<QuizSessionQuestion> webQuestions = null;
 
-        if (apiConfig != null && !string.IsNullOrWhiteSpace(apiConfig.GetQuizUrl))
+        if (Api != null && !string.IsNullOrWhiteSpace(Api.GetQuizUrl))
         {
             yield return FetchFromWeb(
-                apiConfig.GetQuizUrl,
+                Api.GetQuizUrl,
+                accessToken,
                 questions =>
                 {
                     webSuccess = true;
                     webQuestions = questions;
                 });
+        }
+        else
+        {
+            Debug.LogWarning("[QuizQuestionRepository] ApiService or GetQuizUrl is missing.");
         }
 
         if (webSuccess && webQuestions != null && webQuestions.Count > 0)
@@ -84,18 +90,27 @@ public class QuizQuestionRepository : MonoBehaviour
         onFailedCompletely?.Invoke();
     }
 
-    private IEnumerator FetchFromWeb(string url, Action<List<QuizSessionQuestion>> onSuccess)
+    private IEnumerator FetchFromWeb(
+        string url,
+        string accessToken,
+        Action<List<QuizSessionQuestion>> onSuccess)
     {
-        using UnityWebRequest req = UnityWebRequest.Get(url);
-        yield return req.SendWebRequest();
-
-        if (req.result != UnityWebRequest.Result.Success)
+        if (Api == null)
         {
-            Debug.LogWarning($"[QuizQuestionRepository] Quiz GET failed: {req.error}");
+            Debug.LogWarning("[QuizQuestionRepository] ApiService.Instance is null.");
             yield break;
         }
 
-        string rawJson = req.downloadHandler.text;
+        using UnityWebRequest request = Api.Get(url, accessToken);
+        yield return request.SendWebRequest();
+
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            Debug.LogWarning($"[QuizQuestionRepository] Quiz GET failed: {request.error}");
+            yield break;
+        }
+
+        string rawJson = request.downloadHandler.text;
 
         if (string.IsNullOrWhiteSpace(rawJson))
         {
@@ -111,11 +126,10 @@ public class QuizQuestionRepository : MonoBehaviour
         }
 
         SaveCacheEnvelope(rawJson);
-
         onSuccess?.Invoke(questions);
     }
 
-   private List<QuizSessionQuestion> ConvertRawJsonToSessionQuestions(string rawJson)
+    private List<QuizSessionQuestion> ConvertRawJsonToSessionQuestions(string rawJson)
     {
         QuizApiResponseDto dto = null;
 
@@ -199,7 +213,7 @@ public class QuizQuestionRepository : MonoBehaviour
 
         return result;
     }
-    // check if current local data is expired or not
+
     private bool IsExpired(long savedAtUnixSeconds)
     {
         long nowUnixSeconds = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -240,6 +254,7 @@ public class QuizQuestionRepository : MonoBehaviour
             return null;
         }
     }
+
     private int AnswerKeyToIndex(string answerKey)
     {
         if (string.IsNullOrWhiteSpace(answerKey))

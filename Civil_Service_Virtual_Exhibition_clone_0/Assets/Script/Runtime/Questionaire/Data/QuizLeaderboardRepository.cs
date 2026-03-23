@@ -1,23 +1,28 @@
 using System;
 using System.Collections;
-using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
 public class QuizLeaderboardRepository : MonoBehaviour
 {
-    [Header("References")]
-    [SerializeField] private ApiConfig apiConfig;
+    private ApiService Api => ApiService.Instance;
 
     public IEnumerator SubmitResult(
         int score,
         int totalQuestions,
         Action onSuccess,
-        Action<string> onFailed)
+        Action<string> onFailed,
+        string accessToken = null)
     {
-        if (apiConfig == null || string.IsNullOrWhiteSpace(apiConfig.QuizSubmitUrl))
+        if (Api == null)
         {
-            onFailed?.Invoke("QuizSubmitUrl is missing in ApiConfig.");
+            onFailed?.Invoke("ApiService.Instance is null.");
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(Api.QuizSubmitUrl))
+        {
+            onFailed?.Invoke("QuizSubmitUrl is missing.");
             yield break;
         }
 
@@ -28,22 +33,17 @@ public class QuizLeaderboardRepository : MonoBehaviour
         };
 
         string json = JsonUtility.ToJson(bodyDto);
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
 
-        using UnityWebRequest req = new UnityWebRequest(apiConfig.QuizSubmitUrl, UnityWebRequest.kHttpVerbPOST);
-        req.uploadHandler = new UploadHandlerRaw(bodyRaw);
-        req.downloadHandler = new DownloadHandlerBuffer();
-        req.SetRequestHeader("Content-Type", "application/json");
+        using UnityWebRequest request = Api.PostJson(Api.QuizSubmitUrl, json, accessToken);
+        yield return request.SendWebRequest();
 
-        yield return req.SendWebRequest();
-
-        if (req.result != UnityWebRequest.Result.Success)
+        if (request.result != UnityWebRequest.Result.Success)
         {
-            onFailed?.Invoke($"Submit failed: {req.error}");
+            onFailed?.Invoke($"Submit failed: {request.error}");
             yield break;
         }
 
-        string raw = req.downloadHandler.text;
+        string raw = request.downloadHandler.text;
 
         if (string.IsNullOrWhiteSpace(raw))
         {
@@ -59,15 +59,17 @@ public class QuizLeaderboardRepository : MonoBehaviour
         }
         catch
         {
-            // If backend returns some other shape but HTTP is success,
-            // we can still treat submission as success.
             onSuccess?.Invoke();
             yield break;
         }
 
         if (dto != null && !dto.success)
         {
-            onFailed?.Invoke(string.IsNullOrWhiteSpace(dto.message) ? "Submit returned success = false." : dto.message);
+            onFailed?.Invoke(
+                string.IsNullOrWhiteSpace(dto.message)
+                    ? "Submit returned success = false."
+                    : dto.message
+            );
             yield break;
         }
 
@@ -76,24 +78,31 @@ public class QuizLeaderboardRepository : MonoBehaviour
 
     public IEnumerator LoadLeaderboard(
         Action<QuizLeaderboardDataDto> onSuccess,
-        Action<string> onFailed)
+        Action<string> onFailed,
+        string accessToken = null)
     {
-        if (apiConfig == null || string.IsNullOrWhiteSpace(apiConfig.GetQuizLeaderboardUrl))
+        if (Api == null)
         {
-            onFailed?.Invoke("QuizLeaderboardUrl is missing in ApiConfig.");
+            onFailed?.Invoke("ApiService.Instance is null.");
             yield break;
         }
 
-        using UnityWebRequest req = UnityWebRequest.Get(apiConfig.GetQuizLeaderboardUrl);
-        yield return req.SendWebRequest();
-
-        if (req.result != UnityWebRequest.Result.Success)
+        if (string.IsNullOrWhiteSpace(Api.GetQuizLeaderboardUrl))
         {
-            onFailed?.Invoke($"Leaderboard GET failed: {req.error}");
+            onFailed?.Invoke("QuizLeaderboardUrl is missing.");
             yield break;
         }
 
-        string raw = req.downloadHandler.text;
+        using UnityWebRequest request = Api.Get(Api.GetQuizLeaderboardUrl, accessToken);
+        yield return request.SendWebRequest();
+
+        if (request.result != UnityWebRequest.Result.Success)
+        {
+            onFailed?.Invoke($"Leaderboard GET failed: {request.error}");
+            yield break;
+        }
+
+        string raw = request.downloadHandler.text;
 
         if (string.IsNullOrWhiteSpace(raw))
         {

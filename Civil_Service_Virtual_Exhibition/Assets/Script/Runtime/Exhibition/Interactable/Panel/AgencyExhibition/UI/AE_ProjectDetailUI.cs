@@ -523,10 +523,9 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (string.IsNullOrWhiteSpace(projectId))
             return string.Empty;
 
-        string template = useEnglishNarrator
-            ? apiConfig.AgencyExhibitionTtsEng
-            : apiConfig.AgencyExhibitionTtsTh;
-
+        string template = "ok";
+        // Fix this later on
+        
         if (string.IsNullOrWhiteSpace(template))
             return string.Empty;
 

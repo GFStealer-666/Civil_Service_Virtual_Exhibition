@@ -238,11 +238,6 @@ public class QuizGameController : MonoBehaviour
     }
     private void ForceEndSessionBecauseTimeExpired()
     {
-        leaderboardController?.HandleQuizFinished(
-            _correctCount,
-            _sessionQuestions.Count,
-            _score
-        );
         if (_sessionEnded)
         {
             return;
@@ -251,14 +246,21 @@ public class QuizGameController : MonoBehaviour
         _sessionEnded = true;
         _questionActive = false;
         _awaitingNextQuestion = false;
-        
+
         _score = CalculateFinalScore();
         _maxScore = CalculateMaxScore();
+
+        leaderboardController?.HandleQuizFinished(
+            _correctCount,
+            _sessionQuestions.Count,
+            _score
+        );
 
         ui.SetQuestionInteractable(false);
         ui.SetResult(_score, _maxScore);
         ui.ShowResult();
     }
+
     private List<QuizSessionQuestion> PrepareSessionQuestions(List<QuizSessionQuestion> source)
     {
         List<QuizSessionQuestion> cloned = new List<QuizSessionQuestion>();
@@ -346,17 +348,19 @@ public class QuizGameController : MonoBehaviour
         {
             return;
         }
-        leaderboardController?.HandleQuizFinished(
-            _correctCount,
-            _sessionQuestions.Count,
-            _score
-        );
+
         _sessionEnded = true;
         _questionActive = false;
         _awaitingNextQuestion = false;
 
         _score = CalculateFinalScore();
         _maxScore = CalculateMaxScore();
+
+        leaderboardController?.HandleQuizFinished(
+            _correctCount,
+            _sessionQuestions.Count,
+            _score
+        );
 
         ui.SetResult(_score, _maxScore);
         ui.ShowResult();

@@ -20,14 +20,16 @@ public class ExhibitionInfoInteractable : WorldInteractable
     [SerializeField] private float floatSpeed = 1.2f;
 
     private Vector3 _canvasStartLocalPos;
+    private bool _ministryNameInitialized;
 
-    void Start()
+    private void Start()
     {
-        
         if (canvas != null)
         {
             _canvasStartLocalPos = canvas.transform.localPosition;
         }
+
+        TryInitializeMinistryName();
     }
 
     public override bool CanInteract(GameObject interactor)
@@ -41,10 +43,13 @@ public class ExhibitionInfoInteractable : WorldInteractable
         return Task.CompletedTask;
     }
 
-    void Update()
+    private void Update()
     {
-        
-        ministryName.text =  GovernmentCatalogStore.Instance.FindMinistry(ministryKey).ministry.ToString();
+        if (!_ministryNameInitialized)
+        {
+            TryInitializeMinistryName();
+        }
+
         if (canvas == null)
             return;
 
@@ -57,4 +62,33 @@ public class ExhibitionInfoInteractable : WorldInteractable
         canvas.transform.localPosition = pos;
     }
 
+    private void TryInitializeMinistryName()
+    {
+        if (_ministryNameInitialized)
+            return;
+
+        if (ministryName == null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(ministryKey))
+            return;
+
+        GovernmentCatalogStore store = GovernmentCatalogStore.Instance;
+        if (store == null || !store.HasData)
+            return;
+
+        GovernmentMinistryDto ministry = store.GetMinistryById(ministryKey);
+
+        // If ministryKey is not runtimeId, use this instead:
+        // GovernmentMinistryDto ministry = store.FindMinistry(ministryKey);
+
+        if (ministry == null)
+        {
+            Debug.LogWarning($"[ExhibitionInfoInteractable] Ministry not found for key: {ministryKey}");
+            return;
+        }
+
+        ministryName.text = ministry.ministry;
+        _ministryNameInitialized = true;
+    }
 }

@@ -9,7 +9,7 @@ public class AE_MinistrySelectionUI : MonoBehaviour, IPointerDownHandler, IPoint
     [SerializeField] private RectTransform pageRoot;
     [SerializeField] private RectTransform dotRoot;
     [SerializeField] private RectTransform pagePrefab;
-    [SerializeField] private ExhibitionAgencyCardUI cardPrefab;
+    [SerializeField] private AE_CardUI cardPrefab;
     [SerializeField] private PaginationDotUI dotPrefab;
     [SerializeField] private int itemsPerPage = 5;
 
@@ -134,7 +134,7 @@ public class AE_MinistrySelectionUI : MonoBehaviour, IPointerDownHandler, IPoint
 
             for (int itemIndex = start; itemIndex < end; itemIndex++)
             {
-                ExhibitionAgencyCardUI card = Instantiate(cardPrefab, page);
+                AE_CardUI card = Instantiate(cardPrefab, page);
                 card.name = $"Item_{itemIndex + 1}";
                 card.Bind(_items[itemIndex], HandleItemClicked);
             }

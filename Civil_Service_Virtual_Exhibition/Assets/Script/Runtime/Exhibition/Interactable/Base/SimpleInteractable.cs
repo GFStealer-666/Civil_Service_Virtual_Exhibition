@@ -34,6 +34,7 @@ public class SimpleInteractable : WorldInteractable
 
     public override Task InteractAsync(GameObject interactor)
     {
+
         objectToShow.SetActive(true);
         return Task.CompletedTask;
     }
