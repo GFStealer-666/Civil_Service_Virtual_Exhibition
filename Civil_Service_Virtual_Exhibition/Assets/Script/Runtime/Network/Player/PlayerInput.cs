@@ -25,7 +25,8 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
     [SerializeField] private bool invertY = false;
 
     public static bool GameplayInputBlocked;
-
+    public static bool IsCursorUnlocked => Cursor.lockState != CursorLockMode.Locked;
+    private static int _uiBlockCount;
     private NetworkedInput _accumulatedInput;
     private readonly Vector2Accumulator _lookRotationAccumulator = new Vector2Accumulator(0.02f, true);
     public override void Spawned()
@@ -74,8 +75,48 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
         var networkEvents = runner.GetComponent<NetworkEvents>();
         if (networkEvents != null)
             networkEvents.OnInput.RemoveListener(OnInput);
+        if (HasInputAuthority)
+        {
+            _uiBlockCount = 0;
+            GameplayInputBlocked = false;
+            RefreshCursorState();
+        }
+    }
+    public static void PushUIBlock()
+    {
+        Debug.Log("UI BLOCK");
+        _uiBlockCount++;
+        GameplayInputBlocked = _uiBlockCount > 0;
+        RefreshCursorState();
     }
 
+    public static void PopUIBlock()
+    {
+        _uiBlockCount = Mathf.Max(0, _uiBlockCount - 1);
+        GameplayInputBlocked = _uiBlockCount > 0;
+        RefreshCursorState();
+    }
+
+    public static void SetUIBlock(bool blocked)
+    {
+        _uiBlockCount = blocked ? 1 : 0;
+        GameplayInputBlocked = blocked;
+        RefreshCursorState();
+    }
+    private static void RefreshCursorState()
+    {
+        if (InputModeResolver.UseMobileInput())
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+            return;
+        }
+
+        bool unlockCursor = GameplayInputBlocked;
+
+        Cursor.lockState = unlockCursor ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.visible = unlockCursor;
+    }
     void IBeforeUpdate.BeforeUpdate()
     {
         if (!HasInputAuthority)

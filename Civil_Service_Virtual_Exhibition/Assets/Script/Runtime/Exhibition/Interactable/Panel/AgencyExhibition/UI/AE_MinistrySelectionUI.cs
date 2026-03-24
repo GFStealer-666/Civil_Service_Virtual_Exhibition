@@ -122,6 +122,9 @@ public class AE_MinistrySelectionUI : MonoBehaviour, IPointerDownHandler, IPoint
         int safeItemsPerPage = Mathf.Max(1, itemsPerPage);
         int pageCount = Mathf.CeilToInt(_items.Count / (float)safeItemsPerPage);
 
+        if (dotRoot != null)
+        dotRoot.gameObject.SetActive(pageCount > 1);
+        
         for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
         {
             RectTransform page = Instantiate(pagePrefab, pageRoot);
@@ -139,10 +142,13 @@ public class AE_MinistrySelectionUI : MonoBehaviour, IPointerDownHandler, IPoint
                 card.Bind(_items[itemIndex], HandleItemClicked);
             }
 
-            PaginationDotUI dot = Instantiate(dotPrefab, dotRoot);
-            dot.name = $"Dot_{pageIndex + 1}";
-            dot.Bind(pageIndex, SetPage);
-            _dots.Add(dot);
+            if (pageCount > 1)
+            {
+                PaginationDotUI dot = Instantiate(dotPrefab, dotRoot);
+                dot.name = $"Dot_{pageIndex + 1}";
+                dot.Bind(pageIndex, SetPage);
+                _dots.Add(dot);
+            }
         }
 
         SetPage(0);

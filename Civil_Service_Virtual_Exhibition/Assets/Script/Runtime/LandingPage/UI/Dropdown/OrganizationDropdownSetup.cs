@@ -56,5 +56,7 @@ public class OrganizationDropdownSetup : MonoBehaviour
         "สำนักงานบริหารหนี้สาธารณะ",
         "กรมสารนิเทศ",
         "กระทรวงศึกษาธิการ",
+        "พนักงานบริษัทเอกชน",
+        "อื่นๆ"
     };
 }

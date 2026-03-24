@@ -59,7 +59,22 @@ public class ApiService : MonoBehaviour
     {
         return config != null ? config.GetAgencyExhibitionTtsUrl(projectId, language) : string.Empty;
     }
+    public string GetHallOfHonorTtsEngUrl(string officerId)
+    {
+        return config != null ? config.GetHallOfHonorTtsEngUrl(officerId) : string.Empty;
+    }
 
+    public string GetHallOfHonorTtsThUrl(string officerId)
+    {
+        return config != null ? config.GetHallOfHonorTtsThUrl(officerId) : string.Empty;
+    }
+
+    public string GetHallOfHonorTtsUrl(string officerId, SystemLanguage language)
+    {
+        return language == SystemLanguage.English
+            ? GetHallOfHonorTtsEngUrl(officerId)
+            : GetHallOfHonorTtsThUrl(officerId);
+    }
     public UnityWebRequest Get(string url, string bearerToken = null)
     {
         UnityWebRequest request = UnityWebRequest.Get(url);

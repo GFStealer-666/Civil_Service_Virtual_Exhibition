@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -28,11 +29,15 @@ public class HOH_FilterGroup : MonoBehaviour
 {
     [SerializeField] private HOH_FilterToggleBinding[] toggleBindings;
 
-    public event Action<HOH_FilterOption> FilterChanged;
+    public event Action<IReadOnlyCollection<HOH_FilterOption>> FiltersChanged;
 
-    public HOH_FilterOption CurrentFilter { get; private set; } = HOH_FilterOption.All;
-
+    private readonly HashSet<HOH_FilterOption> _currentFilters = new();
     private bool _initialized;
+    private bool _isApplying;
+
+    public IReadOnlyCollection<HOH_FilterOption> CurrentFilters => _currentFilters;
+
+    public bool IsAllSelected => _currentFilters.Count == 0;
 
     private void Awake()
     {
@@ -48,7 +53,7 @@ public class HOH_FilterGroup : MonoBehaviour
 
         if (toggleBindings == null || toggleBindings.Length == 0)
         {
-            CurrentFilter = HOH_FilterOption.All;
+            SelectAll(false);
             return;
         }
 
@@ -58,16 +63,25 @@ public class HOH_FilterGroup : MonoBehaviour
             if (binding == null || binding.toggle == null)
                 continue;
 
-            HOH_FilterToggleBinding capturedBinding = binding;
-            binding.toggle.onValueChanged.AddListener(isOn => HandleToggleChanged(capturedBinding, isOn));
+            HOH_FilterToggleBinding captured = binding;
+            binding.toggle.onValueChanged.AddListener(isOn => HandleToggleChanged(captured, isOn));
         }
 
-        RefreshCurrentFilterFromToggles();
+        RefreshFromToggles(false);
     }
 
-    public void Select(HOH_FilterOption option, bool notify = true)
+    public bool IsSelected(HOH_FilterOption option)
     {
-        CurrentFilter = option;
+        if (option == HOH_FilterOption.All)
+            return IsAllSelected;
+
+        return _currentFilters.Contains(option);
+    }
+
+    public void SelectAll(bool notify = true)
+    {
+        _isApplying = true;
+        _currentFilters.Clear();
 
         if (toggleBindings != null)
         {
@@ -77,22 +91,111 @@ public class HOH_FilterGroup : MonoBehaviour
                 if (binding == null || binding.toggle == null)
                     continue;
 
-                bool isTarget = binding.option == option;
-                binding.toggle.SetIsOnWithoutNotify(isTarget);
+                bool shouldBeOn = binding.option == HOH_FilterOption.All;
+                binding.toggle.SetIsOnWithoutNotify(shouldBeOn);
             }
         }
 
+        _isApplying = false;
+
         if (notify)
-            FilterChanged?.Invoke(CurrentFilter);
+            RaiseChanged();
     }
 
-    public void RefreshCurrentFilterFromToggles()
+    public void RefreshFromToggles(bool notify = true)
     {
+        _currentFilters.Clear();
+
         if (toggleBindings == null || toggleBindings.Length == 0)
         {
-            CurrentFilter = HOH_FilterOption.All;
+            if (notify)
+                RaiseChanged();
             return;
         }
+
+        bool allIsOn = false;
+
+        for (int i = 0; i < toggleBindings.Length; i++)
+        {
+            HOH_FilterToggleBinding binding = toggleBindings[i];
+            if (binding == null || binding.toggle == null || !binding.toggle.isOn)
+                continue;
+
+            if (binding.option == HOH_FilterOption.All)
+            {
+                allIsOn = true;
+            }
+            else
+            {
+                _currentFilters.Add(binding.option);
+            }
+        }
+
+        if (allIsOn || _currentFilters.Count == 0)
+        {
+            SelectAll(notify);
+            return;
+        }
+
+        SetToggleWithoutNotify(HOH_FilterOption.All, false);
+
+        if (notify)
+            RaiseChanged();
+    }
+
+    private void HandleToggleChanged(HOH_FilterToggleBinding binding, bool isOn)
+    {
+        if (_isApplying || binding == null || binding.toggle == null)
+            return;
+
+        if (binding.option == HOH_FilterOption.All)
+        {
+            if (isOn)
+            {
+                SelectAll(true);
+            }
+            else if (_currentFilters.Count == 0)
+            {
+                SetToggleWithoutNotify(HOH_FilterOption.All, true);
+            }
+
+            return;
+        }
+
+        if (isOn)
+        {
+            _currentFilters.Add(binding.option);
+            SetToggleWithoutNotify(HOH_FilterOption.All, false);
+        }
+        else
+        {
+            _currentFilters.Remove(binding.option);
+
+            if (_currentFilters.Count == 0)
+            {
+                SelectAll(true);
+                return;
+            }
+        }
+
+        RaiseChanged();
+    }
+
+    private void SetToggleWithoutNotify(HOH_FilterOption option, bool value)
+    {
+        Toggle toggle = GetToggle(option);
+        if (toggle == null)
+            return;
+
+        _isApplying = true;
+        toggle.SetIsOnWithoutNotify(value);
+        _isApplying = false;
+    }
+
+    private Toggle GetToggle(HOH_FilterOption option)
+    {
+        if (toggleBindings == null)
+            return null;
 
         for (int i = 0; i < toggleBindings.Length; i++)
         {
@@ -100,22 +203,15 @@ public class HOH_FilterGroup : MonoBehaviour
             if (binding == null || binding.toggle == null)
                 continue;
 
-            if (binding.toggle.isOn)
-            {
-                CurrentFilter = binding.option;
-                return;
-            }
+            if (binding.option == option)
+                return binding.toggle;
         }
 
-        CurrentFilter = HOH_FilterOption.All;
+        return null;
     }
 
-    private void HandleToggleChanged(HOH_FilterToggleBinding binding, bool isOn)
+    private void RaiseChanged()
     {
-        if (!isOn || binding == null)
-            return;
-
-        CurrentFilter = binding.option;
-        FilterChanged?.Invoke(CurrentFilter);
+        FiltersChanged?.Invoke(new List<HOH_FilterOption>(_currentFilters));
     }
 }

@@ -747,7 +747,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 42, y: -11}
-  m_SizeDelta: {x: 900, y: 41}
+  m_SizeDelta: {x: 921.5076, y: 41}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &6217038189923093976
 MonoBehaviour:
@@ -830,15 +830,15 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 27.1
+  m_fontSize: 25
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
   m_fontSizeMin: 18
-  m_fontSizeMax: 72
+  m_fontSizeMax: 25
   m_fontStyle: 0
   m_HorizontalAlignment: 1
-  m_VerticalAlignment: 256
+  m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
   m_wordSpacing: 0
@@ -930,3 +930,4 @@ MonoBehaviour:
   titleText: {fileID: 8051178190244744778}
   departmentText: {fileID: 2537157839051662596}
   dateText: {fileID: 1550891230405733221}
+  placesText: {fileID: 3288875269526492398}

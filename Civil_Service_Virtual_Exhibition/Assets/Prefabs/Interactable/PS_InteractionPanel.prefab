@@ -263,8 +263,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 1.5251352, y: 1, z: 1.7360086}
+  m_Center: {x: -0.2625677, y: 3.1474973e-10, z: 0.038794402}
 --- !u!114 &2407893303662379203
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -539,8 +539,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5e34129bbd81e048b5c5e53ff35842e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  desktopPrompt: Press F
-  mobilePrompt: Tap
   canvas: {fileID: 3244898529646389304}
   objectToShow: {fileID: 0}
   floatMinY: 0.2

@@ -7,7 +7,7 @@ public class PS_ServiceItemView : MonoBehaviour
     [SerializeField] private TMP_Text titleText;
     [SerializeField] private TMP_Text departmentText;
     [SerializeField] private TMP_Text dateText;
-
+    [SerializeField] private TMP_Text placesText;
     public void Bind(PS_ServiceActivityDto data, bool useEnglish)
     {
         if (data == null)
@@ -21,6 +21,11 @@ public class PS_ServiceItemView : MonoBehaviour
 
         if (dateText != null)
             dateText.text = Clean(useEnglish ? data.activityDateEn : data.activityDate, useEnglish ? "Not specified" : "ไม่ระบุ");
+        
+        if(placesText != null)
+        {
+            placesText.text = "ไม่ระบุ";
+        }
     }
 
     private string Clean(string value, string fallback)

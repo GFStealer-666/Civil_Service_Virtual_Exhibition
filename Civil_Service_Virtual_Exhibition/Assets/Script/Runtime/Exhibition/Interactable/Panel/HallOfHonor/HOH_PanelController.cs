@@ -15,7 +15,7 @@ public class HOH_PanelSection
     public GameObject emptyStateRoot;
     public TextMeshProUGUI emptyStateText;
 
-    [NonSerialized] public HOH_FilterOption currentFilter = HOH_FilterOption.All;
+    [NonSerialized] public readonly HashSet<HOH_FilterOption> currentFilters = new();
     [NonSerialized] public string currentSearch = string.Empty;
     [NonSerialized] public readonly List<HOH_ItemView> spawnedItems = new();
 }
@@ -26,12 +26,15 @@ public class HOH_PanelController : MonoBehaviour
     [SerializeField] private HOH_CatalogRepository repository;
     [SerializeField] private HOH_FilterResolver filterResolver;
     [SerializeField] private bool initializeRepositoryOnStart = true;
+
     [Header("Detail")]
     [SerializeField] private HOH_OfficerSelectionPanelController officerSelectionPanel;
+
     [Header("Display")]
     [SerializeField] private bool singleVisibleCategoryMode = true;
     [SerializeField] private HOH_CategoryKind defaultVisibleCategory = HOH_CategoryKind.Ministry;
     [SerializeField] private List<HOH_PanelSection> sections = new();
+
     public HOH_CategoryKind CurrentCategory { get; private set; } = HOH_CategoryKind.Unknown;
 
     private bool _uiBound;
@@ -40,7 +43,6 @@ public class HOH_PanelController : MonoBehaviour
     {
         ResolveReferences();
         BindSectionUi();
-
     }
 
     private void OnEnable()
@@ -77,7 +79,6 @@ public class HOH_PanelController : MonoBehaviour
         ShowCategory(kind);
         RefreshCategory(kind);
     }
-
 
     public void ShowCategory(HOH_CategoryKind kind)
     {
@@ -163,7 +164,7 @@ public class HOH_PanelController : MonoBehaviour
             if (!MatchesSearch(unit, section.currentSearch))
                 continue;
 
-            if (!MatchesFilter(section.categoryKind, unit, section.currentFilter))
+            if (!MatchesFilter(section.categoryKind, unit, section.currentFilters))
                 continue;
 
             HOH_ItemView view = Instantiate(section.itemPrefab, section.contentRoot);
@@ -177,15 +178,24 @@ public class HOH_PanelController : MonoBehaviour
         SetEmptyState(section, visibleCount == 0, "ไม่พบข้อมูล");
     }
 
-    private bool MatchesFilter(HOH_CategoryKind categoryKind, HOH_UnitDto unit, HOH_FilterOption filter)
+    private bool MatchesFilter(
+        HOH_CategoryKind categoryKind,
+        HOH_UnitDto unit,
+        IReadOnlyCollection<HOH_FilterOption> filters)
     {
-        if (filter == HOH_FilterOption.All)
+        if (filters == null || filters.Count == 0)
             return true;
 
         if (filterResolver == null)
             return false;
 
-        return filterResolver.Matches(categoryKind, unit, filter);
+        foreach (HOH_FilterOption filter in filters)
+        {
+            if (filterResolver.Matches(categoryKind, unit, filter))
+                return true;
+        }
+
+        return false;
     }
 
     private bool MatchesSearch(HOH_UnitDto unit, string search)
@@ -258,10 +268,21 @@ public class HOH_PanelController : MonoBehaviour
 
             if (capturedSection.filterGroup != null)
             {
-                capturedSection.currentFilter = capturedSection.filterGroup.CurrentFilter;
-                capturedSection.filterGroup.FilterChanged += filter =>
+                capturedSection.currentFilters.Clear();
+
+                foreach (HOH_FilterOption filter in capturedSection.filterGroup.CurrentFilters)
+                    capturedSection.currentFilters.Add(filter);
+
+                capturedSection.filterGroup.FiltersChanged += filters =>
                 {
-                    capturedSection.currentFilter = filter;
+                    capturedSection.currentFilters.Clear();
+
+                    if (filters != null)
+                    {
+                        foreach (HOH_FilterOption filter in filters)
+                            capturedSection.currentFilters.Add(filter);
+                    }
+
                     RefreshSection(capturedSection);
                 };
             }
@@ -292,6 +313,7 @@ public class HOH_PanelController : MonoBehaviour
 
         return null;
     }
+
     private void HandleUnitClicked(HOH_UnitDto unit)
     {
         if (unit == null)
@@ -321,6 +343,7 @@ public class HOH_PanelController : MonoBehaviour
             section.panelRoot.SetActive(false);
         }
     }
+
     public void RestoreCurrentCategory()
     {
         if (CurrentCategory == HOH_CategoryKind.Unknown)

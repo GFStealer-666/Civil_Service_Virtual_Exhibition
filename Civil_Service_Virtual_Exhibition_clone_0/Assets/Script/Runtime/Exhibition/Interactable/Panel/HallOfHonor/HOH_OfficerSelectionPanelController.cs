@@ -212,6 +212,9 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
         int safeItemsPerPage = Mathf.Max(1, itemsPerPage);
         int pageCount = Mathf.CeilToInt(_items.Count / (float)safeItemsPerPage);
 
+        if (dotRoot != null)
+        dotRoot.gameObject.SetActive(pageCount > 1);
+        
         for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
         {
             RectTransform page = Instantiate(pagePrefab, pageRoot);
@@ -225,17 +228,26 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
             for (int itemIndex = start; itemIndex < end; itemIndex++)
             {
                 HOH_OfficerCardUI card = Instantiate(officerCardPrefab, page);
-                card.name = $"Officer_{itemIndex + 1}";
+                card.name = $"Item_{itemIndex + 1}";
                 card.Bind(_items[itemIndex], HandleOfficerClicked);
             }
 
-            PaginationDotUI dot = Instantiate(dotPrefab, dotRoot);
-            dot.name = $"Dot_{pageIndex + 1}";
-            dot.Bind(pageIndex, SetPage);
-            _dots.Add(dot);
+            if (pageCount > 1)
+            {
+                PaginationDotUI dot = Instantiate(dotPrefab, dotRoot);
+                dot.name = $"Dot_{pageIndex + 1}";
+                dot.Bind(pageIndex, SetPage);
+                _dots.Add(dot);
+            }
         }
 
-        SetPage(0);
+        _currentPageIndex = 0;
+        SetPage(_currentPageIndex);
+
+        Canvas.ForceUpdateCanvases();
+
+        if (pageRoot != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(pageRoot);
     }
 
     private void HandleOfficerClicked(HOH_PersonDto person)

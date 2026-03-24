@@ -21,7 +21,7 @@ public class StatusOverlay : MonoBehaviour
     [SerializeField] private GameObject loadingState;
     [SerializeField] private GameObject successState;
     [SerializeField] private GameObject failedState;
-
+    [SerializeField] private GameObject overlay; // block raycast 
     [Header("Loading State Wiring")]
     [SerializeField] private TMP_Text loadingTitleText;
     [SerializeField] private TMP_Text loadingSubtitleText;
@@ -38,7 +38,8 @@ public class StatusOverlay : MonoBehaviour
     [Header("Timing")]
     [SerializeField] private float successAutoDismissSeconds = 1.5f;
     [SerializeField] private float loadingDotInterval = 0.5f;
-
+    [Header("Optional")]
+    [SerializeField] private bool useOverlay = true;
     private Action _onFailedDismissed;
     private Coroutine _loadingDotsCoroutine;
     private Coroutine _autoDismissCoroutine;
@@ -65,7 +66,7 @@ public class StatusOverlay : MonoBehaviour
     public void ShowLoading(string title, string subtitle)
     {
         StopOverlayCoroutines();
-
+        
         SetVisible(true);
         Apply(State.Loading);
 
@@ -122,6 +123,8 @@ public class StatusOverlay : MonoBehaviour
 
         Apply(State.Hidden);
         SetVisible(false);
+
+        overlay.SetActive(false);
     }
 
     private void Apply(State state)
@@ -142,6 +145,9 @@ public class StatusOverlay : MonoBehaviour
     {
         if (panelRoot != null)
             panelRoot.SetActive(show);
+
+        if(useOverlay)
+            overlay.SetActive(true);
     }
 
     private void DismissFailed()
