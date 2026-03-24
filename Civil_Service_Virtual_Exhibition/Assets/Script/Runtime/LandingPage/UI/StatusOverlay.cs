@@ -1,12 +1,18 @@
 using System;
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class StatusOverlay : MonoBehaviour
 {
-    public enum State { Loading, Success, Error }
+    public enum State
+    {
+        Hidden,
+        Loading,
+        Success,
+        Failed
+    }
 
     [Header("Root")]
     [SerializeField] private GameObject panelRoot;
@@ -14,61 +20,70 @@ public class StatusOverlay : MonoBehaviour
     [Header("State Objects")]
     [SerializeField] private GameObject loadingState;
     [SerializeField] private GameObject successState;
-    [SerializeField] private GameObject errorState;
+    [SerializeField] private GameObject failedState;
+
+    [Header("Loading State Wiring")]
+    [SerializeField] private TMP_Text loadingTitleText;
+    [SerializeField] private TMP_Text loadingSubtitleText;
 
     [Header("Success State Wiring")]
     [SerializeField] private TMP_Text successTitleText;
     [SerializeField] private TMP_Text successSubtitleText;
-    [Header("Error State Wiring")]
-    [SerializeField] private TMP_Text errorTitleText;
-    [SerializeField] private TMP_Text errorSubtitleText;
-    [SerializeField] private Button errorOkButton;
+
+    [Header("Failed State Wiring")]
+    [SerializeField] private TMP_Text failedTitleText;
+    [SerializeField] private TMP_Text failedSubtitleText;
+    [SerializeField] private Button failedOkButton;
 
     [Header("Timing")]
-    [SerializeField] private float successAutoDismissSeconds = 3f;
+    [SerializeField] private float successAutoDismissSeconds = 1.5f;
     [SerializeField] private float loadingDotInterval = 0.5f;
-    private Action _onErrorDismissed;
-    private Coroutine _successTypingCoroutine;
-    private string _animatedBaseTitle;
+
+    private Action _onFailedDismissed;
+    private Coroutine _loadingDotsCoroutine;
+    private Coroutine _autoDismissCoroutine;
+
+    private string _loadingSubtitleBase;
+    private State _currentState = State.Hidden;
+
+    public State CurrentState => _currentState;
+
     private void Awake()
     {
-        errorOkButton.onClick.AddListener(DismissError);
+        if (failedOkButton != null)
+            failedOkButton.onClick.AddListener(DismissFailed);
+
         Hide();
     }
 
-    public void ShowLoading()
+    private void OnDestroy()
     {
-        StopAllCoroutines();
+        if (failedOkButton != null)
+            failedOkButton.onClick.RemoveListener(DismissFailed);
+    }
+
+    public void ShowLoading(string title, string subtitle)
+    {
+        StopOverlayCoroutines();
+
         SetVisible(true);
         Apply(State.Loading);
+
+        if (loadingTitleText != null)
+            loadingTitleText.text = title;
+
+        _loadingSubtitleBase = subtitle ?? string.Empty;
+
+        if (loadingSubtitleText != null)
+            loadingSubtitleText.text = _loadingSubtitleBase;
+
+        _loadingDotsCoroutine = StartCoroutine(AnimateLoadingDots());
     }
 
-    // No auto dismiss
-    public void ShowSuccessNoDismiss(string title, string subtitle, Action onDone = null)
+    public void ShowSuccess(string title, string subtitle, bool autoDismiss = true, Action onDone = null)
     {
-        StopAllCoroutines();
-        _successTypingCoroutine = null;
+        StopOverlayCoroutines();
 
-        SetVisible(true);
-        Apply(State.Success);
-
-        _animatedBaseTitle = subtitle;
-
-        if (successTitleText != null)
-            successTitleText.text = title;
-
-        if (successSubtitleText != null)
-            successSubtitleText.text = subtitle;
-
-        _successTypingCoroutine = StartCoroutine(AnimateSuccessDots());
-
-        onDone?.Invoke();
-    }
-
-    // With Auto dismiss
-    public void ShowSuccessDismiss(string title, string subtitle, Action onDone = null)
-    {
-        StopAllCoroutines();
         SetVisible(true);
         Apply(State.Success);
 
@@ -78,33 +93,49 @@ public class StatusOverlay : MonoBehaviour
         if (successSubtitleText != null)
             successSubtitleText.text = subtitle;
 
-        StartCoroutine(AutoDismiss(successAutoDismissSeconds, onDone));
+        if (autoDismiss)
+            _autoDismissCoroutine = StartCoroutine(AutoDismiss(successAutoDismissSeconds, onDone));
+        else
+            onDone?.Invoke();
     }
 
-    public void ShowError(string message, Action onDismissed = null)
+    public void ShowFailed(string title, string subtitle, Action onDismissed = null)
     {
-        StopAllCoroutines();
+        StopOverlayCoroutines();
+
         SetVisible(true);
-        Apply(State.Error);
+        Apply(State.Failed);
 
-        if (errorSubtitleText != null)
-            errorSubtitleText.text = message;
+        if (failedTitleText != null)
+            failedTitleText.text = title;
 
-        _onErrorDismissed = onDismissed;
+        if (failedSubtitleText != null)
+            failedSubtitleText.text = subtitle;
+
+        _onFailedDismissed = onDismissed;
     }
 
     public void Hide()
     {
-        StopAllCoroutines();
-        _successTypingCoroutine = null;
+        StopOverlayCoroutines();
+        _onFailedDismissed = null;
+
+        Apply(State.Hidden);
         SetVisible(false);
     }
 
     private void Apply(State state)
     {
-        loadingState.SetActive(state == State.Loading);
-        successState.SetActive(state == State.Success);
-        errorState.SetActive(state == State.Error);
+        _currentState = state;
+
+        if (loadingState != null)
+            loadingState.SetActive(state == State.Loading);
+
+        if (successState != null)
+            successState.SetActive(state == State.Success);
+
+        if (failedState != null)
+            failedState.SetActive(state == State.Failed);
     }
 
     private void SetVisible(bool show)
@@ -113,16 +144,18 @@ public class StatusOverlay : MonoBehaviour
             panelRoot.SetActive(show);
     }
 
-    private void DismissError()
+    private void DismissFailed()
     {
         Hide();
-        var cb = _onErrorDismissed;
-        _onErrorDismissed = null;
-        cb?.Invoke();
+
+        Action callback = _onFailedDismissed;
+        _onFailedDismissed = null;
+        callback?.Invoke();
     }
-    private IEnumerator AnimateSuccessDots()
+
+    private IEnumerator AnimateLoadingDots()
     {
-        if (successSubtitleText == null || string.IsNullOrEmpty(_animatedBaseTitle))
+        if (loadingSubtitleText == null)
             yield break;
 
         int dotCount = 0;
@@ -130,24 +163,36 @@ public class StatusOverlay : MonoBehaviour
         while (true)
         {
             string dots = new string('.', dotCount);
-            successSubtitleText.text = _animatedBaseTitle + dots;
+            loadingSubtitleText.text = _loadingSubtitleBase + dots;
 
             yield return new WaitForSeconds(loadingDotInterval);
 
             dotCount++;
-
             if (dotCount > 3)
-            {
                 dotCount = 0;
-            }
-                
         }
     }
+
     private IEnumerator AutoDismiss(float delay, Action callback)
     {
         yield return new WaitForSeconds(delay);
 
         Hide();
         callback?.Invoke();
+    }
+
+    private void StopOverlayCoroutines()
+    {
+        if (_loadingDotsCoroutine != null)
+        {
+            StopCoroutine(_loadingDotsCoroutine);
+            _loadingDotsCoroutine = null;
+        }
+
+        if (_autoDismissCoroutine != null)
+        {
+            StopCoroutine(_autoDismissCoroutine);
+            _autoDismissCoroutine = null;
+        }
     }
 }

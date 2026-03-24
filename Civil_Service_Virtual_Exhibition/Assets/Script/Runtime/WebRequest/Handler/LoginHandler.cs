@@ -29,84 +29,141 @@ public class LoginHandler : BaseHandler
 
     private void OnLoginClicked()
     {
-        string email    = emailInput.text.Trim();
+        string email = emailInput.text.Trim();
         string password = passwordInput.text;
 
         if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(password))
         {
-            overlay.ShowError("กรุณากรอกอีเมลและรหัสผ่าน");
+            ShowFailedOverlay("กรุณากรอกอีเมลและรหัสผ่าน");
             return;
         }
+
         StartCoroutine(DoLogin(email, password));
     }
 
     private IEnumerator DoLogin(string email, string password)
     {
         SetButtons(false);
-        string body = JsonUtility.ToJson(new LoginRequestBody { email = email, password = password });
 
-        yield return PostRequest(Api.LoginUrl, body,
+        string body = JsonUtility.ToJson(new LoginRequestBody
+        {
+            email = email,
+            password = password
+        });
+
+        yield return PostRequest(
+            Api.LoginUrl,
+            body,
             onSuccess: json =>
             {
-                var res = JsonUtility.FromJson<LoginResponse>(json);
-                if (!res.success)
+                LoginResponse res = JsonUtility.FromJson<LoginResponse>(json);
+
+                if (res == null)
                 {
-                    overlay.ShowError(
-                        string.IsNullOrEmpty(res.message)
-                            ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง"
-                            : res.message);
+                    ShowFailedOverlay("รูปแบบข้อมูลตอบกลับไม่ถูกต้อง");
                     SetButtons(true);
                     return;
                 }
-                var p = res.data.player;
-                EnterMainScene(p);
+
+                if (!res.success)
+                {
+                    ShowFailedOverlay(
+                        string.IsNullOrEmpty(res.message)
+                            ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง"
+                            : res.message
+                    );
+                    SetButtons(true);
+                    return;
+                }
+
+                PlayerData player = res.data != null ? res.data.player : null;
+                if (player == null)
+                {
+                    ShowFailedOverlay("ไม่พบข้อมูลผู้ใช้งาน");
+                    SetButtons(true);
+                    return;
+                }
+
+                EnterMainScene(player);
             },
-            onError: _ => SetButtons(true));
+            onError: _ =>
+            {
+                SetButtons(true);
+            });
     }
+
 
     // ── Guest ───────────────────────────────────────────────────
 
-    public void OnGuestClicked() => StartCoroutine(GuestLogin());
+    public void OnGuestClicked()
+    {
+        StartCoroutine(GuestLogin());
+    }
 
     private IEnumerator GuestLogin()
     {
         SetButtons(false);
 
-        yield return PostRequest(Api.AnonymousUrl, "{}",
+        yield return PostRequest(
+            Api.AnonymousUrl,
+            "{}",
             onSuccess: json =>
             {
-                var res = JsonUtility.FromJson<LoginResponse>(json);
-                Debug.Log($"[Login Handler] {json}");
-                if (!res.success)
+                LoginResponse res = JsonUtility.FromJson<LoginResponse>(json);
+                Debug.Log($"[LoginHandler] {json}");
+
+                if (res == null)
                 {
-                    overlay.ShowError(
-                        string.IsNullOrEmpty(res.message)
-                            ? "ไม่สามารถเข้าใช้งานแบบ Guest ได้"
-                            : res.message);
+                    ShowFailedOverlay("รูปแบบข้อมูลตอบกลับไม่ถูกต้อง");
                     SetButtons(true);
                     return;
                 }
-                // create dto 
-                var player = res.data != null ? res.data.player : null;
-                if (player == null)
-                    player = new PlayerData();
+
+                if (!res.success)
+                {
+                    ShowFailedOverlay(
+                        string.IsNullOrEmpty(res.message)
+                            ? "ไม่สามารถเข้าใช้งานแบบ Guest ได้"
+                            : res.message
+                    );
+                    SetButtons(true);
+                    return;
+                }
+
+                PlayerData sourcePlayer = res.data != null ? res.data.player : null;
+                string token = res.data != null ? res.data.token : null;
+
+                PlayerData player = sourcePlayer ?? new PlayerData();
 
                 if (string.IsNullOrWhiteSpace(player.characterName))
-                    player.characterName = "Guest_" + Random.Range(1000, 9999);
+                    player.characterName = "Guest_" + UnityEngine.Random.Range(1000, 9999);
 
                 if (string.IsNullOrWhiteSpace(player.gender))
                     player.gender = PlayerGender.Male.ToString();
 
-                player.id ??= res.data.player.id;
-                player.token ??= res.data.token;
+                if (string.IsNullOrWhiteSpace(player.id) && sourcePlayer != null)
+                    player.id = sourcePlayer.id;
+
+                if (string.IsNullOrWhiteSpace(player.token))
+                    player.token = token;
+
                 player.isAnonymous = true;
-                player.department ??= "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อคอิน";
-                player.email ??= "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อคอิน";
-                player.phone ??= "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อคอิน";
+
+                if (string.IsNullOrWhiteSpace(player.department))
+                    player.department = "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อกอิน";
+
+                if (string.IsNullOrWhiteSpace(player.email))
+                    player.email = "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อกอิน";
+
+                if (string.IsNullOrWhiteSpace(player.phone))
+                    player.phone = "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อกอิน";
 
                 EnterMainScene(player);
             },
-            onError: _ => SetButtons(true));
+            onError: _ =>
+            {
+                SetButtons(true);
+            });
     }
 
     private void SetButtons(bool interactable)

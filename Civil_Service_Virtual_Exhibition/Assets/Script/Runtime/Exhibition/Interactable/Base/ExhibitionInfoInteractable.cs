@@ -21,7 +21,13 @@ public class ExhibitionInfoInteractable : WorldInteractable
 
     private Vector3 _canvasStartLocalPos;
     private bool _ministryNameInitialized;
-
+    void Awake()
+    {
+        if(!panelController)
+        {
+            panelController = FindAnyObjectByType<AE_MainPanelController>();
+        }
+    }
     private void Start()
     {
         if (canvas != null)

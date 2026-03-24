@@ -5813,12 +5813,14 @@ MonoBehaviour:
   panelRoot: {fileID: 110671743}
   loadingState: {fileID: 859169417}
   successState: {fileID: 1077053812}
-  errorState: {fileID: 1044855765}
+  failedState: {fileID: 0}
+  loadingTitleText: {fileID: 0}
+  loadingSubtitleText: {fileID: 0}
   successTitleText: {fileID: 1199409790}
   successSubtitleText: {fileID: 1168427874}
-  errorTitleText: {fileID: 1015869134}
-  errorSubtitleText: {fileID: 133628512}
-  errorOkButton: {fileID: 1877639015}
+  failedTitleText: {fileID: 0}
+  failedSubtitleText: {fileID: 0}
+  failedOkButton: {fileID: 0}
   successAutoDismissSeconds: 1.8
   loadingDotInterval: 0.5
 --- !u!1 &686652233
@@ -7463,8 +7465,8 @@ MonoBehaviour:
   IsGuest: 0
   Email: 
   PhoneNumber: 
-  BgmVolume: 1
-  EffectVolume: 1
+  BgmVolume: 0.2
+  EffectVolume: 0.5
   HasInitializedAppearance: 0
 --- !u!4 &835149163
 Transform:

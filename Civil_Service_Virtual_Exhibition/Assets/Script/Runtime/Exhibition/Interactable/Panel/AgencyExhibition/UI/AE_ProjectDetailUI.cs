@@ -7,15 +7,7 @@ using UnityEngine.UI;
 
 public class AE_ProjectDetailUI : MonoBehaviour
 {
-    private enum DownloadState
-    {
-        Idle,
-        Downloading,
-        Playing,
-        Failed,
-        Completed,
-        Stopped
-    }
+
 
     private const int MaxImageSlots = 4;
 
@@ -27,6 +19,8 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
     [Header("Linked Panels")]
     [SerializeField] private AE_AdditionalProjectDetailUI additionalProjectDetailUI;
+    [SerializeField] private AE_ProjectVideoPanel projectVideoUI;
+
 
     [Header("Root")]
     [SerializeField] private GameObject root;
@@ -43,13 +37,9 @@ public class AE_ProjectDetailUI : MonoBehaviour
     [Header("Buttons")]
     [SerializeField] private Button moreInfoButton;
     [SerializeField] private Button narratorButton;
+    [SerializeField] private Button videoButton;
 
-    [Header("Narrator Feedback")]
-    [SerializeField] private TMP_Text narratorStatusText;
-    [SerializeField] private GameObject narratorLoadingObject;
-    [SerializeField] private GameObject narratorPlayingObject;
-    [SerializeField] private GameObject narratorFailedObject;
-    [SerializeField] private GameObject narratorCompletedObject;
+
 
     [Header("Narrator Messages")]
     [SerializeField] private string narratorIdleMessage = "";
@@ -61,7 +51,8 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
     [Header("Audio")]
     [SerializeField] private ExhibitionAudioSource narratorAudioSource;
-
+    [Header("Overlay")]
+    [SerializeField] private StatusOverlay overlay;
     private GovernmentProjectDto _currentProject;
     private string _currentAgencyName;
 
@@ -71,7 +62,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
     private readonly List<Coroutine> _imageLoadRoutines = new();
     private readonly List<Object> _runtimeAssets = new();
 
-    private DownloadState _narratorState = DownloadState.Idle;
+    private MediaState _narratorState = MediaState.Idle;
 
     public bool HasProject => _currentProject != null;
 
@@ -82,6 +73,9 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         if (narratorButton != null)
             narratorButton.onClick.AddListener(HandleNarratorClicked);
+
+        if (videoButton != null)
+            videoButton.onClick.AddListener(HandleVideoClicked);
     }
 
     private void OnDestroy()
@@ -91,6 +85,9 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         if (narratorButton != null)
             narratorButton.onClick.RemoveListener(HandleNarratorClicked);
+
+        if (videoButton != null)
+            videoButton.onClick.RemoveListener(HandleVideoClicked);
 
         StopAllRunningCoroutines();
         StopNarrationInternal(false);
@@ -111,7 +108,8 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         BindText();
         BindImageSlots();
-        SetNarratorState(DownloadState.Idle);
+        SetNarratorState(MediaState.Idle);
+        RefreshButtons();
     }
 
     public void Hide()
@@ -123,11 +121,14 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (additionalProjectDetailUI != null)
             additionalProjectDetailUI.Hide();
 
+        if (projectVideoUI != null)
+            projectVideoUI.Hide();
+
         _currentProject = null;
         _currentAgencyName = string.Empty;
 
         ApplyEmptyState();
-        SetNarratorState(DownloadState.Idle);
+        SetNarratorState(MediaState.Idle);
 
         if (root != null)
             root.SetActive(false);
@@ -136,7 +137,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
     public void StopNarration()
     {
         StopNarrationInternal(true);
-        SetNarratorState(DownloadState.Stopped);
+        SetNarratorState(MediaState.Stopped);
     }
 
     private void BindText()
@@ -195,10 +196,10 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (_currentProject == null)
             return;
 
-        if (_narratorState == DownloadState.Downloading)
+        if (_narratorState == MediaState.Downloading)
             return;
 
-        if (_narratorState == DownloadState.Playing)
+        if (_narratorState == MediaState.Playing)
         {
             StopNarration();
             return;
@@ -209,7 +210,8 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         if (string.IsNullOrWhiteSpace(url))
         {
-            SetNarratorState(DownloadState.Failed, "Narrator URL is empty.");
+            SetNarratorState(MediaState.Failed, "Narrator URL is empty.");
+            overlay?.ShowFailed("ไม่สามารถโหลดเสียงบรรยาย", "ไม่พบลิงก์เสียงบรรยาย");
             return;
         }
 
@@ -221,7 +223,21 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         _narrationDownloadRoutine = StartCoroutine(DownloadAndPlayNarration(url));
     }
+    private void HandleVideoClicked()
+    {
+        if (_currentProject == null)
+            return;
 
+        if (projectVideoUI == null)
+        {
+            Debug.LogWarning("[AE_ProjectDetailUI] ProjectVideoUI is not assigned.");
+            return;
+        }
+
+        StopNarration();
+
+        projectVideoUI.Show(_currentProject, _currentAgencyName);
+    }
     private void BindImageSlots()
     {
         ClearImageSlots();
@@ -266,7 +282,20 @@ public class AE_ProjectDetailUI : MonoBehaviour
             _imageLoadRoutines.Add(routine);
         }
     }
+    private void RefreshButtons()
+    {
+        if (moreInfoButton != null)
+            moreInfoButton.interactable = _currentProject != null;
 
+        if (narratorButton != null)
+            narratorButton.interactable = _currentProject != null && _narratorState != MediaState.Downloading;
+
+        if (videoButton != null)
+        {
+            bool hasVideo = _currentProject != null && !string.IsNullOrWhiteSpace(_currentProject.videoUrl);
+            // videoButton.interactable = hasVideo;
+        }
+    }
     private void ClearImageSlots()
     {
         for (int i = 0; i < imageSlots.Count; i++)
@@ -286,7 +315,8 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
     private IEnumerator DownloadAndPlayNarration(string url)
     {
-        SetNarratorState(DownloadState.Downloading);
+        SetNarratorState(MediaState.Downloading);
+        overlay?.ShowLoading("กำลังดาวน์โหลดเสียงบรรยาย", "กรุณารอสักครู่");
 
         using UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.UNKNOWN);
         ApplyAuthorizationHeader(request);
@@ -297,29 +327,52 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         if (request.result != UnityWebRequest.Result.Success)
         {
-            SetNarratorState(DownloadState.Failed, $"{narratorFailedMessage} ({request.error})");
+            string message = $"{narratorFailedMessage} ({request.error})";
+            SetNarratorState(MediaState.Failed, message);
+
+            overlay?.ShowFailed(
+                "โหลดเสียงบรรยายไม่สำเร็จ",
+                "กรุณาลองใหม่อีกครั้ง"
+            );
             yield break;
         }
 
         AudioClip clip = DownloadHandlerAudioClip.GetContent(request);
         if (clip == null)
         {
-            SetNarratorState(DownloadState.Failed, narratorFailedMessage);
+            SetNarratorState(MediaState.Failed, narratorFailedMessage);
+
+            overlay?.ShowFailed(
+                "โหลดเสียงบรรยายไม่สำเร็จ",
+                "ไม่พบข้อมูลเสียงบรรยาย"
+            );
             yield break;
         }
 
         if (narratorAudioSource == null || narratorAudioSource.AudioSource == null)
         {
-            SetNarratorState(DownloadState.Failed, "Narrator AudioSource is missing.");
+            SetNarratorState(MediaState.Failed, "Narrator AudioSource is missing.");
+
+            overlay?.ShowFailed(
+                "ไม่สามารถเล่นเสียงบรรยาย",
+                "ไม่พบ Audio Source"
+            );
             yield break;
         }
 
         ApplyNarrationBgmMute(true);
-        SetNarratorState(DownloadState.Playing);
 
         narratorAudioSource.AudioSource.Stop();
         narratorAudioSource.AudioSource.clip = clip;
         narratorAudioSource.AudioSource.Play();
+
+        SetNarratorState(MediaState.Playing);
+
+        overlay?.ShowSuccess(
+            "พร้อมใช้งานเสียงบรรยาย",
+            "กำลังเริ่มเล่น",
+            true
+        );
 
         if (_narrationMonitorRoutine != null)
         {
@@ -335,7 +388,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (narratorAudioSource == null || narratorAudioSource.AudioSource == null)
         {
             ApplyNarrationBgmMute(false);
-            SetNarratorState(DownloadState.Failed, "Narrator AudioSource is missing.");
+            SetNarratorState(MediaState.Failed, "Narrator AudioSource is missing.");
             _narrationMonitorRoutine = null;
             yield break;
         }
@@ -346,7 +399,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
             yield return null;
 
         ApplyNarrationBgmMute(false);
-        SetNarratorState(DownloadState.Completed);
+        SetNarratorState(MediaState.Completed);
         _narrationMonitorRoutine = null;
     }
 
@@ -385,48 +438,29 @@ public class AE_ProjectDetailUI : MonoBehaviour
             ExhibitionAudioManager.Instance.ClearTemporaryBgmVolume();
     }
 
-    private void SetNarratorState(DownloadState state, string overrideMessage = null)
+    private void SetNarratorState(MediaState state, string overrideMessage = null)
     {
         _narratorState = state;
 
-        if (narratorLoadingObject != null)
-            narratorLoadingObject.SetActive(state == DownloadState.Downloading);
-
-        if (narratorPlayingObject != null)
-            narratorPlayingObject.SetActive(state == DownloadState.Playing);
-
-        if (narratorFailedObject != null)
-            narratorFailedObject.SetActive(state == DownloadState.Failed);
-
-        if (narratorCompletedObject != null)
-            narratorCompletedObject.SetActive(
-                state == DownloadState.Completed || state == DownloadState.Stopped
-            );
-
-        if (narratorStatusText != null)
-        {
-            narratorStatusText.text = string.IsNullOrWhiteSpace(overrideMessage)
-                ? GetNarratorStateMessage(state)
-                : overrideMessage;
-        }
-
         if (narratorButton != null)
-            narratorButton.interactable = _currentProject != null && state != DownloadState.Downloading;
+            narratorButton.interactable = _currentProject != null && state != MediaState.Downloading;
+
+        RefreshButtons();
     }
 
-    private string GetNarratorStateMessage(DownloadState state)
+    private string GetNarratorStateMessage(MediaState state)
     {
         switch (state)
         {
-            case DownloadState.Downloading:
+            case MediaState.Downloading:
                 return narratorLoadingMessage;
-            case DownloadState.Playing:
+            case MediaState.Playing:
                 return narratorPlayingMessage;
-            case DownloadState.Failed:
+            case MediaState.Failed:
                 return narratorFailedMessage;
-            case DownloadState.Completed:
+            case MediaState.Completed:
                 return narratorCompletedMessage;
-            case DownloadState.Stopped:
+            case MediaState.Stopped:
                 return narratorStoppedMessage;
             default:
                 return narratorIdleMessage;
@@ -614,4 +648,14 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         return string.Empty;
     }
+}
+
+public enum MediaState
+{
+    Idle,
+    Downloading,
+    Playing,
+    Failed,
+    Completed,
+    Stopped
 }

@@ -1,17 +1,17 @@
 using UnityEngine;
 
-public static class LocalInteractorUtility
+public static class LocalPlayerResolver
 {
     public static bool IsLocalPlayerCollider(Collider other)
     {
         if (other == null)
             return false;
 
-        Transform root = other.transform.root;
-        return root.CompareTag("LocalPlayer");
+        Player player = other.GetComponentInParent<Player>();
+        return player != null && player.HasInputAuthority;
     }
 
-    public static GameObject GetLocalPlayer()
+    public static GameObject GetLocalPlayerByTag()
     {
         return GameObject.FindGameObjectWithTag("LocalPlayer");
     }

@@ -66,7 +66,7 @@ public class AE_MainPanelController : MonoBehaviour
         if (panelRoot != null)
             panelRoot.SetActive(false);
 
-        ShowMainPage();
+        // ShowMainPage();
     }
 
     private void OnDestroy()

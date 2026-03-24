@@ -102,48 +102,84 @@ public class RegisterHandler : BaseHandler
         var genderSetup = genderDropdown.GetComponent<GenderDropdownSetup>();
         string gender   = genderSetup != null ? genderSetup.GetSelectedGender() : "male";
 
-        if (password != confirm) { overlay.ShowError("รหัสผ่านไม่ตรงกัน"); return; }
+        if (password != confirm)
+        {
+            ShowFailedOverlay("รหัสผ่านไม่ตรงกัน");
+            return;
+        }
         
 
         StartCoroutine(DoRegister(email, charName, password, firstName, lastName, phone, department, gender));
     }
 
     private IEnumerator DoRegister(
-        string email, string charName, string password,
-        string firstName, string lastName, string phone,
-        string department, string gender)
+        string email,
+        string charName,
+        string password,
+        string firstName,
+        string lastName,
+        string phone,
+        string department,
+        string gender)
     {
         submitBtn.interactable = false;
 
         string body = JsonUtility.ToJson(new RegisterRequestBody
         {
-            email = email, characterName = charName, password = password,
-            firstName = firstName, lastName = lastName,
-            department = department, phone = phone, gender = gender
+            email = email,
+            characterName = charName,
+            password = password,
+            firstName = firstName,
+            lastName = lastName,
+            department = department,
+            phone = phone,
+            gender = gender
         });
 
-        yield return PostRequest(Api.RegisterUrl, body,
+        yield return PostRequest(
+            Api.RegisterUrl,
+            body,
             onSuccess: json =>
             {
-                var res = JsonUtility.FromJson<BaseResponse>(json);
-                if (!res.success)
+                BaseResponse res = JsonUtility.FromJson<BaseResponse>(json);
+
+                if (res == null)
                 {
-                    overlay.ShowError(
-                        string.IsNullOrEmpty(res.message) ? "สมัครสมาชิกไม่สำเร็จ" : res.message,
-                        onDismissed: () => submitBtn.interactable = AllFieldsFilled());
+                    ShowFailedOverlay(
+                        "รูปแบบข้อมูลตอบกลับไม่ถูกต้อง",
+                        onDismissed: () => submitBtn.interactable = AllFieldsFilled()
+                    );
                     return;
                 }
 
-                overlay.ShowSuccessDismiss(
+                if (!res.success)
+                {
+                    ShowFailedOverlay(
+                        string.IsNullOrEmpty(res.message)
+                            ? "สมัครสมาชิกไม่สำเร็จ"
+                            : res.message,
+                        onDismissed: () => submitBtn.interactable = AllFieldsFilled()
+                    );
+                    return;
+                }
+
+                ShowSuccessOverlay(
                     "สมัครสมาชิกสำเร็จ",
                     "กรุณาเข้าสู่ระบบ",
+                    true,
                     () =>
                     {
+                        submitBtn.interactable = true;
                         ClearRegisterForm();
                         pageManager.ShowLogin();
-                    });
+                    }
+                );
             },
-            onError: _ => submitBtn.interactable = AllFieldsFilled());
+            onError: _ =>
+            {
+                submitBtn.interactable = AllFieldsFilled();
+            }
+        );
     }
     private void ClearRegisterForm()
     {
