@@ -3,9 +3,6 @@ using UnityEngine;
 
 public abstract class WorldInteractable : MonoBehaviour
 {
-    [Header("Prompt")]
-    [SerializeField] private string desktopPrompt = "Press F";
-    [SerializeField] private string mobilePrompt = "Tap";
     protected virtual void OnEnable()
     {
         if (InteractionRegistry.Instance != null)
@@ -16,10 +13,6 @@ public abstract class WorldInteractable : MonoBehaviour
     {
         if (InteractionRegistry.Instance != null)
             InteractionRegistry.Instance.Unregister(this);
-    }
-    public string GetPrompt(bool useMobilePrompt)
-    {
-        return useMobilePrompt ? mobilePrompt : desktopPrompt;
     }
 
     public virtual bool CanInteract(GameObject interactor)

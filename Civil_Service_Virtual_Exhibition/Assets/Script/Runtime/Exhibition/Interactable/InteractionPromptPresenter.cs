@@ -19,6 +19,6 @@ public class InteractionPromptPresenter : MonoBehaviour
         }
 
         bool useMobilePrompt = InputModeResolver.UseMobileInput(forceMobilePromptInEditor);
-        promptView.Show(interactable.GetPrompt(useMobilePrompt), useMobilePrompt);
+        promptView.Show(useMobilePrompt);
     }
 }

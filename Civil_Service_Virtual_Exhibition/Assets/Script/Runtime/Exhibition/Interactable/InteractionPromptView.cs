@@ -10,7 +10,6 @@ public class InteractionPromptView : MonoBehaviour
 
     [Header("Mobile")]
     [SerializeField] private GameObject mobileRoot;
-    [SerializeField] private TMP_Text mobileText;
     [SerializeField] private Button mobileButton;
 
     public Button MobileButton => mobileButton;
@@ -19,22 +18,14 @@ public class InteractionPromptView : MonoBehaviour
     {
         Hide();
     }
-
-    public void Show(string prompt, bool showMobile)
+    public void Show(bool showMobile)
     {
         if (desktopRoot != null)
             desktopRoot.SetActive(!showMobile);
 
         if (mobileRoot != null)
             mobileRoot.SetActive(showMobile);
-
-        if (!showMobile && desktopText != null)
-            desktopText.text = prompt;
-
-        if (showMobile && mobileText != null)
-            mobileText.text = prompt;
     }
-
     public void Hide()
     {
         if (desktopRoot != null)
