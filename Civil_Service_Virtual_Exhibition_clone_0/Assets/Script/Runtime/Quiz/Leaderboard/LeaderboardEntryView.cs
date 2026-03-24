@@ -9,15 +9,16 @@ public class LeaderboardEntryView : MonoBehaviour
 
     public void Bind(LeaderboardEntryDto data)
     {
-        if (data == null) return;
+        if (data == null)
+            return;
 
         if (rankText != null)
             rankText.text = data.rank.ToString();
 
         if (usernameText != null)
-            usernameText.text = string.IsNullOrWhiteSpace(data.username) ? "-" : data.username;
+            usernameText.text = string.IsNullOrWhiteSpace(data.characterName) ? "-" : data.characterName;
 
         if (scoreText != null)
-            scoreText.text = $"{data.score} คะแนน";
+            scoreText.text = $"{data.totalScore} คะแนน";
     }
 }

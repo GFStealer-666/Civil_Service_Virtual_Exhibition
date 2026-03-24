@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public class InteractionService : MonoBehaviour
@@ -6,67 +5,63 @@ public class InteractionService : MonoBehaviour
     public WorldInteractable CurrentInteractable { get; private set; }
     public GameObject CurrentInteractor { get; private set; }
 
-    private readonly List<WorldInteractable> _targets = new();
-
-    public void EnterRange(WorldInteractable interactable, GameObject interactor)
-    {
-        if (interactable == null || interactor == null)
-            return;
-
-        if (!_targets.Contains(interactable))
-            _targets.Add(interactable);
-
-        CurrentInteractor = interactor;
-        RefreshCurrent();
-    }
-
-    public void ExitRange(WorldInteractable interactable, GameObject interactor)
-    {
-        if (interactable != null)
-            _targets.Remove(interactable);
-
-        if (CurrentInteractor == interactor && _targets.Count == 0)
-            CurrentInteractor = null;
-
-        RefreshCurrent();
-    }
+    [SerializeField] private float interactDistance = 3f;
 
     private void Update()
     {
-        RefreshCurrent();
-    }
+        GameObject localPlayer = LocalPlayerResolver.GetLocalPlayerByTag();
 
-    private void RefreshCurrent()
-    {
-        _targets.RemoveAll(target => target == null);
-
-        if (CurrentInteractor == null)
+        if (localPlayer == null)
         {
             CurrentInteractable = null;
+            CurrentInteractor = null;
             return;
         }
 
-        WorldInteractable best = null;
-        float bestDistance = float.MaxValue;
-        Vector3 interactorPosition = CurrentInteractor.transform.position;
+        WorldInteractable nearest = FindNearestInteractable(localPlayer.transform.position);
 
-        for (int i = 0; i < _targets.Count; i++)
+        CurrentInteractable = nearest;
+        CurrentInteractor = nearest != null ? localPlayer : null;
+    }
+
+    private WorldInteractable FindNearestInteractable(Vector3 fromPosition)
+    {
+        WorldInteractable[] interactables = FindObjectsByType<WorldInteractable>(FindObjectsSortMode.None);
+
+        WorldInteractable nearest = null;
+        float bestSqrDistance = interactDistance * interactDistance;
+
+        for (int i = 0; i < interactables.Length; i++)
         {
-            WorldInteractable target = _targets[i];
-            if (target == null || !target.isActiveAndEnabled)
+            if (interactables[i] == null)
                 continue;
 
-            if (!target.CanInteract(CurrentInteractor))
+            float sqrDistance = (interactables[i].transform.position - fromPosition).sqrMagnitude;
+            if (sqrDistance > bestSqrDistance)
                 continue;
 
-            float distance = (target.transform.position - interactorPosition).sqrMagnitude;
-            if (distance < bestDistance)
-            {
-                bestDistance = distance;
-                best = target;
-            }
+            bestSqrDistance = sqrDistance;
+            nearest = interactables[i];
         }
 
-        CurrentInteractable = best;
+        return nearest;
+    }
+
+    public void SetCurrent(WorldInteractable interactable, GameObject interactor)
+    {
+        CurrentInteractable = interactable;
+        CurrentInteractor = interactor;
+    }
+
+    public void ClearCurrent(WorldInteractable interactable, GameObject interactor)
+    {
+        if (CurrentInteractable != interactable)
+            return;
+
+        if (CurrentInteractor != interactor)
+            return;
+
+        CurrentInteractable = null;
+        CurrentInteractor = null;
     }
 }

@@ -56,16 +56,35 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
             panelRoot.SetActive(false);
     }
 
-    public void Open(HOH_UnitDto unit, HOH_PanelController owner)
+    public bool Open(HOH_UnitDto unit, HOH_PanelController owner)
     {
         _currentUnit = unit;
         _owner = owner;
 
-        if (panelRoot != null)
-            panelRoot.SetActive(true);
+        if (panelRoot == null)
+        {
+            Debug.LogWarning("[HOH_OfficerSelectionPanelController] panelRoot is not assigned.");
+            return false;
+        }
+
+        panelRoot.SetActive(true);
+
+        Canvas.ForceUpdateCanvases();
 
         BindHeader(unit);
         SetItems(unit != null ? unit.persons : null);
+
+        Canvas.ForceUpdateCanvases();
+
+        if (pageRoot != null)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(pageRoot);
+
+        Debug.Log(
+            $"[HOH_OfficerSelectionPanelController] Open success | " +
+            $"activeSelf={panelRoot.activeSelf} | activeInHierarchy={panelRoot.activeInHierarchy}"
+        );
+
+        return true;
     }
 
     public void Close()

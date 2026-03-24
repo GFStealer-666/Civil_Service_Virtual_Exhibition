@@ -133,7 +133,7 @@ GameObject:
   - component: {fileID: 7222450}
   - component: {fileID: 7222449}
   m_Layer: 0
-  m_Name: FronterendAuthenticator
+  m_Name: ToggleAuthenticator
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -650,6 +650,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 48922042}
   m_CullTransparentMesh: 1
+--- !u!1 &93860801
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 93860802}
+  m_Layer: 0
+  m_Name: ------------------ SINGLETON ------------------
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &93860802
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 93860801}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &110671743
 GameObject:
   m_ObjectHideFlags: 0
@@ -6720,7 +6751,7 @@ GameObject:
   m_Component:
   - component: {fileID: 778670293}
   m_Layer: 0
-  m_Name: ================== UserInterface ==================
+  m_Name: ------------------ CANVAS ------------------
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7406,7 +7437,7 @@ GameObject:
   - component: {fileID: 835149163}
   - component: {fileID: 835149162}
   m_Layer: 0
-  m_Name: LocalPlayerData
+  m_Name: '[Singleton] LocalPlayerData'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8500,81 +8531,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 877345871}
   m_CullTransparentMesh: 1
---- !u!1 &901091709
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 901091710}
-  m_Layer: 0
-  m_Name: ================== Camera ==================
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &901091710
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 901091709}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &906426008
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 906426010}
-  - component: {fileID: 906426011}
-  m_Layer: 0
-  m_Name: DtoDownloader
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &906426010
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 906426008}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 22.52344, y: 2.9224148, z: 20.742512}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &906426011
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 906426008}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 061b9048e83868344ad38c492fa9bed2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &914275444
 GameObject:
   m_ObjectHideFlags: 0
@@ -10897,7 +10853,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1096038259}
   m_Layer: 0
-  m_Name: ================== Script Instance ==================
+  m_Name: ------------------ LOCAL INSTANCE  ------------------
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -12440,7 +12396,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1274379669}
   m_Layer: 0
-  m_Name: ================== Misc. ==================
+  m_Name: ------------------ MISCELLANEOUS ------------------
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -12649,7 +12605,7 @@ MonoBehaviour:
   m_CharacterValidation: 0
   m_RegexValue: 
   m_GlobalPointSize: 14
-  m_CharacterLimit: 12
+  m_CharacterLimit: 0
   m_OnEndEdit:
     m_PersistentCalls:
       m_Calls: []
@@ -15488,7 +15444,7 @@ GameObject:
   - component: {fileID: 1694645483}
   - component: {fileID: 1694645484}
   m_Layer: 0
-  m_Name: LocalizationController
+  m_Name: '[Singleton] LocalizationController'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -17507,50 +17463,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1877639013}
   m_CullTransparentMesh: 1
---- !u!1 &1883000937
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1883000939}
-  - component: {fileID: 1883000938}
-  m_Layer: 0
-  m_Name: MinistryFileStorage
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1883000938
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1883000937}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d6962c7574f5a87499bf2e2a8801030b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!4 &1883000939
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1883000937}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 22.52344, y: 2.9224148, z: 20.742512}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1890667372
 GameObject:
   m_ObjectHideFlags: 0
@@ -19016,7 +18928,7 @@ GameObject:
   - component: {fileID: 2035772209}
   - component: {fileID: 2035772208}
   m_Layer: 0
-  m_Name: NetworkLauncher
+  m_Name: '[Singleton] NetworkLauncher'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -19255,7 +19167,7 @@ GameObject:
   - component: {fileID: 2042872856}
   - component: {fileID: 2042872857}
   m_Layer: 0
-  m_Name: APIService
+  m_Name: '[Singleton] APIService'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -19960,7 +19872,6 @@ SceneRoots:
   - {fileID: 1274379669}
   - {fileID: 371310755}
   - {fileID: 1571363504}
-  - {fileID: 901091710}
   - {fileID: 2430814611149909390}
   - {fileID: 778670293}
   - {fileID: 432520673}
@@ -19968,10 +19879,9 @@ SceneRoots:
   - {fileID: 1096038259}
   - {fileID: 1219720395}
   - {fileID: 7222450}
-  - {fileID: 835149163}
   - {fileID: 658363195}
+  - {fileID: 93860802}
   - {fileID: 2035772209}
-  - {fileID: 1694645482}
-  - {fileID: 906426010}
-  - {fileID: 1883000939}
   - {fileID: 2042872856}
+  - {fileID: 835149163}
+  - {fileID: 1694645482}

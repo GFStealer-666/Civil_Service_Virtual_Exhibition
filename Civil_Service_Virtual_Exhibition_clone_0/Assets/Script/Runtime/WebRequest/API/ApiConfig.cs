@@ -27,6 +27,8 @@ public class ApiConfig : ScriptableObject
     [Header("TTS")]
     [SerializeField] private string agencyExhibitionTtsEngEndpoint = "/api/game/projects/:id/tts?lang=en";
     [SerializeField] private string agencyExhibitionTtsThEndpoint = "/api/game/projects/:id/tts";
+    [SerializeField] private string hallofHonorTtsEngEndpoint = "/api/public/civil-servants/:id/tts?lang=en";
+    [SerializeField] private string hallofHonorTtsThEndPoint = "/api/public/civil-servants/:id/tts";
 
     public string BaseUrl => NormalizeBaseUrl(baseUrl);
 
@@ -50,7 +52,15 @@ public class ApiConfig : ScriptableObject
     {
         return BuildTemplate(agencyExhibitionTtsThEndpoint, projectId);
     }
+    public string GetHallOfHonorTtsEngUrl(string officerId)
+    {
+        return BuildTemplate(hallofHonorTtsEngEndpoint, officerId);
+    }
 
+    public string GetHallOfHonorTtsThUrl(string officerId)
+    {
+        return BuildTemplate(hallofHonorTtsThEndPoint, officerId);
+    }
     public string GetAgencyExhibitionTtsUrl(string projectId, SystemLanguage language)
     {
         return language == SystemLanguage.English

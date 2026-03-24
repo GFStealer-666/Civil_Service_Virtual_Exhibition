@@ -303,8 +303,11 @@ public class HOH_PanelController : MonoBehaviour
             return;
         }
 
+        bool opened = officerSelectionPanel.Open(unit, this);
+        if (!opened)
+            return;
+
         HideAllCategoryPanels();
-        officerSelectionPanel.Open(unit, this);
     }
 
     public void HideAllCategoryPanels()
@@ -318,7 +321,6 @@ public class HOH_PanelController : MonoBehaviour
             section.panelRoot.SetActive(false);
         }
     }
-
     public void RestoreCurrentCategory()
     {
         if (CurrentCategory == HOH_CategoryKind.Unknown)

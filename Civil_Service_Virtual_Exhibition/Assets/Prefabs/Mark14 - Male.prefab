@@ -157,7 +157,7 @@ GameObject:
   - component: {fileID: 4909880482109869986}
   m_Layer: 8
   m_Name: Mark14 - Male
-  m_TagString: LocalPlayer
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -689,6 +689,10 @@ PrefabInstance:
       propertyPath: m_TagString
       value: LocalPlayer
       objectReference: {fileID: 0}
+    - target: {fileID: 7287348809885537732, guid: d200a45a91188624e8ffd3d9e42cb99b, type: 3}
+      propertyPath: m_Materials.Array.data[0]
+      value: 
+      objectReference: {fileID: 2100000, guid: 2008d9bdf409ef24b9d64aa4985d63dd, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []

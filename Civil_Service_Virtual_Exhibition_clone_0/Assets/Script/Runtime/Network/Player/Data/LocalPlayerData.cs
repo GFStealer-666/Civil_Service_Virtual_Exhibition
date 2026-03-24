@@ -8,10 +8,11 @@ public class LocalPlayerData : MonoBehaviour
     [Header("Profile")]
     public string PlayerID = "";
     public string PlayerToken = "";
-    public string       PlayerName   = "Guest1";
-    public PlayerGender Gender       = PlayerGender.Male;
-    public string       Organization = "";
-    public bool         IsGuest      = false;
+    public string PlayerName = "Guest1";
+    public PlayerGender Gender = PlayerGender.Male;
+    public string Organization = "";
+    public bool IsGuest = false;
+
     [Space]
     [Header("Contact")]
     public string Email = "";
@@ -22,12 +23,13 @@ public class LocalPlayerData : MonoBehaviour
     [Range(0f, 1f)] public float BgmVolume = 0.5f;
     [Range(0f, 1f)] public float EffectVolume = 0.5f;
     public bool HasInitializedAppearance = false;
+
     private Color[] _colors;
 
+    public bool HasValidToken => !string.IsNullOrWhiteSpace(PlayerToken);
 
     private void Awake()
     {
-        // Auto-create and persist if not already existing
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -35,14 +37,16 @@ public class LocalPlayerData : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject); // ← critical
+        DontDestroyOnLoad(gameObject);
         InitializeDefaults();
     }
+
     private void OnDestroy()
     {
         if (Instance == this)
             Instance = null;
     }
+
     private void InitializeDefaults()
     {
         int count = Enum.GetValues(typeof(AppearanceSlot)).Length;
@@ -53,6 +57,7 @@ public class LocalPlayerData : MonoBehaviour
 
         RandomizeAppearance();
     }
+
     public void RandomizeAppearance()
     {
         var outfit = Gender == PlayerGender.Male
@@ -62,8 +67,10 @@ public class LocalPlayerData : MonoBehaviour
         foreach (var kvp in outfit)
             SetColor(kvp.Key, kvp.Value);
 
-        Debug.Log($"[LocalPlayerData] Appearance randomized for {Gender} ");
+        HasInitializedAppearance = true;
+        Debug.Log($"[LocalPlayerData] Appearance randomized for {Gender}");
     }
+
     private void EnsureColorBuffer()
     {
         int count = Enum.GetValues(typeof(AppearanceSlot)).Length;
@@ -74,10 +81,15 @@ public class LocalPlayerData : MonoBehaviour
 
     public void ClearForSignOut()
     {
+        PlayerID = string.Empty;
+        PlayerToken = string.Empty;
         PlayerName = string.Empty;
         Organization = string.Empty;
         IsGuest = false;
         Gender = PlayerGender.Male;
+        Email = string.Empty;
+        PhoneNumber = string.Empty;
+        HasInitializedAppearance = false;
 
         EnsureColorBuffer();
 
@@ -86,18 +98,22 @@ public class LocalPlayerData : MonoBehaviour
 
         Debug.Log("[LocalPlayerData] Cleared for sign out.");
     }
+
     public void SetColor(AppearanceSlot slot, Color color)
     {
+        EnsureColorBuffer();
         _colors[(int)slot] = color;
     }
 
     public Color GetColor(AppearanceSlot slot)
     {
+        EnsureColorBuffer();
         return _colors[(int)slot];
     }
 
     public bool HasColor(AppearanceSlot slot)
     {
+        EnsureColorBuffer();
         return _colors[(int)slot] != Color.clear;
     }
 
@@ -121,5 +137,16 @@ public class LocalPlayerData : MonoBehaviour
     public void SetEffectVolume(float value)
     {
         EffectVolume = Mathf.Clamp01(value);
+    }
+
+    public void SetAuth(string playerId, string playerToken)
+    {
+        PlayerID = playerId ?? "";
+        PlayerToken = string.IsNullOrWhiteSpace(playerToken) ? "" : playerToken.Trim();
+    }
+
+    public void ClearToken()
+    {
+        PlayerToken = string.Empty;
     }
 }

@@ -221,7 +221,7 @@ public class AE_CatalogRepository : MonoBehaviour
         _loadRoutine = null;
         LastError = error;
 
-        Debug.LogError($"[GovernmentCatalogRepository] {error}");
+        Debug.LogError($"[AE_Repository] {error}");
         OnDataLoadFailed?.Invoke(error);
     }
 

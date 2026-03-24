@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
+using UnityEngine.SocialPlatforms;
 
 public abstract class BaseHandler : MonoBehaviour
 {
@@ -72,6 +73,8 @@ public abstract class BaseHandler : MonoBehaviour
         localData.Gender = ParseGender(player.gender);   
         localData.PlayerID = player.id;
         localData.PlayerToken = player.token;
+        localData.SetAuth(player.id, player.token);
+        
         if (!localData.HasInitializedAppearance)
         {
             localData.RandomizeAppearance();

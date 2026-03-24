@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
-// Fetch quiz from API, cache raw JSON locally, then convert to session questions.
 public class QuizQuestionRepository : MonoBehaviour
 {
     [Header("References")]
@@ -80,7 +79,7 @@ public class QuizQuestionRepository : MonoBehaviour
             List<QuizSessionQuestion> fallbackQuestions = QuizSessionBuilder.BuildFromFallback(fallbackConfig);
             if (fallbackQuestions != null && fallbackQuestions.Count > 0)
             {
-                Debug.Log("[QuizQuestionRepository] No web/cache data. Using SO fallback.");
+                Debug.Log("[QuizQuestionRepository] No web or cache data. Using SO fallback.");
                 onSuccess?.Invoke(fallbackQuestions);
                 yield break;
             }
@@ -104,13 +103,26 @@ public class QuizQuestionRepository : MonoBehaviour
         using UnityWebRequest request = Api.Get(url, accessToken);
         yield return request.SendWebRequest();
 
-        if (request.result != UnityWebRequest.Result.Success)
+        long statusCode = request.responseCode;
+        string rawJson = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
+
+        bool hasNetworkFailure =
+            request.result == UnityWebRequest.Result.ConnectionError ||
+            request.result == UnityWebRequest.Result.DataProcessingError;
+
+        if (hasNetworkFailure)
         {
             Debug.LogWarning($"[QuizQuestionRepository] Quiz GET failed: {request.error}");
             yield break;
         }
 
-        string rawJson = request.downloadHandler.text;
+        if (statusCode < 200 || statusCode >= 300)
+        {
+            Debug.LogWarning(
+                $"[QuizQuestionRepository] Quiz GET failed. HTTP {statusCode}. Body: {rawJson}"
+            );
+            yield break;
+        }
 
         if (string.IsNullOrWhiteSpace(rawJson))
         {
@@ -131,11 +143,11 @@ public class QuizQuestionRepository : MonoBehaviour
 
     private List<QuizSessionQuestion> ConvertRawJsonToSessionQuestions(string rawJson)
     {
-        QuizApiResponseDto dto = null;
+        QuizCurrentResponseDto dto = null;
 
         try
         {
-            dto = JsonUtility.FromJson<QuizApiResponseDto>(rawJson);
+            dto = JsonUtility.FromJson<QuizCurrentResponseDto>(rawJson);
         }
         catch (Exception ex)
         {
@@ -165,7 +177,7 @@ public class QuizQuestionRepository : MonoBehaviour
 
         for (int i = 0; i < dto.data.questions.Length; i++)
         {
-            QuizApiQuestionDto source = dto.data.questions[i];
+            QuizQuestionDto source = dto.data.questions[i];
 
             if (source == null)
                 continue;
@@ -188,7 +200,9 @@ public class QuizQuestionRepository : MonoBehaviour
 
             if (correctChoiceIndex < 0 || correctChoiceIndex >= orderedChoices.Count)
             {
-                Debug.LogWarning($"[QuizQuestionRepository] Question {source.id} has invalid answer key: {source.answer}");
+                Debug.LogWarning(
+                    $"[QuizQuestionRepository] Question {source.id} has invalid answer key: {source.answer}"
+                );
                 continue;
             }
 
@@ -262,11 +276,16 @@ public class QuizQuestionRepository : MonoBehaviour
 
         switch (answerKey.Trim().ToLowerInvariant())
         {
-            case "a": return 0;
-            case "b": return 1;
-            case "c": return 2;
-            case "d": return 3;
-            default: return -1;
+            case "a":
+                return 0;
+            case "b":
+                return 1;
+            case "c":
+                return 2;
+            case "d":
+                return 3;
+            default:
+                return -1;
         }
     }
 }

@@ -8,6 +8,8 @@ public class PS_SearchBar : MonoBehaviour
     [SerializeField] private PS_PanelController targetPanel;
     [SerializeField] private bool notifyInitialValue = true;
 
+    private Coroutine _notifyRoutine;
+
     private void Awake()
     {
         if (inputField != null)
@@ -36,14 +38,51 @@ public class PS_SearchBar : MonoBehaviour
         if (inputField == null)
             return;
 
+        if (_notifyRoutine != null)
+        {
+            StopCoroutine(_notifyRoutine);
+            _notifyRoutine = null;
+        }
+
+        inputField.DeactivateInputField();
         inputField.SetTextWithoutNotify(string.Empty);
+
+        StartCoroutine(ClearAndNotifyNextFrame());
+    }
+
+    private IEnumerator ClearAndNotifyNextFrame()
+    {
+        yield return null;
+
+        if (inputField == null)
+            yield break;
+
         inputField.ForceLabelUpdate();
         NotifyPanel(string.Empty);
     }
 
     private void HandleValueChanged(string value)
     {
-        NotifyPanel(value);
+        if (_notifyRoutine != null)
+            StopCoroutine(_notifyRoutine);
+
+        _notifyRoutine = StartCoroutine(NotifyNextFrame(value));
+    }
+
+    private IEnumerator NotifyNextFrame(string value)
+    {
+        yield return null;
+
+        if (this == null || !isActiveAndEnabled)
+            yield break;
+
+        if (inputField == null)
+            yield break;
+
+        inputField.ForceLabelUpdate();
+        NotifyPanel(value ?? string.Empty);
+
+        _notifyRoutine = null;
     }
 
     private void NotifyPanel(string value)

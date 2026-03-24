@@ -1,31 +1,32 @@
 using System;
 using System.Collections.Generic;
+
 [Serializable]
-public class QuizApiResponseDto
+public class QuizCurrentResponseDto
 {
     public bool success;
-    public QuizApiDataDto data;
+    public QuizCurrentDataDto data;
 }
 
 [Serializable]
-public class QuizApiDataDto
+public class QuizCurrentDataDto
 {
     public int setNumber;
     public int totalQuestions;
-    public QuizApiQuestionDto[] questions;
+    public QuizQuestionDto[] questions;
 }
 
 [Serializable]
-public class QuizApiQuestionDto
+public class QuizQuestionDto
 {
     public int id;
     public string question;
-    public QuizApiChoicesDto choices;
+    public QuizChoicesDto choices;
     public string answer;
 }
 
 [Serializable]
-public class QuizApiChoicesDto
+public class QuizChoicesDto
 {
     public string a;
     public string b;
@@ -40,20 +41,25 @@ public class QuizCacheEnvelope
     public long savedAtUnixSeconds;
 }
 
-// Quiz Leaderboard 
-
 [Serializable]
 public class QuizSubmitRequestDto
 {
     public int score;
-    public int totalQuestions;
 }
 
 [Serializable]
 public class QuizSubmitResponseDto
 {
     public bool success;
-    public string message;
+    public QuizSubmitDataDto data;
+}
+
+[Serializable]
+public class QuizSubmitDataDto
+{
+    public int setNumber;
+    public int score;
+    public int maxScore;
 }
 
 [Serializable]
@@ -66,24 +72,21 @@ public class QuizLeaderboardResponseDto
 [Serializable]
 public class QuizLeaderboardDataDto
 {
-    // Rename this field if your backend uses another name
-    public LeaderboardEntryDto[] leaderboard;
-
-    public int myRank;
-    public int myScore;
+    public LeaderboardEntryDto[] top10;
+    public LeaderboardEntryDto player;
 }
 
 [Serializable]
 public class LeaderboardEntryDto
 {
     public int rank;
-    public string username;
-    public int score;
+    public string characterName;
+    public int totalScore;
+    public string lastPlayed;
 }
 
-
 [Serializable]
-public class QuizSessionQuestion // each question 
+public class QuizSessionQuestion
 {
     public string questionText;
     public List<QuizSessionChoice> choices = new List<QuizSessionChoice>();

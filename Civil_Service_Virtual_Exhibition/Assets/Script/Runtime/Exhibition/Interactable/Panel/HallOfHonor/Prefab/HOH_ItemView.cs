@@ -14,6 +14,7 @@ public class HOH_ItemView : MonoBehaviour
     [SerializeField] private TextMeshProUGUI unitNameText;
     [SerializeField] private TextMeshProUGUI personCountText;
     [SerializeField] private UniversalImageLoader iconLoader;
+
     [Header("Fallback")]
     [SerializeField] private Sprite fallbackSprite;
     [SerializeField] private string personCountFormat = "จำนวน {0} ราย";
@@ -21,19 +22,16 @@ public class HOH_ItemView : MonoBehaviour
     private static readonly Dictionary<string, Sprite> SpriteCache = new();
 
     private Coroutine _loadRoutine;
-    private HOH_UnitDto _boundData;
+    [SerializeField] private HOH_UnitDto _boundData;
     private string _pendingIconUrl;
 
     public void Bind(HOH_UnitDto data, Action<HOH_UnitDto> onClick = null)
     {
         _boundData = data;
-        
+
         BindTexts(data);
         BindButton(onClick);
         BindIcon(data);
-
-        if (iconLoader != null)
-        iconLoader.Load(data != null ? data.logoUrl : string.Empty);
     }
 
     private void OnEnable()
@@ -75,9 +73,6 @@ public class HOH_ItemView : MonoBehaviour
 
     private void BindIcon(HOH_UnitDto data)
     {
-        if (iconImage == null)
-            return;
-
         if (_loadRoutine != null)
         {
             StopCoroutine(_loadRoutine);
@@ -90,17 +85,37 @@ public class HOH_ItemView : MonoBehaviour
         if (string.IsNullOrWhiteSpace(url))
         {
             SetFallbackSprite();
+
+            if (iconLoader != null)
+                iconLoader.ClearImage();
+
             return;
         }
 
         if (SpriteCache.TryGetValue(url, out Sprite cachedSprite) && cachedSprite != null)
         {
-            iconImage.sprite = cachedSprite;
+            if (iconImage != null)
+                iconImage.sprite = cachedSprite;
+
             _pendingIconUrl = null;
+
+            if (iconLoader != null && iconImage != null && iconLoader.gameObject == iconImage.gameObject)
+                iconLoader.Load(url);
+
             return;
         }
 
         SetFallbackSprite();
+
+        // ใช้ UniversalImageLoader เป็นตัวหลักถ้ามี
+        if (iconLoader != null)
+        {
+            iconLoader.Load(url);
+            _pendingIconUrl = null;
+            return;
+        }
+
+        // ถ้าไม่มี iconLoader ค่อยใช้ internal loader
         TryStartPendingIconLoad();
     }
 
@@ -114,7 +129,16 @@ public class HOH_ItemView : MonoBehaviour
 
         if (SpriteCache.TryGetValue(_pendingIconUrl, out Sprite cachedSprite) && cachedSprite != null)
         {
-            iconImage.sprite = cachedSprite;
+            if (iconImage != null)
+                iconImage.sprite = cachedSprite;
+
+            _pendingIconUrl = null;
+            return;
+        }
+
+        if (iconLoader != null)
+        {
+            iconLoader.Load(_pendingIconUrl);
             _pendingIconUrl = null;
             return;
         }
@@ -130,6 +154,10 @@ public class HOH_ItemView : MonoBehaviour
         if (req.result != UnityWebRequest.Result.Success)
         {
             Debug.LogWarning($"[HOH_ItemView] Failed to load icon: {url} | {req.error}");
+
+            if (req.downloadHandler != null)
+                Debug.LogWarning($"[HOH_ItemView] DownloadHandler error: {req.downloadHandler.error}");
+
             _loadRoutine = null;
             yield break;
         }
@@ -137,6 +165,7 @@ public class HOH_ItemView : MonoBehaviour
         Texture2D texture = DownloadHandlerTexture.GetContent(req);
         if (texture == null)
         {
+            Debug.LogWarning($"[HOH_ItemView] Texture is null: {url}");
             _loadRoutine = null;
             yield break;
         }

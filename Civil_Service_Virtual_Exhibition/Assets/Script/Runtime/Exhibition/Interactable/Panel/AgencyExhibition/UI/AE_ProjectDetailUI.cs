@@ -4,11 +4,10 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
-using UnityEngine.Video;
 
 public class AE_ProjectDetailUI : MonoBehaviour
 {
-    private enum NarratorState
+    private enum DownloadState
     {
         Idle,
         Downloading,
@@ -18,6 +17,8 @@ public class AE_ProjectDetailUI : MonoBehaviour
         Stopped
     }
 
+    private const int MaxImageSlots = 4;
+
     [Header("Config")]
     [SerializeField] private ApiConfig apiConfig;
     [SerializeField] private bool useEnglishContent;
@@ -26,7 +27,6 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
     [Header("Linked Panels")]
     [SerializeField] private AE_AdditionalProjectDetailUI additionalProjectDetailUI;
-    [SerializeField] private AE_ProjectVideoUI projectVideoUI;
 
     [Header("Root")]
     [SerializeField] private GameObject root;
@@ -36,14 +36,9 @@ public class AE_ProjectDetailUI : MonoBehaviour
     [SerializeField] private TMP_Text agencyText;
     [SerializeField] private TMP_Text descriptionText;
 
-    [Header("Main Visual")]
-    [SerializeField] private Image mainImage;
-    [SerializeField] private Button mainImageButton;
-    [SerializeField] private Sprite defaultMainImage;
-
-    [Header("Gallery")]
-    [SerializeField] private List<Image> galleryImages = new List<Image>();
-    [SerializeField] private Sprite defaultGalleryImage;
+    [Header("Images")]
+    [SerializeField] private List<Image> imageSlots = new();
+    [SerializeField] private Sprite defaultImage;
 
     [Header("Buttons")]
     [SerializeField] private Button moreInfoButton;
@@ -67,41 +62,26 @@ public class AE_ProjectDetailUI : MonoBehaviour
     [Header("Audio")]
     [SerializeField] private ExhibitionAudioSource narratorAudioSource;
 
-    [Header("Video Thumbnail")]
-    [SerializeField] private int videoThumbnailWidth = 1280;
-    [SerializeField] private int videoThumbnailHeight = 720;
-    [SerializeField] private float videoPrepareTimeout = 8f;
-    [SerializeField] private float videoFrameTimeout = 3f;
-
     private GovernmentProjectDto _currentProject;
     private string _currentAgencyName;
 
-    private Coroutine _mainVisualRoutine;
     private Coroutine _narrationDownloadRoutine;
     private Coroutine _narrationMonitorRoutine;
 
-    private readonly List<Coroutine> _galleryLoadRoutines = new List<Coroutine>();
-    private readonly List<Object> _runtimeAssets = new List<Object>();
+    private readonly List<Coroutine> _imageLoadRoutines = new();
+    private readonly List<Object> _runtimeAssets = new();
 
-    private VideoPlayer _thumbnailVideoPlayer;
-    private RenderTexture _thumbnailRenderTexture;
-
-    private NarratorState _narratorState = NarratorState.Idle;
+    private DownloadState _narratorState = DownloadState.Idle;
 
     public bool HasProject => _currentProject != null;
 
     private void Awake()
     {
-        EnsureThumbnailPlayer();
-
         if (moreInfoButton != null)
             moreInfoButton.onClick.AddListener(HandleMoreInfoClicked);
 
         if (narratorButton != null)
             narratorButton.onClick.AddListener(HandleNarratorClicked);
-
-        if (mainImageButton != null)
-            mainImageButton.onClick.AddListener(HandleMainImageClicked);
     }
 
     private void OnDestroy()
@@ -112,13 +92,9 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (narratorButton != null)
             narratorButton.onClick.RemoveListener(HandleNarratorClicked);
 
-        if (mainImageButton != null)
-            mainImageButton.onClick.RemoveListener(HandleMainImageClicked);
-
         StopAllRunningCoroutines();
         StopNarrationInternal(false);
         ClearRuntimeAssets();
-        ReleaseThumbnailPlayer();
     }
 
     public void Show(GovernmentProjectDto project, string agencyName)
@@ -134,9 +110,8 @@ public class AE_ProjectDetailUI : MonoBehaviour
             root.SetActive(true);
 
         BindText();
-        BindGalleryImages();
-        LoadMainVisual();
-        SetNarratorState(NarratorState.Idle);
+        BindImageSlots();
+        SetNarratorState(DownloadState.Idle);
     }
 
     public void Hide()
@@ -148,14 +123,11 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (additionalProjectDetailUI != null)
             additionalProjectDetailUI.Hide();
 
-        if (projectVideoUI != null)
-            projectVideoUI.Hide();
-
         _currentProject = null;
         _currentAgencyName = string.Empty;
 
         ApplyEmptyState();
-        SetNarratorState(NarratorState.Idle);
+        SetNarratorState(DownloadState.Idle);
 
         if (root != null)
             root.SetActive(false);
@@ -164,7 +136,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
     public void StopNarration()
     {
         StopNarrationInternal(true);
-        SetNarratorState(NarratorState.Stopped);
+        SetNarratorState(DownloadState.Stopped);
     }
 
     private void BindText()
@@ -182,10 +154,12 @@ public class AE_ProjectDetailUI : MonoBehaviour
             agencyText.text = _currentAgencyName ?? string.Empty;
 
         if (descriptionText != null)
+        {
             descriptionText.text = TruncateWithEllipsis(
                 GetProjectDescription(_currentProject),
                 shortDescriptionCharacterLimit
             );
+        }
     }
 
     private void ApplyEmptyState()
@@ -199,13 +173,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (descriptionText != null)
             descriptionText.text = string.Empty;
 
-        if (mainImage != null)
-        {
-            mainImage.sprite = defaultMainImage;
-            mainImage.preserveAspect = true;
-        }
-
-        ClearGallerySlots();
+        ClearImageSlots();
     }
 
     private void HandleMoreInfoClicked()
@@ -222,45 +190,26 @@ public class AE_ProjectDetailUI : MonoBehaviour
         additionalProjectDetailUI.Show(_currentProject, _currentAgencyName);
     }
 
-    private void HandleMainImageClicked()
-    {
-        if (_currentProject == null)
-            return;
-
-        if (projectVideoUI == null)
-        {
-            Debug.LogWarning("[AE_ProjectDetailUI] ProjectVideoUI is not assigned.");
-            return;
-        }
-
-        if (string.IsNullOrWhiteSpace(_currentProject.videoUrl))
-        {
-            Debug.LogWarning("[AE_ProjectDetailUI] Current project has no video url.");
-            return;
-        }
-
-        projectVideoUI.Show(_currentProject, _currentAgencyName);
-    }
-
     private void HandleNarratorClicked()
     {
         if (_currentProject == null)
             return;
 
-        if (_narratorState == NarratorState.Downloading)
+        if (_narratorState == DownloadState.Downloading)
             return;
 
-        if (_narratorState == NarratorState.Playing)
+        if (_narratorState == DownloadState.Playing)
         {
             StopNarration();
             return;
         }
 
         string url = BuildProjectTtsUrl(_currentProject);
+        Debug.Log($"[AE_ProjectDetailUI] Narrator URL = {url}");
 
         if (string.IsNullOrWhiteSpace(url))
         {
-            SetNarratorState(NarratorState.Failed, "Narrator URL is empty.");
+            SetNarratorState(DownloadState.Failed, "Narrator URL is empty.");
             return;
         }
 
@@ -273,106 +222,73 @@ public class AE_ProjectDetailUI : MonoBehaviour
         _narrationDownloadRoutine = StartCoroutine(DownloadAndPlayNarration(url));
     }
 
-    private void LoadMainVisual()
+    private void BindImageSlots()
     {
-        if (mainImage != null)
-        {
-            mainImage.sprite = defaultMainImage;
-            mainImage.preserveAspect = true;
-        }
-
-        if (_mainVisualRoutine != null)
-        {
-            StopCoroutine(_mainVisualRoutine);
-            _mainVisualRoutine = null;
-        }
-
-        if (_currentProject == null)
-            return;
-
-        _mainVisualRoutine = StartCoroutine(LoadMainVisualRoutine());
-    }
-
-    private IEnumerator LoadMainVisualRoutine()
-    {
-        bool loadedFromVideo = false;
-
-        if (!string.IsNullOrWhiteSpace(_currentProject.videoUrl))
-        {
-            yield return StartCoroutine(TryLoadVideoFirstFrame(
-                _currentProject.videoUrl,
-                success => loadedFromVideo = success
-            ));
-        }
-
-        if (!loadedFromVideo)
-        {
-            string fallbackImageUrl = GetPrimaryGalleryImageUrl(_currentProject);
-
-            if (!string.IsNullOrWhiteSpace(fallbackImageUrl))
-                yield return StartCoroutine(LoadImageIntoImage(fallbackImageUrl, mainImage, -1));
-        }
-
-        _mainVisualRoutine = null;
-    }
-
-    private void BindGalleryImages()
-    {
-        ClearGallerySlots();
+        ClearImageSlots();
 
         if (_currentProject == null || _currentProject.imageUrls == null || _currentProject.imageUrls.Count == 0)
         {
-            Debug.Log("[AE_ProjectDetailUI] No gallery images in current project.");
+            Debug.Log("[AE_ProjectDetailUI] No images in current project.");
             return;
         }
 
-        int count = Mathf.Min(galleryImages.Count, _currentProject.imageUrls.Count);
+        int count = Mathf.Min(
+            MaxImageSlots,
+            Mathf.Min(imageSlots.Count, _currentProject.imageUrls.Count)
+        );
 
         for (int i = 0; i < count; i++)
         {
-            Image slot = galleryImages[i];
+            Image slot = imageSlots[i];
             if (slot == null)
             {
-                Debug.LogWarning($"[AE_ProjectDetailUI] Gallery slot {i} is null.");
+                Debug.LogWarning($"[AE_ProjectDetailUI] Image slot {i} is null.");
                 continue;
             }
 
             string imageUrl = _currentProject.imageUrls[i];
 
             slot.gameObject.SetActive(true);
-            slot.sprite = defaultGalleryImage;
+            slot.sprite = defaultImage;
             slot.preserveAspect = true;
+
+            Color color = slot.color;
+            color.a = 1f;
+            slot.color = color;
 
             if (string.IsNullOrWhiteSpace(imageUrl))
             {
-                Debug.LogWarning($"[AE_ProjectDetailUI] Gallery slot {i} has empty image url.");
+                Debug.LogWarning($"[AE_ProjectDetailUI] Image slot {i} has empty image url.");
                 continue;
             }
 
             Coroutine routine = StartCoroutine(LoadImageIntoImage(imageUrl, slot, i));
-            _galleryLoadRoutines.Add(routine);
+            _imageLoadRoutines.Add(routine);
         }
     }
 
-    private void ClearGallerySlots()
+    private void ClearImageSlots()
     {
-        for (int i = 0; i < galleryImages.Count; i++)
+        for (int i = 0; i < imageSlots.Count; i++)
         {
-            if (galleryImages[i] == null)
+            if (imageSlots[i] == null)
                 continue;
 
-            galleryImages[i].sprite = defaultGalleryImage;
-            galleryImages[i].preserveAspect = true;
-            galleryImages[i].gameObject.SetActive(false);
+            imageSlots[i].sprite = defaultImage;
+            imageSlots[i].preserveAspect = true;
+            imageSlots[i].gameObject.SetActive(false);
+
+            Color color = imageSlots[i].color;
+            color.a = 1f;
+            imageSlots[i].color = color;
         }
     }
 
     private IEnumerator DownloadAndPlayNarration(string url)
     {
-        SetNarratorState(NarratorState.Downloading);
+        SetNarratorState(DownloadState.Downloading);
 
         using UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.UNKNOWN);
-
         ApplyAuthorizationHeader(request);
 
         yield return request.SendWebRequest();
@@ -381,26 +297,25 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         if (request.result != UnityWebRequest.Result.Success)
         {
-            SetNarratorState(NarratorState.Failed, $"{narratorFailedMessage} ({request.error})");
+            SetNarratorState(DownloadState.Failed, $"{narratorFailedMessage} ({request.error})");
             yield break;
         }
 
         AudioClip clip = DownloadHandlerAudioClip.GetContent(request);
-
         if (clip == null)
         {
-            SetNarratorState(NarratorState.Failed, narratorFailedMessage);
+            SetNarratorState(DownloadState.Failed, narratorFailedMessage);
             yield break;
         }
 
         if (narratorAudioSource == null || narratorAudioSource.AudioSource == null)
         {
-            SetNarratorState(NarratorState.Failed, "Narrator AudioSource is missing.");
+            SetNarratorState(DownloadState.Failed, "Narrator AudioSource is missing.");
             yield break;
         }
 
         ApplyNarrationBgmMute(true);
-        SetNarratorState(NarratorState.Playing);
+        SetNarratorState(DownloadState.Playing);
 
         narratorAudioSource.AudioSource.Stop();
         narratorAudioSource.AudioSource.clip = clip;
@@ -420,7 +335,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (narratorAudioSource == null || narratorAudioSource.AudioSource == null)
         {
             ApplyNarrationBgmMute(false);
-            SetNarratorState(NarratorState.Failed, "Narrator AudioSource is missing.");
+            SetNarratorState(DownloadState.Failed, "Narrator AudioSource is missing.");
             _narrationMonitorRoutine = null;
             yield break;
         }
@@ -431,7 +346,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
             yield return null;
 
         ApplyNarrationBgmMute(false);
-        SetNarratorState(NarratorState.Completed);
+        SetNarratorState(DownloadState.Completed);
         _narrationMonitorRoutine = null;
     }
 
@@ -470,44 +385,48 @@ public class AE_ProjectDetailUI : MonoBehaviour
             ExhibitionAudioManager.Instance.ClearTemporaryBgmVolume();
     }
 
-    private void SetNarratorState(NarratorState state, string overrideMessage = null)
+    private void SetNarratorState(DownloadState state, string overrideMessage = null)
     {
         _narratorState = state;
 
         if (narratorLoadingObject != null)
-            narratorLoadingObject.SetActive(state == NarratorState.Downloading);
+            narratorLoadingObject.SetActive(state == DownloadState.Downloading);
 
         if (narratorPlayingObject != null)
-            narratorPlayingObject.SetActive(state == NarratorState.Playing);
+            narratorPlayingObject.SetActive(state == DownloadState.Playing);
 
         if (narratorFailedObject != null)
-            narratorFailedObject.SetActive(state == NarratorState.Failed);
+            narratorFailedObject.SetActive(state == DownloadState.Failed);
 
         if (narratorCompletedObject != null)
-            narratorCompletedObject.SetActive(state == NarratorState.Completed || state == NarratorState.Stopped);
+            narratorCompletedObject.SetActive(
+                state == DownloadState.Completed || state == DownloadState.Stopped
+            );
 
         if (narratorStatusText != null)
+        {
             narratorStatusText.text = string.IsNullOrWhiteSpace(overrideMessage)
                 ? GetNarratorStateMessage(state)
                 : overrideMessage;
+        }
 
         if (narratorButton != null)
-            narratorButton.interactable = _currentProject != null && state != NarratorState.Downloading;
+            narratorButton.interactable = _currentProject != null && state != DownloadState.Downloading;
     }
 
-    private string GetNarratorStateMessage(NarratorState state)
+    private string GetNarratorStateMessage(DownloadState state)
     {
         switch (state)
         {
-            case NarratorState.Downloading:
+            case DownloadState.Downloading:
                 return narratorLoadingMessage;
-            case NarratorState.Playing:
+            case DownloadState.Playing:
                 return narratorPlayingMessage;
-            case NarratorState.Failed:
+            case DownloadState.Failed:
                 return narratorFailedMessage;
-            case NarratorState.Completed:
+            case DownloadState.Completed:
                 return narratorCompletedMessage;
-            case NarratorState.Stopped:
+            case DownloadState.Stopped:
                 return narratorStoppedMessage;
             default:
                 return narratorIdleMessage;
@@ -516,20 +435,28 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
     private string BuildProjectTtsUrl(GovernmentProjectDto project)
     {
-        if (project == null || apiConfig == null)
+        if (project == null)
             return string.Empty;
 
         string projectId = FirstNotEmpty(project.id, project.runtimeId);
         if (string.IsNullOrWhiteSpace(projectId))
             return string.Empty;
 
-        string template = "ok";
-        // Fix this later on
-        
-        if (string.IsNullOrWhiteSpace(template))
-            return string.Empty;
+        if (ApiService.Instance != null)
+        {
+            return useEnglishNarrator
+                ? ApiService.Instance.GetAgencyExhibitionTtsEngUrl(projectId)
+                : ApiService.Instance.GetAgencyExhibitionTtsThUrl(projectId);
+        }
 
-        return template.Replace(":id", projectId);
+        if (apiConfig != null)
+        {
+            return useEnglishNarrator
+                ? apiConfig.GetAgencyExhibitionTtsEngUrl(projectId)
+                : apiConfig.GetAgencyExhibitionTtsThUrl(projectId);
+        }
+
+        return string.Empty;
     }
 
     private string GetProjectTitle(GovernmentProjectDto project)
@@ -552,109 +479,6 @@ public class AE_ProjectDetailUI : MonoBehaviour
             : FirstNotEmpty(project.description, project.descriptionEn);
     }
 
-    private string GetPrimaryGalleryImageUrl(GovernmentProjectDto project)
-    {
-        if (project == null || project.imageUrls == null || project.imageUrls.Count == 0)
-            return string.Empty;
-
-        return project.imageUrls[0];
-    }
-
-    private IEnumerator TryLoadVideoFirstFrame(string videoUrl, System.Action<bool> onFinished)
-    {
-        EnsureThumbnailPlayer();
-
-        if (_thumbnailVideoPlayer == null || _thumbnailRenderTexture == null)
-        {
-            onFinished?.Invoke(false);
-            yield break;
-        }
-
-        _thumbnailVideoPlayer.Stop();
-        _thumbnailVideoPlayer.source = VideoSource.Url;
-        _thumbnailVideoPlayer.url = videoUrl;
-        _thumbnailVideoPlayer.audioOutputMode = VideoAudioOutputMode.None;
-        _thumbnailVideoPlayer.renderMode = VideoRenderMode.RenderTexture;
-        _thumbnailVideoPlayer.targetTexture = _thumbnailRenderTexture;
-
-        _thumbnailVideoPlayer.Prepare();
-
-        float prepareTimer = videoPrepareTimeout;
-
-        while (!_thumbnailVideoPlayer.isPrepared && prepareTimer > 0f)
-        {
-            prepareTimer -= Time.unscaledDeltaTime;
-            yield return null;
-        }
-
-        if (!_thumbnailVideoPlayer.isPrepared)
-        {
-            onFinished?.Invoke(false);
-            yield break;
-        }
-
-        _thumbnailVideoPlayer.Play();
-
-        float frameTimer = videoFrameTimeout;
-
-        while (frameTimer > 0f)
-        {
-            bool hasFrame = _thumbnailVideoPlayer.texture != null &&
-                            (_thumbnailVideoPlayer.frame > 0 || _thumbnailVideoPlayer.time > 0.01d);
-
-            if (hasFrame)
-                break;
-
-            frameTimer -= Time.unscaledDeltaTime;
-            yield return null;
-        }
-
-        yield return new WaitForEndOfFrame();
-
-        if (_thumbnailRenderTexture == null)
-        {
-            _thumbnailVideoPlayer.Stop();
-            onFinished?.Invoke(false);
-            yield break;
-        }
-
-        Texture2D texture = new Texture2D(
-            _thumbnailRenderTexture.width,
-            _thumbnailRenderTexture.height,
-            TextureFormat.RGBA32,
-            false
-        );
-
-        RenderTexture previous = RenderTexture.active;
-        RenderTexture.active = _thumbnailRenderTexture;
-        texture.ReadPixels(
-            new Rect(0f, 0f, _thumbnailRenderTexture.width, _thumbnailRenderTexture.height),
-            0,
-            0
-        );
-        texture.Apply();
-        RenderTexture.active = previous;
-
-        _thumbnailVideoPlayer.Stop();
-
-        Sprite sprite = Sprite.Create(
-            texture,
-            new Rect(0f, 0f, texture.width, texture.height),
-            new Vector2(0.5f, 0.5f)
-        );
-
-        RegisterRuntimeAsset(texture);
-        RegisterRuntimeAsset(sprite);
-
-        if (mainImage != null)
-        {
-            mainImage.sprite = sprite;
-            mainImage.preserveAspect = true;
-        }
-
-        onFinished?.Invoke(true);
-    }
-
     private IEnumerator LoadImageIntoImage(string url, Image targetImage, int slotIndex)
     {
         if (targetImage == null)
@@ -666,7 +490,6 @@ public class AE_ProjectDetailUI : MonoBehaviour
         using UnityWebRequest request = UnityWebRequest.Get(url);
         request.downloadHandler = new DownloadHandlerBuffer();
         request.SetRequestHeader("Accept", "image/png,image/jpeg,image/*,*/*");
-
         ApplyAuthorizationHeader(request);
 
         yield return request.SendWebRequest();
@@ -681,7 +504,6 @@ public class AE_ProjectDetailUI : MonoBehaviour
         }
 
         byte[] bytes = request.downloadHandler.data;
-
         if (bytes == null || bytes.Length == 0)
         {
             Debug.LogWarning($"[AE_ProjectDetailUI] Image bytes empty. slot={slotIndex} | url={url}");
@@ -713,24 +535,11 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         targetImage.sprite = sprite;
         targetImage.preserveAspect = true;
-        targetImage.enabled = true;
-
-        Color color = targetImage.color;
-        color.a = 1f;
-        targetImage.color = color;
-
-        if (slotIndex >= 0)
-            targetImage.gameObject.SetActive(true);
+        targetImage.gameObject.SetActive(true);
     }
 
     private void StopAllRunningCoroutines()
     {
-        if (_mainVisualRoutine != null)
-        {
-            StopCoroutine(_mainVisualRoutine);
-            _mainVisualRoutine = null;
-        }
-
         if (_narrationDownloadRoutine != null)
         {
             StopCoroutine(_narrationDownloadRoutine);
@@ -743,57 +552,13 @@ public class AE_ProjectDetailUI : MonoBehaviour
             _narrationMonitorRoutine = null;
         }
 
-        for (int i = 0; i < _galleryLoadRoutines.Count; i++)
+        for (int i = 0; i < _imageLoadRoutines.Count; i++)
         {
-            if (_galleryLoadRoutines[i] != null)
-                StopCoroutine(_galleryLoadRoutines[i]);
+            if (_imageLoadRoutines[i] != null)
+                StopCoroutine(_imageLoadRoutines[i]);
         }
 
-        _galleryLoadRoutines.Clear();
-    }
-
-    private void EnsureThumbnailPlayer()
-    {
-        if (_thumbnailVideoPlayer != null && _thumbnailRenderTexture != null)
-            return;
-
-        GameObject playerObject = new GameObject("AE_ProjectDetail_ThumbnailPlayer");
-        playerObject.transform.SetParent(transform, false);
-        playerObject.hideFlags = HideFlags.HideInHierarchy;
-
-        _thumbnailVideoPlayer = playerObject.AddComponent<VideoPlayer>();
-        _thumbnailVideoPlayer.playOnAwake = false;
-        _thumbnailVideoPlayer.waitForFirstFrame = true;
-        _thumbnailVideoPlayer.isLooping = false;
-        _thumbnailVideoPlayer.skipOnDrop = false;
-        _thumbnailVideoPlayer.audioOutputMode = VideoAudioOutputMode.None;
-        _thumbnailVideoPlayer.renderMode = VideoRenderMode.RenderTexture;
-
-        _thumbnailRenderTexture = new RenderTexture(
-            videoThumbnailWidth,
-            videoThumbnailHeight,
-            0,
-            RenderTextureFormat.ARGB32
-        );
-        _thumbnailRenderTexture.Create();
-
-        _thumbnailVideoPlayer.targetTexture = _thumbnailRenderTexture;
-    }
-
-    private void ReleaseThumbnailPlayer()
-    {
-        if (_thumbnailVideoPlayer != null)
-            Destroy(_thumbnailVideoPlayer.gameObject);
-
-        _thumbnailVideoPlayer = null;
-
-        if (_thumbnailRenderTexture != null)
-        {
-            _thumbnailRenderTexture.Release();
-            Destroy(_thumbnailRenderTexture);
-        }
-
-        _thumbnailRenderTexture = null;
+        _imageLoadRoutines.Clear();
     }
 
     private void RegisterRuntimeAsset(Object asset)
@@ -820,15 +585,9 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (request == null)
             return;
 
-        string accessToken = GetAccessToken();
-
+        string accessToken = PlayerPrefs.GetString("access_token", string.Empty);
         if (!string.IsNullOrWhiteSpace(accessToken))
             request.SetRequestHeader("Authorization", $"Bearer {accessToken}");
-    }
-
-    private string GetAccessToken()
-    {
-        return PlayerPrefs.GetString("access_token", string.Empty);
     }
 
     private string TruncateWithEllipsis(string value, int maxCharacters)

@@ -7,7 +7,7 @@ using UnityEngine;
 public class QuizLeaderboardController : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] private QuizLeaderboardRepository repository;
+    [SerializeField] private QuizRepository repository;
 
     [Header("Panel")]
     [SerializeField] private GameObject panelRoot;
@@ -32,6 +32,11 @@ public class QuizLeaderboardController : MonoBehaviour
 
     private bool _hasSessionResult;
     private bool _isRefreshing;
+
+    private void Start()
+    {
+        RefreshLeaderboard();
+    }
 
     public void HandleQuizFinished(int correctCount, int totalQuestions, int finalUiScore)
     {
@@ -67,35 +72,41 @@ public class QuizLeaderboardController : MonoBehaviour
 
     private IEnumerator SubmitLatestResultRoutine()
     {
-        if (!_hasSessionResult || repository == null)
+        if (!_hasSessionResult)
             yield break;
 
-        bool isDone = false;
-        string errorMessage = null;
+        if (repository == null)
+        {
+            Debug.LogWarning("[QuizLeaderboardController] QuizRepository is missing.");
+            yield break;
+        }
 
-        // Submit correctCount instead of finalUiScore
-        // because your API body example is like:
-        // { "score": 8, "totalQuestions": 10 }
+        QuizSubmitOperationResult submitResult = null;
+
         yield return repository.SubmitResult(
-            _lastSubmittedCorrectCount,
-            _lastSubmittedTotalQuestions,
-            () =>
+            _lastFinalUiScore,
+            result =>
             {
-                isDone = true;
-            },
-            error =>
-            {
-                errorMessage = error;
-                isDone = true;
+                submitResult = result;
             });
 
-        if (!isDone)
-            yield break;
-
-        if (!string.IsNullOrWhiteSpace(errorMessage))
+        if (submitResult == null)
         {
-            Debug.LogWarning("[QuizLeaderboardController] Submit failed: " + errorMessage);
+            Debug.LogWarning("[QuizLeaderboardController] Submit result is null.");
+            yield break;
         }
+
+        if (!submitResult.success)
+        {
+            Debug.LogWarning(
+                $"[QuizLeaderboardController] Submit failed | type={submitResult.errorType} | code={submitResult.statusCode} | message={submitResult.message}"
+            );
+            yield break;
+        }
+
+        Debug.Log("[QuizLeaderboardController] Submit success.");
+
+        RefreshLeaderboard();
     }
 
     private IEnumerator RefreshLeaderboardRoutine()
@@ -105,32 +116,38 @@ public class QuizLeaderboardController : MonoBehaviour
         SetStatus("Loading...");
         ClearSpawned();
 
-        QuizLeaderboardDataDto loadedData = null;
-        string errorMessage = null;
-
         if (repository == null)
         {
-            SetStatus("Leaderboard repository is missing.");
+            SetStatus("Quiz repository is missing.");
             _isRefreshing = false;
             yield break;
         }
 
-        yield return repository.LoadLeaderboard(
-            data => loadedData = data,
-            error => errorMessage = error
-        );
+        QuizLeaderboardOperationResult loadResult = null;
 
-        if (loadedData == null)
+        yield return repository.LoadLeaderboard(result =>
         {
-            SetStatus(string.IsNullOrWhiteSpace(errorMessage)
+            loadResult = result;
+        });
+
+        if (loadResult == null)
+        {
+            SetStatus("Failed to load leaderboard.");
+            _isRefreshing = false;
+            yield break;
+        }
+
+        if (!loadResult.success || loadResult.response == null || loadResult.response.data == null)
+        {
+            SetStatus(string.IsNullOrWhiteSpace(loadResult.message)
                 ? "Failed to load leaderboard."
-                : errorMessage);
+                : loadResult.message);
 
             _isRefreshing = false;
             yield break;
         }
 
-        BuildLeaderboard(loadedData);
+        BuildLeaderboard(loadResult.response.data);
         _isRefreshing = false;
     }
 
@@ -138,13 +155,13 @@ public class QuizLeaderboardController : MonoBehaviour
     {
         SetStatus(string.Empty);
 
-        if (data != null && data.leaderboard != null && data.leaderboard.Length > 0)
+        if (data != null && data.top10 != null && data.top10.Length > 0)
         {
-            Array.Sort(data.leaderboard, CompareByRank);
+            Array.Sort(data.top10, CompareByRank);
 
-            for (int i = 0; i < data.leaderboard.Length; i++)
+            for (int i = 0; i < data.top10.Length; i++)
             {
-                LeaderboardEntryDto entry = data.leaderboard[i];
+                LeaderboardEntryDto entry = data.top10[i];
                 if (entry == null)
                     continue;
 
@@ -157,9 +174,14 @@ public class QuizLeaderboardController : MonoBehaviour
 
     private static int CompareByRank(LeaderboardEntryDto a, LeaderboardEntryDto b)
     {
-        if (a == null && b == null) return 0;
-        if (a == null) return 1;
-        if (b == null) return -1;
+        if (a == null && b == null)
+            return 0;
+
+        if (a == null)
+            return 1;
+
+        if (b == null)
+            return -1;
 
         return a.rank.CompareTo(b.rank);
     }
@@ -169,10 +191,7 @@ public class QuizLeaderboardController : MonoBehaviour
         if (entry == null)
             return;
 
-        LeaderboardEntryView prefab;
-        Transform parent;
-
-        if (!TryGetPrefabAndParent(entry.rank, out prefab, out parent))
+        if (!TryGetPrefabAndParent(entry.rank, out LeaderboardEntryView prefab, out Transform parent))
             return;
 
         LeaderboardEntryView view = Instantiate(prefab, parent);
@@ -222,15 +241,23 @@ public class QuizLeaderboardController : MonoBehaviour
         if (mySummaryText == null)
             return;
 
-        int shownMyScore = (data != null && data.myScore > 0)
-            ? data.myScore
-            : _lastFinalUiScore;
+        if (data != null && data.player != null)
+        {
+            string playerName = string.IsNullOrWhiteSpace(data.player.characterName)
+                ? "-"
+                : data.player.characterName;
 
-        string rankText = (data != null && data.myRank > 0)
-            ? "อันดับที่ " + data.myRank
-            : "-";
+            mySummaryText.text =
+                "ชื่อ: " + playerName +
+                " | คะแนนของคุณ: " + data.player.totalScore +
+                " คะแนน | อันดับของคุณ: " + data.player.rank;
 
-        mySummaryText.text = "คะแนนของคุณ: " + shownMyScore + " คะแนน อันดับของคุณ: " + rankText;
+            return;
+        }
+
+        mySummaryText.text =
+            "คะแนนของคุณ: " + _lastFinalUiScore +
+            " คะแนน | อันดับของคุณ: -";
     }
 
     private void ClearSpawned()

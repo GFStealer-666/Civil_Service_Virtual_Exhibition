@@ -13,12 +13,17 @@ MonoBehaviour:
   m_Name: MetaverseXR
   m_EditorClassIdentifier: 
   baseUrl: https://thaicivilserviceday.mhesi.go.th
-  loginEndpoint: /api/auth/login
+  loginEndpoint: /api/game/login
   registerEndpoint: /api/game/register
   anonymousEndpoint: /api/game/anonymous
   resetPasswordEndpoint: /api/auth/reset-password
-  weeklyQuizEndpoint: /api/game/quiz
+  getQuizEndpoint: /api/quiz/weekly
+  submitQuizEndpoint: /api/game/quiz/submit
+  getQuizLeaderboardEndpoint: /api/game/quiz/leaderboard
   governmentCatalogEndpoint: /api/game/submissions/all
-  agencyexhibitionttseng: /api/game/projects/:id/tts?lang=en
-  agencyexhibitionttsth: /api/game/projects/:id/tts
-  initialRoom: {fileID: 11400000, guid: c03de5142ec7c954382d218fbc6341bb, type: 2}
+  publicServiceUrl: /api/public/activities/all
+  hallofHonorUrl: /api/public/civil-servants/all
+  agencyExhibitionTtsEngEndpoint: /api/game/projects/:id/tts?lang=en
+  agencyExhibitionTtsThEndpoint: /api/game/projects/:id/tts
+  hallofHonorTtsEngEndpoint: /api/public/civil-servants/:id/tts?lang=en
+  hallofHonorTtsThEndPoint: /api/public/civil-servants/:id/tts

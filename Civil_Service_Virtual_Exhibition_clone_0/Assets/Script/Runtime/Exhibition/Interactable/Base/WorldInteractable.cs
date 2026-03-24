@@ -28,4 +28,5 @@ public abstract class WorldInteractable : MonoBehaviour
     }
 
     public abstract Task InteractAsync(GameObject interactor);
+
 }
