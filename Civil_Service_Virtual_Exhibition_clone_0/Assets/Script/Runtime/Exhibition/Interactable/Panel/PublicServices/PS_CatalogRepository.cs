@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Networking;
 
-public class PS_ServiceRepository : MonoBehaviour
+public class PS_CatalogRepository : MonoBehaviour
 {
-    public static PS_ServiceRepository Instance { get; private set; }
+    public static PS_CatalogRepository Instance { get; private set; }
 
     [Header("Load")]
     [SerializeField] private bool preloadOnStart = true;

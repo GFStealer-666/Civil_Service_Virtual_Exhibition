@@ -5,9 +5,9 @@ using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
 
-public class AE_ExhibitionRepository : MonoBehaviour
+public class AE_CatalogRepository : MonoBehaviour
 {
-    public static AE_ExhibitionRepository Instance { get; private set; }
+    public static AE_CatalogRepository Instance { get; private set; }
 
     [Header("Load")]
     [SerializeField] private bool preloadOnStart = true;
@@ -49,13 +49,13 @@ public class AE_ExhibitionRepository : MonoBehaviour
             Initialize();
     }
 
-    public static AE_ExhibitionRepository EnsureExists()
+    public static AE_CatalogRepository EnsureExists()
     {
         if (Instance != null)
             return Instance;
 
-        GameObject go = new GameObject(nameof(AE_ExhibitionRepository));
-        return go.AddComponent<AE_ExhibitionRepository>();
+        GameObject go = new GameObject(nameof(AE_CatalogRepository));
+        return go.AddComponent<AE_CatalogRepository>();
     }
 
     public void Initialize(bool forceRefresh = false, string accessToken = null)

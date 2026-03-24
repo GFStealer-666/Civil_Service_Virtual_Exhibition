@@ -5,7 +5,7 @@ using UnityEngine;
 public class PS_PanelController : MonoBehaviour
 {
     [Header("Repository")]
-    [SerializeField] private PS_ServiceRepository repository;
+    [SerializeField] private PS_CatalogRepository repository;
 
     [Header("Category")]
     [SerializeField] private string targetCategory;
@@ -29,7 +29,7 @@ public class PS_PanelController : MonoBehaviour
     private void OnEnable()
     {
         if (repository == null)
-            repository = PS_ServiceRepository.Instance;
+            repository = PS_CatalogRepository.Instance;
 
         if (repository == null)
         {

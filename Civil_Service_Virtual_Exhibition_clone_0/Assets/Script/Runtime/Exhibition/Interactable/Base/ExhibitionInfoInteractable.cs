@@ -73,7 +73,7 @@ public class ExhibitionInfoInteractable : WorldInteractable
         if (string.IsNullOrWhiteSpace(ministryKey))
             return;
 
-        AE_ExhibitionRepository store = AE_ExhibitionRepository.Instance;
+        AE_CatalogRepository store = AE_CatalogRepository.Instance;
         if (store == null || !store.HasData)
             return;
 
