@@ -31,6 +31,8 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
     [Header("Empty State")]
     [SerializeField] private GameObject emptyStateRoot;
     [SerializeField] private TextMeshProUGUI emptyStateText;
+    [Header("Loader")]
+    [SerializeField] private UniversalImageLoader photoLoader;
 
     private readonly List<RectTransform> _pages = new();
     private readonly List<PaginationDotUI> _dots = new();
@@ -39,7 +41,7 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
     private Vector2 _pointerDownPosition;
     private int _currentPageIndex;
     private HOH_UnitDto _currentUnit;
-
+    private HOH_PanelController _owner;
     public bool IsOpen => panelRoot != null && panelRoot.activeSelf;
     public HOH_UnitDto CurrentUnit => _currentUnit;
 
@@ -54,9 +56,10 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
             panelRoot.SetActive(false);
     }
 
-    public void Open(HOH_UnitDto unit)
+    public void Open(HOH_UnitDto unit, HOH_PanelController owner)
     {
         _currentUnit = unit;
+        _owner = owner;
 
         if (panelRoot != null)
             panelRoot.SetActive(true);
@@ -69,6 +72,9 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
     {
         if (panelRoot != null)
             panelRoot.SetActive(false);
+
+        if (_owner != null)
+            _owner.RestoreCurrentCategory();
     }
 
     public void SetItems(IReadOnlyList<HOH_PersonDto> items)
@@ -80,7 +86,11 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
 
         Rebuild();
     }
-
+    public void ReopenFromChild()
+    {
+        if (panelRoot != null)
+            panelRoot.SetActive(true);
+    }
     public void SetPage(int pageIndex)
     {
         if (_pages.Count == 0)
@@ -152,15 +162,8 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
         if (unitLogoImage != null)
             unitLogoImage.gameObject.SetActive(true);
 
-        if (unitLogoImage != null)
-        {
-            HOH_UnitLogoLoader loader = unitLogoImage.GetComponent<HOH_UnitLogoLoader>();
-
-            if (loader == null)
-                loader = unitLogoImage.gameObject.AddComponent<HOH_UnitLogoLoader>();
-
-            loader.Load(unit != null ? unit.logoUrl : string.Empty);
-        }
+        if (photoLoader != null)
+        photoLoader.Load(unit != null ? unit.logoUrl : string.Empty);
     }
 
     private void Rebuild()
@@ -226,7 +229,10 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
             return;
         }
 
-        officerDetailUI.Show(person, _currentUnit);
+        if (panelRoot != null)
+            panelRoot.SetActive(false);
+
+        officerDetailUI.Show(person, _currentUnit, this);
     }
 
     private void ClearGenerated()

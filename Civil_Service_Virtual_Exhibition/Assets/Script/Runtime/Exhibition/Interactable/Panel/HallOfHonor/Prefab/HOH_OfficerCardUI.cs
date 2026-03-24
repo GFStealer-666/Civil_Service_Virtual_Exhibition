@@ -12,7 +12,7 @@ public class HOH_OfficerCardUI : MonoBehaviour
     [SerializeField] private Button button;
     [SerializeField] private Image photoImage;
     [SerializeField] private TextMeshProUGUI officerNameText;
-
+    [SerializeField] private UniversalImageLoader photoLoader;
     [Header("Fallback")]
     [SerializeField] private Sprite fallbackPhoto;
 
@@ -29,6 +29,9 @@ public class HOH_OfficerCardUI : MonoBehaviour
         BindTexts(data);
         BindButton(onClick);
         BindPhoto(data);
+
+        if (photoLoader != null)
+        photoLoader.Load(data != null ? data.photoUrl : string.Empty);
     }
 
     private void OnEnable()

@@ -7585,7 +7585,7 @@ GameObject:
   - component: {fileID: 254435705}
   - component: {fileID: 254435704}
   m_Layer: 5
-  m_Name: '[API] Officer_Picture'
+  m_Name: Officer_PictureBorder
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -13925,6 +13925,7 @@ GameObject:
   m_Component:
   - component: {fileID: 514813115}
   - component: {fileID: 514813116}
+  - component: {fileID: 514813117}
   m_Layer: 5
   m_Name: HallofHonor_OfficerDetail
   m_TagString: Untagged
@@ -13981,12 +13982,29 @@ MonoBehaviour:
   roleText: {fileID: 2092533972}
   organizationText: {fileID: 1985664610}
   shortDescriptionText: {fileID: 1156173855}
-  photoLoader: {fileID: 1671994931}
   moreInfoButton: {fileID: 1105613019}
   narratorButton: {fileID: 1368186793}
   narratorButtonRoot: {fileID: 1368186791}
   narratorAvailable: 1
   shortDescriptionCharacterLimit: 360
+  photoLoader: {fileID: 514813117}
+--- !u!114 &514813117
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 514813114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88065452d0907804f9c881961f785a20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetImage: {fileID: 1932484291}
+  fallbackSprite: {fileID: 0}
+  preserveAspect: 1
+  useApiService: 1
+  useCache: 1
 --- !u!1 &520606743
 GameObject:
   m_ObjectHideFlags: 0
@@ -28164,6 +28182,37 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1004702516
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1004702517}
+  m_Layer: 0
+  m_Name: UniversalImageLoader
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1004702517
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1004702516}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 1345.1512, y: 541.3134, z: -433.91458}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1004712464
 GameObject:
   m_ObjectHideFlags: 0
@@ -39368,7 +39417,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1369314688}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 331697328}
+        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
+        m_MethodName: SetActive
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 1
+        m_CallState: 2
 --- !u!114 &1369314688
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -46333,8 +46394,6 @@ GameObject:
   - component: {fileID: 1671994928}
   - component: {fileID: 1671994930}
   - component: {fileID: 1671994929}
-  - component: {fileID: 1671994932}
-  - component: {fileID: 1671994931}
   m_Layer: 5
   m_Name: HallOfHonor_Controller
   m_TagString: Untagged
@@ -46388,7 +46447,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 512b9695118b3384088512729b11f603, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  panelRoot: {fileID: 0}
   repository: {fileID: 1525797441}
   filterResolver: {fileID: 1671994929}
   initializeRepositoryOnStart: 1
@@ -46420,34 +46478,6 @@ MonoBehaviour:
     searchBar: {fileID: 2094621294}
     emptyStateRoot: {fileID: 0}
     emptyStateText: {fileID: 0}
---- !u!114 &1671994931
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1671994927}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 98b18dca21e2c1e49b64968e98cb7556, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  targetImage: {fileID: 254435705}
-  fallbackSprite: {fileID: 0}
---- !u!114 &1671994932
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1671994927}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e0b8ae28dae62ae42aaf64be01d86649, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  targetImage: {fileID: 1048151831}
-  fallbackSprite: {fileID: 0}
 --- !u!1 &1687841478
 GameObject:
   m_ObjectHideFlags: 0
@@ -57801,6 +57831,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1815093392}
   - component: {fileID: 1815093393}
+  - component: {fileID: 1815093394}
   m_Layer: 5
   m_Name: HallofHonor_OfficerSelection
   m_TagString: Untagged
@@ -57823,9 +57854,9 @@ RectTransform:
   - {fileID: 1690672731}
   - {fileID: 1533093927}
   - {fileID: 701649703}
+  - {fileID: 1048151830}
   - {fileID: 646303507}
   - {fileID: 1336809143}
-  - {fileID: 1048151830}
   - {fileID: 1692229797}
   - {fileID: 1829804628}
   m_Father: {fileID: 849841933}
@@ -57863,6 +57894,24 @@ MonoBehaviour:
   swipeThreshold: 80
   emptyStateRoot: {fileID: 0}
   emptyStateText: {fileID: 0}
+  photoLoader: {fileID: 1815093394}
+--- !u!114 &1815093394
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1815093391}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88065452d0907804f9c881961f785a20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetImage: {fileID: 1048151831}
+  fallbackSprite: {fileID: 0}
+  preserveAspect: 1
+  useApiService: 1
+  useCache: 1
 --- !u!1001 &1816170259
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -61114,7 +61163,7 @@ GameObject:
   - component: {fileID: 1932484291}
   - component: {fileID: 1932484290}
   m_Layer: 5
-  m_Name: '[API] ProjectVideoButton'
+  m_Name: '[API] Officer_Picture'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -151464,3 +151513,4 @@ SceneRoots:
   - {fileID: 2087775731}
   - {fileID: 286029033}
   - {fileID: 1464937600}
+  - {fileID: 1004702517}

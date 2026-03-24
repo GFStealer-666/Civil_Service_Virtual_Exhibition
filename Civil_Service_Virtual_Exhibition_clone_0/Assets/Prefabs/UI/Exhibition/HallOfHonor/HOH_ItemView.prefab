@@ -171,8 +171,9 @@ GameObject:
   - component: {fileID: 1772597497146414385}
   - component: {fileID: 1441836909784649273}
   - component: {fileID: 2026856765828174164}
+  - component: {fileID: 2718223656373409043}
   m_Layer: 5
-  m_Name: HallOfHonor
+  m_Name: HOH_ItemView
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -298,8 +299,26 @@ MonoBehaviour:
   iconImage: {fileID: 5305556243232139210}
   unitNameText: {fileID: 8082380547369821008}
   personCountText: {fileID: 4642971079182984770}
+  iconLoader: {fileID: 2718223656373409043}
   fallbackSprite: {fileID: 0}
   personCountFormat: "\u0E08\u0E33\u0E19\u0E27\u0E19 {0} \u0E23\u0E32\u0E22"
+--- !u!114 &2718223656373409043
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1850201402807793065}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88065452d0907804f9c881961f785a20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetImage: {fileID: 5305556243232139210}
+  fallbackSprite: {fileID: 0}
+  preserveAspect: 1
+  useApiService: 1
+  useCache: 1
 --- !u!1 &7732618994468342084
 GameObject:
   m_ObjectHideFlags: 0

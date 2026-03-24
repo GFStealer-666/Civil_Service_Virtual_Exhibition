@@ -13,7 +13,7 @@ public class HOH_OfficerAdditionalDetailUI : MonoBehaviour
     [SerializeField] private TMP_Text roleText;
     [SerializeField] private TMP_Text organizationText;
     [SerializeField] private TMP_Text bodyText;
-
+    private HOH_OfficerDetailUI _previousDetail;
     private HOH_PersonDto _currentPerson;
     private HOH_UnitDto _currentUnit;
 
@@ -23,10 +23,11 @@ public class HOH_OfficerAdditionalDetailUI : MonoBehaviour
             closeButton.onClick.AddListener(Hide);
     }
 
-    public void Show(HOH_PersonDto person, HOH_UnitDto unit)
+    public void Show(HOH_PersonDto person, HOH_UnitDto unit, HOH_OfficerDetailUI previousDetail)
     {
         _currentPerson = person;
         _currentUnit = unit;
+        _previousDetail = previousDetail;
 
         if (root != null)
             root.SetActive(true);
@@ -53,6 +54,9 @@ public class HOH_OfficerAdditionalDetailUI : MonoBehaviour
 
         if (root != null)
             root.SetActive(false);
+
+        if (_previousDetail != null)
+            _previousDetail.ReopenFromChild();
     }
     private void BindText()
     {
@@ -135,7 +139,26 @@ public class HOH_OfficerAdditionalDetailUI : MonoBehaviour
             serviceBlock
         );
     }
+    public void HideSilently()
+    {
+        _currentPerson = null;
+        _currentUnit = null;
 
+        if (titleText != null)
+            titleText.text = string.Empty;
+
+        if (roleText != null)
+            roleText.text = string.Empty;
+
+        if (organizationText != null)
+            organizationText.text = string.Empty;
+
+        if (bodyText != null)
+            bodyText.text = string.Empty;
+
+        if (root != null)
+            root.SetActive(false);
+    }
     private string FirstNotEmpty(params string[] values)
     {
         if (values == null)

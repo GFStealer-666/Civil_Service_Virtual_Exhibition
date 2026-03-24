@@ -4,15 +4,19 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 
-public class HOH_RemoteImageLoader : MonoBehaviour
+public class UniversalImageLoader : MonoBehaviour
 {
     [SerializeField] private Image targetImage;
     [SerializeField] private Sprite fallbackSprite;
+    [SerializeField] private bool preserveAspect = true;
+    [SerializeField] private bool useApiService = true;
+    [SerializeField] private bool useCache = true;
 
     private static readonly Dictionary<string, Sprite> SpriteCache = new();
 
     private Coroutine _loadRoutine;
     private string _pendingUrl;
+    private string _pendingBearerToken;
 
     private void Awake()
     {
@@ -34,9 +38,10 @@ public class HOH_RemoteImageLoader : MonoBehaviour
         }
     }
 
-    public void Load(string url)
+    public void Load(string url, string bearerToken = null)
     {
         _pendingUrl = url;
+        _pendingBearerToken = bearerToken;
 
         if (targetImage == null)
             return;
@@ -47,16 +52,35 @@ public class HOH_RemoteImageLoader : MonoBehaviour
             return;
         }
 
-        if (SpriteCache.TryGetValue(url, out Sprite cachedSprite) && cachedSprite != null)
+        if (useCache && SpriteCache.TryGetValue(url, out Sprite cachedSprite) && cachedSprite != null)
         {
-            targetImage.sprite = cachedSprite;
-            targetImage.preserveAspect = true;
+            ApplySprite(cachedSprite);
             _pendingUrl = null;
+            _pendingBearerToken = null;
             return;
         }
 
         ApplyFallback();
         TryStartLoad();
+    }
+
+    public void ClearImage()
+    {
+        _pendingUrl = null;
+        _pendingBearerToken = null;
+
+        if (_loadRoutine != null)
+        {
+            StopCoroutine(_loadRoutine);
+            _loadRoutine = null;
+        }
+
+        ApplyFallback();
+    }
+
+    public static void ClearCache()
+    {
+        SpriteCache.Clear();
     }
 
     private void TryStartLoad()
@@ -73,23 +97,32 @@ public class HOH_RemoteImageLoader : MonoBehaviour
             _loadRoutine = null;
         }
 
-        _loadRoutine = StartCoroutine(LoadRoutine(_pendingUrl));
+        _loadRoutine = StartCoroutine(LoadRoutine(_pendingUrl, _pendingBearerToken));
     }
 
-    private IEnumerator LoadRoutine(string url)
+    private IEnumerator LoadRoutine(string url, string bearerToken)
     {
-        using UnityWebRequest request = UnityWebRequestTexture.GetTexture(url);
+        UnityWebRequest request = null;
+
+        if (useApiService && ApiService.Instance != null)
+            request = ApiService.Instance.GetTexture(url, bearerToken);
+        else
+            request = UnityWebRequestTexture.GetTexture(url);
+
         yield return request.SendWebRequest();
 
         _loadRoutine = null;
 
         if (request.result != UnityWebRequest.Result.Success)
         {
-            Debug.LogWarning($"[HOH_RemoteImageLoader] Failed to load image: {url} | {request.error}");
+            Debug.LogWarning($"[UniversalImageLoader] Failed to load image: {url} | {request.error}");
+            request.Dispose();
             yield break;
         }
 
         Texture2D texture = DownloadHandlerTexture.GetContent(request);
+        request.Dispose();
+
         if (texture == null)
             yield break;
 
@@ -99,17 +132,15 @@ public class HOH_RemoteImageLoader : MonoBehaviour
             new Vector2(0.5f, 0.5f)
         );
 
-        if (!SpriteCache.ContainsKey(url))
+        if (useCache && !SpriteCache.ContainsKey(url))
             SpriteCache.Add(url, sprite);
 
-        if (targetImage != null)
-        {
-            targetImage.sprite = sprite;
-            targetImage.preserveAspect = true;
-        }
-
         if (_pendingUrl == url)
+        {
+            ApplySprite(sprite);
             _pendingUrl = null;
+            _pendingBearerToken = null;
+        }
     }
 
     private void ApplyFallback()
@@ -118,9 +149,17 @@ public class HOH_RemoteImageLoader : MonoBehaviour
             return;
 
         if (fallbackSprite != null)
-        {
             targetImage.sprite = fallbackSprite;
-            targetImage.preserveAspect = true;
-        }
+
+        targetImage.preserveAspect = preserveAspect;
+    }
+
+    private void ApplySprite(Sprite sprite)
+    {
+        if (targetImage == null || sprite == null)
+            return;
+
+        targetImage.sprite = sprite;
+        targetImage.preserveAspect = preserveAspect;
     }
 }

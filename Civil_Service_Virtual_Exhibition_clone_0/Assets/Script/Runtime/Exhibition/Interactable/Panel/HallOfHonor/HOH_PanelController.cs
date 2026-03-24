@@ -22,9 +22,6 @@ public class HOH_PanelSection
 
 public class HOH_PanelController : MonoBehaviour
 {
-    [Header("Root")]
-    [SerializeField] private GameObject panelRoot;
-    
     [Header("Data")]
     [SerializeField] private HOH_CatalogRepository repository;
     [SerializeField] private HOH_FilterResolver filterResolver;
@@ -35,8 +32,6 @@ public class HOH_PanelController : MonoBehaviour
     [SerializeField] private bool singleVisibleCategoryMode = true;
     [SerializeField] private HOH_CategoryKind defaultVisibleCategory = HOH_CategoryKind.Ministry;
     [SerializeField] private List<HOH_PanelSection> sections = new();
-
-    public bool IsOpen => panelRoot != null && panelRoot.activeSelf;
     public HOH_CategoryKind CurrentCategory { get; private set; } = HOH_CategoryKind.Unknown;
 
     private bool _uiBound;
@@ -46,8 +41,6 @@ public class HOH_PanelController : MonoBehaviour
         ResolveReferences();
         BindSectionUi();
 
-        if (panelRoot != null && singleVisibleCategoryMode)
-            ShowCategory(defaultVisibleCategory);
     }
 
     private void OnEnable()
@@ -76,9 +69,6 @@ public class HOH_PanelController : MonoBehaviour
 
     public void Open(HOH_CategoryKind kind)
     {
-        if (panelRoot != null)
-            panelRoot.SetActive(true);
-
         CurrentCategory = kind;
 
         if (repository != null && !repository.HasData && !repository.IsLoading)
@@ -88,22 +78,6 @@ public class HOH_PanelController : MonoBehaviour
         RefreshCategory(kind);
     }
 
-    public void Close()
-    {
-        if (panelRoot != null)
-            panelRoot.SetActive(false);
-    }
-
-    public void Toggle(HOH_CategoryKind kind)
-    {
-        if (IsOpen && CurrentCategory == kind)
-        {
-            Close();
-            return;
-        }
-
-        Open(kind);
-    }
 
     public void ShowCategory(HOH_CategoryKind kind)
     {
@@ -115,8 +89,7 @@ public class HOH_PanelController : MonoBehaviour
             if (section == null || section.panelRoot == null)
                 continue;
 
-            bool shouldShow = !singleVisibleCategoryMode || section.categoryKind == kind;
-            section.panelRoot.SetActive(shouldShow);
+            section.panelRoot.SetActive(section.categoryKind == kind);
         }
     }
 
@@ -330,6 +303,28 @@ public class HOH_PanelController : MonoBehaviour
             return;
         }
 
-        officerSelectionPanel.Open(unit);
+        HideAllCategoryPanels();
+        officerSelectionPanel.Open(unit, this);
+    }
+
+    public void HideAllCategoryPanels()
+    {
+        for (int i = 0; i < sections.Count; i++)
+        {
+            HOH_PanelSection section = sections[i];
+            if (section == null || section.panelRoot == null)
+                continue;
+
+            section.panelRoot.SetActive(false);
+        }
+    }
+
+    public void RestoreCurrentCategory()
+    {
+        if (CurrentCategory == HOH_CategoryKind.Unknown)
+            return;
+
+        ShowCategory(CurrentCategory);
+        RefreshCategory(CurrentCategory);
     }
 }

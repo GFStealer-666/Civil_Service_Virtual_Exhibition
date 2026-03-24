@@ -13,7 +13,7 @@ public class HOH_ItemView : MonoBehaviour
     [SerializeField] private Image iconImage;
     [SerializeField] private TextMeshProUGUI unitNameText;
     [SerializeField] private TextMeshProUGUI personCountText;
-
+    [SerializeField] private UniversalImageLoader iconLoader;
     [Header("Fallback")]
     [SerializeField] private Sprite fallbackSprite;
     [SerializeField] private string personCountFormat = "จำนวน {0} ราย";
@@ -27,10 +27,13 @@ public class HOH_ItemView : MonoBehaviour
     public void Bind(HOH_UnitDto data, Action<HOH_UnitDto> onClick = null)
     {
         _boundData = data;
-
+        
         BindTexts(data);
         BindButton(onClick);
         BindIcon(data);
+
+        if (iconLoader != null)
+        iconLoader.Load(data != null ? data.logoUrl : string.Empty);
     }
 
     private void OnEnable()

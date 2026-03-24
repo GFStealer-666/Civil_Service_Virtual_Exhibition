@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 2068476769307973331}
   - component: {fileID: 3889199397267047083}
   m_Layer: 5
-  m_Name: OfficerCardUI
+  m_Name: '[API] OfficerImage'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -134,8 +134,9 @@ GameObject:
   - component: {fileID: 5193217577525826991}
   - component: {fileID: 1546891493726698363}
   - component: {fileID: 9039789789355207239}
+  - component: {fileID: 3850881282936828507}
   m_Layer: 5
-  m_Name: OfficerCardUI
+  m_Name: HOH_OfficerCardUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -214,6 +215,7 @@ MonoBehaviour:
   button: {fileID: 3889199397267047083}
   photoImage: {fileID: 5193217577525826991}
   officerNameText: {fileID: 5838919904629439791}
+  photoLoader: {fileID: 3850881282936828507}
   fallbackPhoto: {fileID: 0}
 --- !u!114 &9039789789355207239
 MonoBehaviour:
@@ -228,6 +230,23 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_ShowMaskGraphic: 0
+--- !u!114 &3850881282936828507
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3066172570224757137}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88065452d0907804f9c881961f785a20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetImage: {fileID: 2068476769307973331}
+  fallbackSprite: {fileID: 0}
+  preserveAspect: 1
+  useApiService: 1
+  useCache: 1
 --- !u!1 &4497814193190753408
 GameObject:
   m_ObjectHideFlags: 0

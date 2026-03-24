@@ -17,9 +17,6 @@ public class HOH_OfficerDetailUI : MonoBehaviour
     [SerializeField] private TMP_Text organizationText;
     [SerializeField] private TMP_Text shortDescriptionText;
 
-    [Header("Main Visual")]
-    [SerializeField] private HOH_RemoteImageLoader photoLoader;
-
     [Header("Buttons")]
     [SerializeField] private Button moreInfoButton;
     [SerializeField] private Button narratorButton;
@@ -28,10 +25,11 @@ public class HOH_OfficerDetailUI : MonoBehaviour
 
     [Header("Config")]
     [SerializeField] private int shortDescriptionCharacterLimit = 360;
-
+    [Header("Loader")]
+    [SerializeField] private UniversalImageLoader photoLoader;
     private HOH_PersonDto _currentPerson;
     private HOH_UnitDto _currentUnit;
-
+    private HOH_OfficerSelectionPanelController _previousSelection;
     public bool HasPerson => _currentPerson != null;
 
     private void Awake()
@@ -46,10 +44,11 @@ public class HOH_OfficerDetailUI : MonoBehaviour
             narratorButton.onClick.AddListener(HandleNarratorClicked);
     }
 
-    public void Show(HOH_PersonDto person, HOH_UnitDto unit)
+    public void Show(HOH_PersonDto person, HOH_UnitDto unit, HOH_OfficerSelectionPanelController previousSelection)
     {
         _currentPerson = person;
         _currentUnit = unit;
+        _previousSelection = previousSelection;
 
         if (root != null)
             root.SetActive(true);
@@ -62,8 +61,21 @@ public class HOH_OfficerDetailUI : MonoBehaviour
     public void Hide()
     {
         if (additionalDetailUI != null)
-            additionalDetailUI.Hide();
+            additionalDetailUI.HideSilently();
 
+        _currentPerson = null;
+        _currentUnit = null;
+
+        ApplyEmptyState();
+
+        if (root != null)
+            root.SetActive(false);
+
+        if (_previousSelection != null)
+            _previousSelection.ReopenFromChild();
+    }
+    public void HideSilently()
+    {
         _currentPerson = null;
         _currentUnit = null;
 
@@ -73,6 +85,11 @@ public class HOH_OfficerDetailUI : MonoBehaviour
             root.SetActive(false);
     }
 
+    public void ReopenFromChild()
+    {
+        if (root != null)
+            root.SetActive(true);
+    }
     private void BindText()
     {
         if (_currentPerson == null)
@@ -149,7 +166,10 @@ public class HOH_OfficerDetailUI : MonoBehaviour
             return;
         }
 
-        additionalDetailUI.Show(_currentPerson, _currentUnit);
+        if (root != null)
+            root.SetActive(false);
+
+        additionalDetailUI.Show(_currentPerson, _currentUnit, this);
     }
 
     private void HandleNarratorClicked()
