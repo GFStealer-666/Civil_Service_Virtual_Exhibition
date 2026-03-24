@@ -113,7 +113,7 @@ public class AE_MainPanelController : MonoBehaviour
 
     private void BuildPanel()
     {
-        GovernmentCatalogStore store = GovernmentCatalogStore.Instance;
+        AE_ExhibitionRepository store = AE_ExhibitionRepository.Instance;
 
         if (store == null || !store.HasData)
         {
@@ -207,7 +207,7 @@ public class AE_MainPanelController : MonoBehaviour
             return;
         }
 
-        GovernmentCatalogStore store = GovernmentCatalogStore.Instance;
+        AE_ExhibitionRepository store = AE_ExhibitionRepository.Instance;
         if (store == null || !store.HasData)
         {
             Debug.LogWarning("[MinistryExhibitionPanelController] Store has no data.");
@@ -277,7 +277,7 @@ public class AE_MainPanelController : MonoBehaviour
         if (data == null)
             return null;
 
-        GovernmentCatalogStore store = GovernmentCatalogStore.Instance;
+        AE_ExhibitionRepository store = AE_ExhibitionRepository.Instance;
         if (store == null || !store.HasData)
             return null;
 

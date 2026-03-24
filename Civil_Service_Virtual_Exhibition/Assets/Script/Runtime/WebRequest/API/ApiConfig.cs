@@ -21,8 +21,9 @@ public class ApiConfig : ScriptableObject
     [Header("AgencyExhibition")]
     [SerializeField] private string governmentCatalogEndpoint = "/api/game/submissions/all";
     [Header("Public Service")]
-    [SerializeField] private string publicServiceListUrl ="/api/public/activities/all";
-
+    [SerializeField] private string publicServiceUrl ="/api/public/activities/all";
+    [Header("Hall of Frame")]
+    [SerializeField] private string hallofHonorUrl = "/api/public/civil-servants/all";
     [Header("TTS")]
     [SerializeField] private string agencyExhibitionTtsEngEndpoint = "/api/game/projects/:id/tts?lang=en";
     [SerializeField] private string agencyExhibitionTtsThEndpoint = "/api/game/projects/:id/tts";
@@ -38,7 +39,8 @@ public class ApiConfig : ScriptableObject
     public string QuizSubmitUrl => Build(submitQuizEndpoint);
     public string GetQuizLeaderboardUrl => Build(getQuizLeaderboardEndpoint);
     public string GovernmentCatalogUrl => Build(governmentCatalogEndpoint);
-    public string PublicServiceUrl => Build(publicServiceListUrl);
+    public string PublicServiceUrl => Build(publicServiceUrl);
+    public string HallofHonorUrl => Build(hallofHonorUrl);
     public string GetAgencyExhibitionTtsEngUrl(string projectId)
     {
         return BuildTemplate(agencyExhibitionTtsEngEndpoint, projectId);

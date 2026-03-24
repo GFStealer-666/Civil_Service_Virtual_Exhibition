@@ -10,7 +10,7 @@ public class PS_ServiceRepository : MonoBehaviour
 
     [Header("Load")]
     [SerializeField] private bool preloadOnStart = true;
-
+    [SerializeField] private bool dontDestroyOnLoad = true;
     public bool IsLoading { get; private set; }
     public bool HasData => _cachedResponse != null && _cachedResponse.data != null;
     public string LastError { get; private set; }
@@ -32,6 +32,9 @@ public class PS_ServiceRepository : MonoBehaviour
         }
 
         Instance = this;
+
+        if (dontDestroyOnLoad)
+            DontDestroyOnLoad(gameObject);
     }
 
     private void Start()
@@ -153,7 +156,7 @@ public class PS_ServiceRepository : MonoBehaviour
         }
 
         HandleSuccess(dto);
-
+        Debug.Log($"[PS_Repository] Downloaded success");
         IsLoading = false;
         _loadRoutine = null;
     }

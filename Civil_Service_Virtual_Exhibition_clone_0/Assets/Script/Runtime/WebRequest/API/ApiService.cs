@@ -24,7 +24,8 @@ public class ApiService : MonoBehaviour
     public string GetQuizLeaderboardUrl => config != null ? config.GetQuizLeaderboardUrl : string.Empty;
 
     public string GovernmentCatalogUrl => config != null ? config.GovernmentCatalogUrl : string.Empty;
-     public string PublicServiceUrl => config != null ? config.PublicServiceUrl : string.Empty;
+    public string PublicServiceUrl => config != null ? config.PublicServiceUrl : string.Empty;
+    public string HallOfHonorUrl => config != null ? config.HallofHonorUrl : string.Empty;
 
     private void Awake()
     {
