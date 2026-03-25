@@ -33,11 +33,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 7005183116900851874}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 0.5}
-  m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -79, y: 0}
-  m_SizeDelta: {x: 53.75354, y: 50}
-  m_Pivot: {x: 1, y: 0.5}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 282.92, y: 0}
+  m_SizeDelta: {x: 247.75, y: 50}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &3646071187106912738
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -55,8 +55,8 @@ MonoBehaviour:
   isTokenize: 1
   separator: 
   tmpText: {fileID: 7754070358403595568}
-  lastKnownText: 98
-  outputString: 98
+  lastKnownText: '98 '
+  outputString: '98 '
   lastWordCount: 1
   guiMode: 0
   guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
@@ -89,7 +89,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 98
+  m_text: '98 '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 53b996a541caf76428dae1f499114a87, type: 2}
   m_sharedMaterial: {fileID: 6974300880222390269, guid: 53b996a541caf76428dae1f499114a87, type: 2}

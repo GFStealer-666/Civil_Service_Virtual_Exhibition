@@ -318,12 +318,20 @@ public class AE_ProjectDetailUI : MonoBehaviour
         SetNarratorState(MediaState.Downloading);
         overlay?.ShowLoading("กำลังดาวน์โหลดเสียงบรรยาย", "กรุณารอสักครู่");
 
-        using UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.UNKNOWN);
+        using UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.MPEG);
         ApplyAuthorizationHeader(request);
+        request.SetRequestHeader("Accept", "audio/mpeg,audio/*,*/*");
+
+        DownloadHandlerAudioClip downloadHandler = request.downloadHandler as DownloadHandlerAudioClip;
+        if (downloadHandler != null)
+            downloadHandler.streamAudio = false;
 
         yield return request.SendWebRequest();
 
         _narrationDownloadRoutine = null;
+
+        string contentType = request.GetResponseHeader("Content-Type");
+        Debug.Log($"[AE_ProjectDetailUI] TTS response | code={request.responseCode} | type={contentType} | error={request.error}");
 
         if (request.result != UnityWebRequest.Result.Success)
         {
@@ -340,8 +348,9 @@ public class AE_ProjectDetailUI : MonoBehaviour
         AudioClip clip = DownloadHandlerAudioClip.GetContent(request);
         if (clip == null)
         {
-            SetNarratorState(MediaState.Failed, narratorFailedMessage);
+            Debug.LogError($"[AE_ProjectDetailUI] Narration clip is null. Content-Type={contentType}");
 
+            SetNarratorState(MediaState.Failed, narratorFailedMessage);
             overlay?.ShowFailed(
                 "โหลดเสียงบรรยายไม่สำเร็จ",
                 "ไม่พบข้อมูลเสียงบรรยาย"
