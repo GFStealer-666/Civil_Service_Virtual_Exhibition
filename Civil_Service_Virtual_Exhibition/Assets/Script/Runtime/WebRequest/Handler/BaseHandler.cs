@@ -75,8 +75,14 @@ public abstract class BaseHandler : MonoBehaviour
         onSuccess?.Invoke(req.downloadHandler.text);
     }
 
-    protected void EnterMainScene(PlayerData player)
+    protected void EnterMainScene(LoginData  loginData)
     {
+        if (loginData == null || loginData.player == null)
+        {
+            ShowFailedOverlay("Login data is missing.");
+            return;
+        }
+
         LocalPlayerData localData = LocalPlayerData.Instance;
         if (localData == null)
         {
@@ -84,7 +90,10 @@ public abstract class BaseHandler : MonoBehaviour
             return;
         }
 
+        PlayerData player = loginData.player;
+
         localData.SetContact(player.email, player.phone);
+
         localData.PlayerName = string.IsNullOrWhiteSpace(player.characterName)
             ? $"{player.firstName} {player.lastName}".Trim()
             : player.characterName;
@@ -93,14 +102,18 @@ public abstract class BaseHandler : MonoBehaviour
         localData.IsGuest = player.isAnonymous;
         localData.Gender = ParseGender(player.gender);
         localData.PlayerID = player.id;
-        localData.PlayerToken = player.token;
-        localData.SetAuth(player.id, player.token);
+        localData.PlayerToken = loginData.token;
 
         if (!localData.HasInitializedAppearance)
         {
             localData.RandomizeAppearance();
             localData.HasInitializedAppearance = true;
         }
+
+        Debug.Log(
+            $"[EnterMainScene] ID={localData.PlayerID}, Name={localData.PlayerName}, " +
+            $"Gender={localData.Gender}, Org={localData.Organization}, Email={player.email}, Token={localData.PlayerToken}"
+        );
 
         ShowSuccessOverlay(
             "เข้าสู่ระบบสำเร็จ",

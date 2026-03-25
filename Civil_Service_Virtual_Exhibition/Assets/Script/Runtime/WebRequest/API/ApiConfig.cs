@@ -17,7 +17,7 @@ public class ApiConfig : ScriptableObject
     [SerializeField] private string getQuizEndpoint = "/api/quiz/weekly";
     [SerializeField] private string submitQuizEndpoint = "/api/game/quiz/submit";
     [SerializeField] private string getQuizLeaderboardEndpoint = "/api/game/quiz/leaderboard";
-
+    [SerializeField] private string getQuizLeaderboardMe = "/api/game/quiz/me";
     [Header("AgencyExhibition")]
     [SerializeField] private string governmentCatalogEndpoint = "/api/game/submissions/all";
     [Header("Public Service")]
@@ -40,6 +40,7 @@ public class ApiConfig : ScriptableObject
     public string GetQuizUrl => Build(getQuizEndpoint);
     public string QuizSubmitUrl => Build(submitQuizEndpoint);
     public string GetQuizLeaderboardUrl => Build(getQuizLeaderboardEndpoint);
+    public string GetQuizMe => Build(getQuizLeaderboardMe);
     public string GovernmentCatalogUrl => Build(governmentCatalogEndpoint);
     public string PublicServiceUrl => Build(publicServiceUrl);
     public string HallofHonorUrl => Build(hallofHonorUrl);

@@ -123,31 +123,47 @@ public class QuizLeaderboardController : MonoBehaviour
             yield break;
         }
 
-        QuizLeaderboardOperationResult loadResult = null;
+        QuizLeaderboardOperationResult leaderboardResult = null;
+        QuizMeOperationResult meResult = null;
 
         yield return repository.LoadLeaderboard(result =>
         {
-            loadResult = result;
+            leaderboardResult = result;
         });
 
-        if (loadResult == null)
+        yield return repository.LoadMe(result =>
+        {
+            meResult = result;
+        });
+
+        if (leaderboardResult == null)
         {
             SetStatus("Failed to load leaderboard.");
+            UpdateMySummary(null);
             _isRefreshing = false;
             yield break;
         }
 
-        if (!loadResult.success || loadResult.response == null || loadResult.response.data == null)
+        if (!leaderboardResult.success || leaderboardResult.response == null || leaderboardResult.response.data == null)
         {
-            SetStatus(string.IsNullOrWhiteSpace(loadResult.message)
+            SetStatus(string.IsNullOrWhiteSpace(leaderboardResult.message)
                 ? "Failed to load leaderboard."
-                : loadResult.message);
+                : leaderboardResult.message);
+
+            UpdateMySummary(meResult != null && meResult.success && meResult.response != null
+                ? meResult.response.data
+                : null);
 
             _isRefreshing = false;
             yield break;
         }
 
-        BuildLeaderboard(loadResult.response.data);
+        BuildLeaderboard(leaderboardResult.response.data);
+
+        UpdateMySummary(meResult != null && meResult.success && meResult.response != null
+            ? meResult.response.data
+            : null);
+
         _isRefreshing = false;
     }
 
@@ -169,7 +185,7 @@ public class QuizLeaderboardController : MonoBehaviour
             }
         }
 
-        UpdateMySummary(data);
+        
     }
 
     private static int CompareByRank(LeaderboardEntryDto a, LeaderboardEntryDto b)
@@ -236,27 +252,30 @@ public class QuizLeaderboardController : MonoBehaviour
         }
     }
 
-    private void UpdateMySummary(QuizLeaderboardDataDto data)
+    private void UpdateMySummary(QuizMeDataDto data)
     {
         if (mySummaryText == null)
             return;
 
-        if (data != null && data.player != null)
-        {
-            string playerName = string.IsNullOrWhiteSpace(data.player.characterName)
-                ? "-"
-                : data.player.characterName;
+        string playerName =
+            LocalPlayerData.Instance != null &&
+            !string.IsNullOrWhiteSpace(LocalPlayerData.Instance.PlayerName)
+                ? LocalPlayerData.Instance.PlayerName
+                : "-";
 
+        if (data != null)
+        {
             mySummaryText.text =
                 "ชื่อ: " + playerName +
-                " | คะแนนของคุณ: " + data.player.totalScore +
-                " คะแนน | อันดับของคุณ: " + data.player.rank;
+                " | คะแนนของคุณ: " + data.totalScore +
+                " คะแนน | อันดับของคุณ: " + data.rank;
 
             return;
         }
 
         mySummaryText.text =
-            "คะแนนของคุณ: " + _lastFinalUiScore +
+            "ชื่อ: " + playerName +
+            " | คะแนนของคุณ: " + _lastFinalUiScore +
             " คะแนน | อันดับของคุณ: -";
     }
 

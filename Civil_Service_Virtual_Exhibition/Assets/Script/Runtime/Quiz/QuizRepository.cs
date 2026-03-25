@@ -48,7 +48,16 @@ public class QuizLeaderboardOperationResult
     public string rawBody;
     public QuizLeaderboardResponseDto response;
 }
-
+[Serializable]
+public class QuizMeOperationResult
+{
+    public bool success;
+    public QuizRequestErrorType errorType;
+    public long statusCode;
+    public string message;
+    public string rawBody;
+    public QuizMeResponseDto response;
+}
 public class QuizRepository : MonoBehaviour
 {
     private ApiService Api => ApiService.Instance;
@@ -259,17 +268,23 @@ public class QuizRepository : MonoBehaviour
             );
             yield break;
         }
-
+        
         QuizSubmitRequestDto bodyDto = new QuizSubmitRequestDto
         {
             score = score
         };
 
         string json = JsonUtility.ToJson(bodyDto);
-
+        Debug.Log(
+            $"[QuizRepository] SubmitResult | url={Api.QuizSubmitUrl} | " +
+            $"requireToken={requireToken} | hasToken={!string.IsNullOrWhiteSpace(token)} | " +
+            $"tokenPreview={(string.IsNullOrWhiteSpace(token) ? "<empty>" : token.Substring(0, Mathf.Min(12, token.Length)) + "...")}"
+        );
         using UnityWebRequest request = Api.PostJson(Api.QuizSubmitUrl, json, token);
         yield return request.SendWebRequest();
-
+        Debug.Log(
+            $"[QuizRepository] Authorization header = {request.GetRequestHeader("Authorization")}"
+        );
         long statusCode = request.responseCode;
         string rawBody = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
 
@@ -358,7 +373,7 @@ public class QuizRepository : MonoBehaviour
             yield break;
         }
 
-        if (!dto.success || dto.data == null)
+       if (!dto.success)
         {
             CompleteSubmit(
                 result,
@@ -624,6 +639,205 @@ public class QuizRepository : MonoBehaviour
 
         Debug.Log(
             $"[QuizRepository][Leaderboard] success={result.success}, " +
+            $"errorType={result.errorType}, " +
+            $"statusCode={result.statusCode}, " +
+            $"message={result.message}"
+        );
+
+        onCompleted?.Invoke(result);
+    }
+
+    public IEnumerator LoadMe(
+    Action<QuizMeOperationResult> onCompleted,
+    string accessTokenOverride = null,
+    bool requireToken = true)
+    {
+        QuizMeOperationResult result = new QuizMeOperationResult();
+
+        if (Api == null)
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.MissingApiService,
+                0,
+                "ApiService.Instance is null.",
+                null,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(Api.GetQuizMe))
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.MissingUrl,
+                0,
+                "GetQuizMe is missing.",
+                null,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        string token = ResolveToken(accessTokenOverride);
+
+        if (requireToken && string.IsNullOrWhiteSpace(token))
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.MissingToken,
+                0,
+                "Quiz me requires token, but no token was found.",
+                null,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        using UnityWebRequest request = Api.Get(Api.GetQuizMe, token);
+        yield return request.SendWebRequest();
+
+        long statusCode = request.responseCode;
+        string rawBody = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
+
+        bool hasNetworkFailure =
+            request.result == UnityWebRequest.Result.ConnectionError ||
+            request.result == UnityWebRequest.Result.DataProcessingError;
+
+        if (hasNetworkFailure)
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.NetworkError,
+                statusCode,
+                request.error,
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (statusCode < 200 || statusCode >= 300)
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.HttpError,
+                statusCode,
+                string.IsNullOrWhiteSpace(rawBody) ? request.error : rawBody,
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(rawBody))
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.EmptyResponse,
+                statusCode,
+                "Quiz me API returned empty response.",
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        QuizMeResponseDto dto = null;
+
+        try
+        {
+            dto = JsonUtility.FromJson<QuizMeResponseDto>(rawBody);
+        }
+        catch (Exception ex)
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.ParseError,
+                statusCode,
+                $"Quiz me parse error: {ex.Message}",
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (dto == null)
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.ParseError,
+                statusCode,
+                "Quiz me response parsed to null.",
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (!dto.success || dto.data == null)
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.BackendRejected,
+                statusCode,
+                "Quiz me response is invalid.",
+                rawBody,
+                dto,
+                onCompleted
+            );
+            yield break;
+        }
+
+        CompleteMe(
+            result,
+            true,
+            QuizRequestErrorType.None,
+            statusCode,
+            "Quiz me loaded successfully.",
+            rawBody,
+            dto,
+            onCompleted
+        );
+    }
+
+    private void CompleteMe(
+    QuizMeOperationResult result,
+    bool success,
+    QuizRequestErrorType errorType,
+    long statusCode,
+    string message,
+    string rawBody,
+    QuizMeResponseDto response,
+    Action<QuizMeOperationResult> onCompleted)
+    {
+        result.success = success;
+        result.errorType = errorType;
+        result.statusCode = statusCode;
+        result.message = message;
+        result.rawBody = rawBody;
+        result.response = response;
+
+        Debug.Log(
+            $"[QuizRepository][Me] success={result.success}, " +
             $"errorType={result.errorType}, " +
             $"statusCode={result.statusCode}, " +
             $"message={result.message}"

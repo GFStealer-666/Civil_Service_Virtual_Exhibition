@@ -146,7 +146,7 @@ public class StatusOverlay : MonoBehaviour
         if (panelRoot != null)
             panelRoot.SetActive(show);
 
-        if(useOverlay)
+        if(useOverlay || !overlay.activeSelf)
             overlay.SetActive(true);
     }
 

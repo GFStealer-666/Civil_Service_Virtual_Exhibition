@@ -26,7 +26,7 @@ public class ApiService : MonoBehaviour
     public string GovernmentCatalogUrl => config != null ? config.GovernmentCatalogUrl : string.Empty;
     public string PublicServiceUrl => config != null ? config.PublicServiceUrl : string.Empty;
     public string HallOfHonorUrl => config != null ? config.HallofHonorUrl : string.Empty;
-
+    public string GetQuizMe => config != null ? config.GetQuizMe : string.Empty;
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -125,6 +125,8 @@ public class ApiService : MonoBehaviour
 
         if (!string.IsNullOrWhiteSpace(bearerToken))
         {
+            Debug.Log("======================================================");
+            Debug.Log($"{bearerToken}");
             request.SetRequestHeader("Authorization", $"Bearer {bearerToken}");
         }
     }

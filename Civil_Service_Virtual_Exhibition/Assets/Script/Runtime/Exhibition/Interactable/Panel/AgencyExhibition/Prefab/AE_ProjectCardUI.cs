@@ -5,9 +5,14 @@ using UnityEngine.UI;
 
 public class AE_ProjectCardUI : MonoBehaviour
 {
+    [Header("UI")]
     [SerializeField] private Button rootButton;
     [SerializeField] private Image backgroundImage;
     [SerializeField] private TMP_Text titleText;
+    [SerializeField] private UniversalImageLoader backgroundLoader;
+
+    [Header("Fallback")]
+    [SerializeField] private Sprite fallbackBackground;
 
     private ExhibitionProjectData _data;
     private Action<ExhibitionProjectData> _onClicked;
@@ -40,20 +45,15 @@ public class AE_ProjectCardUI : MonoBehaviour
 
         if (backgroundImage != null)
         {
-            backgroundImage.sprite = data != null ? data.FallbackBackgroundSprite : null;
+            backgroundImage.sprite = data != null && data.FallbackBackgroundSprite != null
+                ? data.FallbackBackgroundSprite
+                : fallbackBackground;
+
             backgroundImage.preserveAspect = false;
         }
-    }
 
-    public void SetBackground(Sprite sprite, int bindVersion)
-    {
-        if (bindVersion != _bindVersion)
-            return;
-
-        if (backgroundImage == null || sprite == null)
-            return;
-
-        backgroundImage.sprite = sprite;
+        if (backgroundLoader != null)
+            backgroundLoader.Load(GetBackgroundUrl(data));
     }
 
     private void HandleClicked()
@@ -62,5 +62,13 @@ public class AE_ProjectCardUI : MonoBehaviour
             return;
 
         _onClicked?.Invoke(_data);
+    }
+
+    private string GetBackgroundUrl(ExhibitionProjectData data)
+    {
+        if (data == null)
+            return string.Empty;
+
+        return data.BackgroundUrl;
     }
 }

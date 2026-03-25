@@ -17,7 +17,7 @@ MonoBehaviour:
   registerEndpoint: /api/game/register
   anonymousEndpoint: /api/game/anonymous
   resetPasswordEndpoint: /api/auth/reset-password
-  getQuizEndpoint: /api/quiz/weekly
+  getQuizEndpoint: /api/game/quiz
   submitQuizEndpoint: /api/game/quiz/submit
   getQuizLeaderboardEndpoint: /api/game/quiz/leaderboard
   governmentCatalogEndpoint: /api/game/submissions/all

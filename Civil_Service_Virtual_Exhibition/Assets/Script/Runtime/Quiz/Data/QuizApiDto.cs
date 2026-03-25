@@ -100,3 +100,20 @@ public class QuizSessionChoice
     public string text;
     public bool isCorrect;
 }
+
+[Serializable]
+public class QuizMeResponseDto
+{
+    public bool success;
+    public QuizMeDataDto data;
+}
+
+[Serializable]
+public class QuizMeDataDto
+{
+    public int totalScore;
+    public int setsCompleted;
+    public int maxScore;
+    public int rank;
+    public int totalPlayers;
+}
