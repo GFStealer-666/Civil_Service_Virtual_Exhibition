@@ -38127,7 +38127,6 @@ GameObject:
   - component: {fileID: 1139210951}
   - component: {fileID: 1139210950}
   - component: {fileID: 1139210949}
-  - component: {fileID: 1139210948}
   m_Layer: 5
   m_Name: '[API] OfficerDescription'
   m_TagString: Untagged
@@ -38154,20 +38153,6 @@ RectTransform:
   m_AnchoredPosition: {x: 767.45, y: -0}
   m_SizeDelta: {x: 1534.9, y: 574.6}
   m_Pivot: {x: 0.5, y: 1}
---- !u!114 &1139210948
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1139210946}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3245ec927659c4140ac4f8d17403cc18, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_HorizontalFit: 0
-  m_VerticalFit: 2
 --- !u!114 &1139210949
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -38909,7 +38894,7 @@ RectTransform:
   m_Father: {fileID: 1535602827}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.111189954}
-  m_AnchorMax: {x: 1, y: 0.9999995}
+  m_AnchorMax: {x: 1, y: 0.9999996}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
   m_Pivot: {x: 0.5, y: 0.5}
