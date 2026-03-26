@@ -33,6 +33,9 @@ public class QuizInteractable : WorldInteractable
 
     public override Task InteractAsync(GameObject interactor)
     {
+        if (!CanInteract(interactor))
+            return Task.CompletedTask;
+            
         _isQuizActive = true;
         objectToShow.SetActive(true);
         return Task.CompletedTask;

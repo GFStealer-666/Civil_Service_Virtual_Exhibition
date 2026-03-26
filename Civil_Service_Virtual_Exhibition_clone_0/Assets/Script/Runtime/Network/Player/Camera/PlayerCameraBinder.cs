@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using Fusion;
 
@@ -8,17 +9,35 @@ public class PlayerCameraBinder : NetworkBehaviour
         if (!HasInputAuthority)
             return;
 
-        if (Camera.main == null)
-            return;
+        StartCoroutine(BindWhenCameraReady());
+    }
 
-        ThirdPersonCameraFollow follow = Camera.main.GetComponent<ThirdPersonCameraFollow>();
-        if (follow == null)
-            return;
+    private IEnumerator BindWhenCameraReady()
+    {
+        float timeout = 3f;
+        float elapsed = 0f;
 
-        Player player = GetComponent<Player>();
-        if (player == null)
-            return;
+        while (elapsed < timeout)
+        {
+            Camera mainCamera = Camera.main;
+            if (mainCamera != null)
+            {
+                ThirdPersonCameraFollow follow = mainCamera.GetComponent<ThirdPersonCameraFollow>();
+                if (follow != null)
+                {
+                    Player player = GetComponent<Player>();
+                    if (player != null)
+                    {
+                        follow.SetTarget(player);
+                        yield break;
+                    }
+                }
+            }
 
-        follow.SetTarget(player);
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        Debug.LogWarning("[PlayerCameraBinder] Could not bind camera to local player.");
     }
 }

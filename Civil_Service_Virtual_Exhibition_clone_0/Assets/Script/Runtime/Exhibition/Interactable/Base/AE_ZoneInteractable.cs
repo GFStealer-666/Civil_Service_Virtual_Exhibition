@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
-public class ExhibitionInfoInteractable : WorldInteractable
+public class AE_ZoneInteractable : WorldInteractable
 {
     [Header("Ministry")]
     [SerializeField] private string ministryKey;
@@ -21,30 +21,36 @@ public class ExhibitionInfoInteractable : WorldInteractable
 
     private Vector3 _canvasStartLocalPos;
     private bool _ministryNameInitialized;
-    void Awake()
+
+    private void Awake()
     {
-        if(!panelController)
-        {
-            panelController = FindAnyObjectByType<AE_MainPanelController>();
-        }
+        ResolvePanelController();
     }
+
     private void Start()
     {
         if (canvas != null)
-        {
             _canvasStartLocalPos = canvas.transform.localPosition;
-        }
 
         TryInitializeMinistryName();
     }
 
     public override bool CanInteract(GameObject interactor)
     {
-        return panelController != null && !panelController.IsOpen;
+        if (panelController == null || interactor == null)
+            return false;
+
+        if (!LocalPlayerResolver.IsLocalPlayer(interactor))
+            return false;
+
+        return !panelController.IsOpen;
     }
 
     public override Task InteractAsync(GameObject interactor)
     {
+        if (!CanInteract(interactor))
+            return Task.CompletedTask;
+
         panelController.Open(ministryKey);
         return Task.CompletedTask;
     }
@@ -52,9 +58,7 @@ public class ExhibitionInfoInteractable : WorldInteractable
     private void Update()
     {
         if (!_ministryNameInitialized)
-        {
             TryInitializeMinistryName();
-        }
 
         if (canvas == null)
             return;
@@ -66,6 +70,28 @@ public class ExhibitionInfoInteractable : WorldInteractable
         Vector3 pos = _canvasStartLocalPos;
         pos.y = centerY + yOffset;
         canvas.transform.localPosition = pos;
+    }
+
+    private void ResolvePanelController()
+    {
+        if (panelController != null)
+            return;
+
+        AE_MainPanelController[] controllers = Resources.FindObjectsOfTypeAll<AE_MainPanelController>();
+
+        for (int i = 0; i < controllers.Length; i++)
+        {
+            AE_MainPanelController candidate = controllers[i];
+
+            if (candidate == null)
+                continue;
+
+            if (!candidate.gameObject.scene.IsValid())
+                continue;
+
+            panelController = candidate;
+            break;
+        }
     }
 
     private void TryInitializeMinistryName()
@@ -84,9 +110,6 @@ public class ExhibitionInfoInteractable : WorldInteractable
             return;
 
         GovernmentMinistryDto ministry = store.GetMinistryById(ministryKey);
-
-        // If ministryKey is not runtimeId, use this instead:
-        // GovernmentMinistryDto ministry = store.FindMinistry(ministryKey);
 
         if (ministry == null)
         {

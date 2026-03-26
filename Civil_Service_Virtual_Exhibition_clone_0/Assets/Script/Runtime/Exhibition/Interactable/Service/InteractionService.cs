@@ -1,67 +1,106 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class InteractionService : MonoBehaviour
 {
+    [SerializeField] private float interactDistance = 3f;
+
     public WorldInteractable CurrentInteractable { get; private set; }
     public GameObject CurrentInteractor { get; private set; }
 
-    [SerializeField] private float interactDistance = 3f;
+    private readonly HashSet<WorldInteractable> _nearbyInteractables = new();
+    private Player _localPlayer;
 
     private void Update()
     {
-        GameObject localPlayer = LocalPlayerResolver.GetLocalPlayerByTag();
+        if (_localPlayer == null || !LocalPlayerResolver.IsOwnedByLocalClient(_localPlayer))
+            _localPlayer = LocalPlayerResolver.GetLocalPlayer();
 
-        if (localPlayer == null)
+        if (_localPlayer == null)
         {
             CurrentInteractable = null;
             CurrentInteractor = null;
             return;
         }
 
-        WorldInteractable nearest = FindNearestInteractable(localPlayer.transform.position);
+        CurrentInteractor = _localPlayer.gameObject;
+        CurrentInteractable = FindBestInteractable(_localPlayer.transform.position, CurrentInteractor);
 
-        CurrentInteractable = nearest;
-        CurrentInteractor = nearest != null ? localPlayer : null;
+        if (CurrentInteractable == null)
+            CurrentInteractor = null;
     }
 
-    private WorldInteractable FindNearestInteractable(Vector3 fromPosition)
+    private WorldInteractable FindBestInteractable(Vector3 fromPosition, GameObject interactor)
     {
-        WorldInteractable[] interactables = FindObjectsByType<WorldInteractable>(FindObjectsSortMode.None);
-
         WorldInteractable nearest = null;
         float bestSqrDistance = interactDistance * interactDistance;
 
-        for (int i = 0; i < interactables.Length; i++)
+        _nearbyInteractables.RemoveWhere(x => x == null);
+
+        foreach (WorldInteractable interactable in _nearbyInteractables)
         {
-            if (interactables[i] == null)
+            if (interactable == null)
                 continue;
 
-            float sqrDistance = (interactables[i].transform.position - fromPosition).sqrMagnitude;
+            if (!interactable.CanInteract(interactor))
+                continue;
+
+            float sqrDistance = (interactable.transform.position - fromPosition).sqrMagnitude;
             if (sqrDistance > bestSqrDistance)
                 continue;
 
             bestSqrDistance = sqrDistance;
-            nearest = interactables[i];
+            nearest = interactable;
         }
 
         return nearest;
     }
 
-    public void SetCurrent(WorldInteractable interactable, GameObject interactor)
+    public void RegisterNearby(WorldInteractable interactable, Collider other)
     {
-        CurrentInteractable = interactable;
-        CurrentInteractor = interactor;
+        if (interactable == null)
+            return;
+
+        if (!LocalPlayerResolver.IsLocalPlayerCollider(other))
+            return;
+
+        _nearbyInteractables.Add(interactable);
     }
 
-    public void ClearCurrent(WorldInteractable interactable, GameObject interactor)
+    public void UnregisterNearby(WorldInteractable interactable, Collider other)
     {
-        if (CurrentInteractable != interactable)
+        if (interactable == null)
             return;
 
-        if (CurrentInteractor != interactor)
+        if (!LocalPlayerResolver.IsLocalPlayerCollider(other))
             return;
 
-        CurrentInteractable = null;
-        CurrentInteractor = null;
+        _nearbyInteractables.Remove(interactable);
+
+        if (CurrentInteractable == interactable)
+        {
+            CurrentInteractable = null;
+            CurrentInteractor = null;
+        }
+    }
+
+    public bool IsCurrentValid()
+    {
+        if (CurrentInteractable == null || CurrentInteractor == null)
+            return false;
+
+        if (!LocalPlayerResolver.IsLocalPlayer(CurrentInteractor))
+            return false;
+
+        if (!_nearbyInteractables.Contains(CurrentInteractable))
+            return false;
+
+        float sqrDistance =
+            (CurrentInteractable.transform.position - CurrentInteractor.transform.position).sqrMagnitude;
+
+        if (sqrDistance > interactDistance * interactDistance)
+            return false;
+
+        return CurrentInteractable.CanInteract(CurrentInteractor);
     }
 }

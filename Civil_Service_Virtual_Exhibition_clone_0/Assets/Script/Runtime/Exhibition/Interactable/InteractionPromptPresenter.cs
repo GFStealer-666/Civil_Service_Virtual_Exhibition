@@ -11,8 +11,7 @@ public class InteractionPromptPresenter : MonoBehaviour
         if (interactionService == null || promptView == null)
             return;
 
-        WorldInteractable interactable = interactionService.CurrentInteractable;
-        if (interactable == null)
+        if (!interactionService.IsCurrentValid())
         {
             promptView.Hide();
             return;

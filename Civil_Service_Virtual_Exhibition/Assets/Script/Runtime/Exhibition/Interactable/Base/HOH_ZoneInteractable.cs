@@ -17,6 +17,28 @@ public class HOH_ZoneInteractable : WorldInteractable
 
     private Vector3 _canvasStartLocalPos;
 
+    private void Awake()
+    {
+        if (panelController == null)
+        {
+            HOH_PanelController[] controllers = Resources.FindObjectsOfTypeAll<HOH_PanelController>();
+
+            for (int i = 0; i < controllers.Length; i++)
+            {
+                HOH_PanelController candidate = controllers[i];
+
+                if (candidate == null)
+                    continue;
+
+                if (!candidate.gameObject.scene.IsValid())
+                    continue;
+
+                panelController = candidate;
+                break;
+            }
+        }
+    }
+
     private void Start()
     {
         if (canvas != null)
@@ -25,11 +47,20 @@ public class HOH_ZoneInteractable : WorldInteractable
 
     public override bool CanInteract(GameObject interactor)
     {
-        return panelController != null;
+        if (panelController == null || interactor == null)
+            return false;
+
+        if (!LocalPlayerResolver.IsLocalPlayer(interactor))
+            return false;
+
+        return true;
     }
 
     public override Task InteractAsync(GameObject interactor)
     {
+        if (!CanInteract(interactor))
+            return Task.CompletedTask;
+
         panelController.Open(categoryToOpen);
         return Task.CompletedTask;
     }

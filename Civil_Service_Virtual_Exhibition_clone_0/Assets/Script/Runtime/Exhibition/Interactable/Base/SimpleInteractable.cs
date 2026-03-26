@@ -1,7 +1,5 @@
 using System.Threading.Tasks;
-using TMPro;
 using UnityEngine;
-
 
 public class SimpleInteractable : WorldInteractable
 {
@@ -18,30 +16,35 @@ public class SimpleInteractable : WorldInteractable
 
     private Vector3 _canvasStartLocalPos;
 
-    void Start()
+    private void Start()
     {
-        
         if (canvas != null)
-        {
             _canvasStartLocalPos = canvas.transform.localPosition;
-        }
     }
 
     public override bool CanInteract(GameObject interactor)
     {
-        return objectToShow != null && !objectToShow.activeSelf;
+        if (objectToShow == null || interactor == null)
+            return false;
+
+        if (!LocalPlayerResolver.IsLocalPlayer(interactor))
+            return false;
+
+        return !objectToShow.activeSelf;
     }
 
     public override Task InteractAsync(GameObject interactor)
     {
+        if (!CanInteract(interactor))
+            return Task.CompletedTask;
 
         objectToShow.SetActive(true);
         return Task.CompletedTask;
     }
 
-    void Update()
+    private void Update()
     {
-                if (canvas == null)
+        if (canvas == null)
             return;
 
         float centerY = (floatMinY + floatMaxY) * 0.5f;

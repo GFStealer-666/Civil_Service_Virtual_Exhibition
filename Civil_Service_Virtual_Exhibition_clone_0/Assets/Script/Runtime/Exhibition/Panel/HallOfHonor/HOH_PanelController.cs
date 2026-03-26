@@ -22,6 +22,9 @@ public class HOH_PanelSection
 
 public class HOH_PanelController : MonoBehaviour
 {
+    [Header("Root")]
+    [SerializeField] private GameObject panelRoot;
+
     [Header("Data")]
     [SerializeField] private HOH_CatalogRepository repository;
     [SerializeField] private HOH_FilterResolver filterResolver;
@@ -36,6 +39,7 @@ public class HOH_PanelController : MonoBehaviour
     [SerializeField] private List<HOH_PanelSection> sections = new();
 
     public HOH_CategoryKind CurrentCategory { get; private set; } = HOH_CategoryKind.Unknown;
+    public bool IsOpen => panelRoot != null ? panelRoot.activeInHierarchy : gameObject.activeInHierarchy;
 
     private bool _uiBound;
 
@@ -71,6 +75,9 @@ public class HOH_PanelController : MonoBehaviour
 
     public void Open(HOH_CategoryKind kind)
     {
+        if (panelRoot != null)
+            panelRoot.SetActive(true);
+
         CurrentCategory = kind;
 
         if (repository != null && !repository.HasData && !repository.IsLoading)
@@ -78,6 +85,19 @@ public class HOH_PanelController : MonoBehaviour
 
         ShowCategory(kind);
         RefreshCategory(kind);
+
+        PlayerInput.PushUIBlock();
+    }
+
+    public void Close()
+    {
+        HideAllCategoryPanels();
+        CurrentCategory = HOH_CategoryKind.Unknown;
+
+        if (panelRoot != null)
+            panelRoot.SetActive(false);
+
+        PlayerInput.PopUIBlock();
     }
 
     public void ShowCategory(HOH_CategoryKind kind)
@@ -178,10 +198,7 @@ public class HOH_PanelController : MonoBehaviour
         SetEmptyState(section, visibleCount == 0, "ไม่พบข้อมูล");
     }
 
-    private bool MatchesFilter(
-        HOH_CategoryKind categoryKind,
-        HOH_UnitDto unit,
-        IReadOnlyCollection<HOH_FilterOption> filters)
+    private bool MatchesFilter(HOH_CategoryKind categoryKind, HOH_UnitDto unit, IReadOnlyCollection<HOH_FilterOption> filters)
     {
         if (filters == null || filters.Count == 0)
             return true;

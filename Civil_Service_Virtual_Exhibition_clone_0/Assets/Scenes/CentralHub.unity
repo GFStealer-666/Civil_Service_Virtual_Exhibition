@@ -55001,6 +55001,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 512b9695118b3384088512729b11f603, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  panelRoot: {fileID: 0}
   repository: {fileID: 1525797441}
   filterResolver: {fileID: 1671994929}
   initializeRepositoryOnStart: 1
@@ -64940,7 +64941,7 @@ GameObject:
   - component: {fileID: 1767034047}
   - component: {fileID: 1767034048}
   m_Layer: 0
-  m_Name: InteractableService
+  m_Name: InteractionService
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -32,14 +32,11 @@ public class InteractionController : MonoBehaviour
 
     private async Task TryInteractAsync()
     {
+        if (!interactionService.IsCurrentValid())
+            return;
+
         WorldInteractable interactable = interactionService.CurrentInteractable;
         GameObject interactor = interactionService.CurrentInteractor;
-
-        if (interactable == null || interactor == null)
-            return;
-
-        if (!interactable.CanInteract(interactor))
-            return;
 
         _busy = true;
 

@@ -21,7 +21,7 @@ public class InteractionTriggerZone : MonoBehaviour
     {
         _trigger = GetComponent<Collider>();
         _trigger.isTrigger = true;
-        
+
         if (interactionService == null)
             interactionService = FindFirstObjectByType<InteractionService>();
 
@@ -31,14 +31,13 @@ public class InteractionTriggerZone : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        Debug.Log($"[InteractionTriggerZone] Enter by {other.name}, layer={LayerMask.LayerToName(other.gameObject.layer)}");
         if (interactionService == null || interactable == null)
             return;
+
         if (!LocalPlayerResolver.IsLocalPlayerCollider(other))
             return;
 
-        Debug.Log($"[{gameObject.name}] Player get in the zone");
-        interactionService.SetCurrent(interactable, other.transform.root.gameObject);
+        interactionService.RegisterNearby(interactable, other);
     }
 
     private void OnTriggerExit(Collider other)
@@ -46,10 +45,9 @@ public class InteractionTriggerZone : MonoBehaviour
         if (interactionService == null || interactable == null)
             return;
 
-        GameObject root = other.transform.root.gameObject;
-        if (!root.CompareTag("LocalPlayer"))
+        if (!LocalPlayerResolver.IsLocalPlayerCollider(other))
             return;
 
-        interactionService.ClearCurrent(interactable, other.transform.root.gameObject);
+        interactionService.UnregisterNearby(interactable, other);
     }
 }
