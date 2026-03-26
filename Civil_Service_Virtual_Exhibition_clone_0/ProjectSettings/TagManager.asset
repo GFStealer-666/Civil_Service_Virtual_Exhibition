@@ -11,6 +11,7 @@ TagManager:
   - Mud
   - CinemachineTarget
   - LocalPlayer
+  - Camera
   layers:
   - Default
   - TransparentFX
@@ -18,7 +19,7 @@ TagManager:
   - Target
   - Water
   - UI
-  - 
+  - AvatarOnly
   - 
   - Agent
   - Projectile

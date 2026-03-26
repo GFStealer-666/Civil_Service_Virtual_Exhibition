@@ -1,10 +1,10 @@
 using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.Video;
 using UnityEngine.UI;
+using UnityEngine.Video;
 
-public class AE_ProjectVideoPlayerController : MonoBehaviour
+public class AE_ProjectVideoPlayerController : MonoBehaviour, IAE_ProjectVideoPlaybackController
 {
     public event Action Prepared;
     public event Action<string> Failed;
@@ -20,24 +20,27 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
 
     private Coroutine _prepareTimeoutRoutine;
     private bool _isPrepared;
+    private bool _isPreparing;
+    private bool _cancelPrepareRequested;
 
     public bool IsPrepared => _isPrepared;
+    public bool IsPreparing => _isPreparing;
     public bool IsPlaying => videoPlayer != null && videoPlayer.isPlaying;
     public double CurrentTime => videoPlayer != null ? videoPlayer.time : 0d;
     public double Duration => videoPlayer != null ? videoPlayer.length : 0d;
 
     private void Awake()
     {
-        if (videoPlayer != null)
-        {
-            videoPlayer.playOnAwake = false;
-            videoPlayer.waitForFirstFrame = true;
-            videoPlayer.skipOnDrop = true;
+        if (videoPlayer == null)
+            return;
 
-            videoPlayer.prepareCompleted += HandlePrepareCompleted;
-            videoPlayer.errorReceived += HandleErrorReceived;
-            videoPlayer.loopPointReached += HandleLoopPointReached;
-        }
+        videoPlayer.playOnAwake = false;
+        videoPlayer.waitForFirstFrame = true;
+        videoPlayer.skipOnDrop = true;
+
+        videoPlayer.prepareCompleted += HandlePrepareCompleted;
+        videoPlayer.errorReceived += HandleErrorReceived;
+        videoPlayer.loopPointReached += HandleLoopPointReached;
     }
 
     private void OnDestroy()
@@ -74,9 +77,17 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
             return;
         }
 
-        StopPlayback();
+        if (LooksLikeYoutubeUrl(url))
+        {
+            Failed?.Invoke("This video uses a YouTube page URL. Unity VideoPlayer needs a direct video file URL.");
+            return;
+        }
 
+        StopPlaybackInternal(resetOutput: true, notifyState: true);
+
+        _cancelPrepareRequested = false;
         _isPrepared = false;
+        _isPreparing = true;
 
         if (videoOutputImage != null)
             videoOutputImage.texture = null;
@@ -87,6 +98,19 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
 
         StopPrepareTimeoutRoutine();
         _prepareTimeoutRoutine = StartCoroutine(PrepareTimeoutRoutine(prepareTimeoutSeconds));
+    }
+
+    private bool LooksLikeYoutubeUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(url))
+            return false;
+
+        string lower = url.Trim().ToLowerInvariant();
+
+        return lower.Contains("youtube.com/watch") ||
+               lower.Contains("youtu.be/") ||
+               lower.Contains("youtube.com/shorts/") ||
+               lower.Contains("youtube.com/live/");
     }
 
     public void Play()
@@ -107,24 +131,19 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
         PlayStateChanged?.Invoke(false);
     }
 
+    public void CancelPrepare()
+    {
+        if (!_isPreparing)
+            return;
+
+        _cancelPrepareRequested = true;
+        StopPlaybackInternal(resetOutput: true, notifyState: true);
+    }
+
     public void StopPlayback()
     {
-        StopPrepareTimeoutRoutine();
-
-        if (videoPlayer != null)
-        {
-            if (videoPlayer.isPlaying)
-                videoPlayer.Stop();
-
-            videoPlayer.targetTexture = null;
-        }
-
-        if (videoOutputImage != null)
-            videoOutputImage.texture = null;
-
-        _isPrepared = false;
-        PlayStateChanged?.Invoke(false);
-        TimeChanged?.Invoke(0d, 0d);
+        _cancelPrepareRequested = false;
+        StopPlaybackInternal(resetOutput: true, notifyState: true);
     }
 
     public void SeekNormalized(float normalizedValue)
@@ -144,7 +163,7 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
     {
         float timer = timeoutSeconds;
 
-        while (timer > 0f && !_isPrepared)
+        while (timer > 0f && _isPreparing && !_isPrepared)
         {
             timer -= Time.unscaledDeltaTime;
             yield return null;
@@ -152,9 +171,10 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
 
         _prepareTimeoutRoutine = null;
 
-        if (_isPrepared)
+        if (_isPrepared || !_isPreparing)
             yield break;
 
+        StopPlaybackInternal(resetOutput: true, notifyState: true);
         Failed?.Invoke("Unable to load video.");
     }
 
@@ -162,6 +182,14 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
     {
         StopPrepareTimeoutRoutine();
 
+        if (_cancelPrepareRequested)
+        {
+            _cancelPrepareRequested = false;
+            StopPlaybackInternal(resetOutput: true, notifyState: true);
+            return;
+        }
+
+        _isPreparing = false;
         _isPrepared = true;
 
         if (videoOutputImage != null)
@@ -178,7 +206,16 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
     {
         StopPrepareTimeoutRoutine();
 
+        if (_cancelPrepareRequested)
+        {
+            _cancelPrepareRequested = false;
+            StopPlaybackInternal(resetOutput: true, notifyState: true);
+            return;
+        }
+
+        _isPreparing = false;
         _isPrepared = false;
+
         Failed?.Invoke(string.IsNullOrWhiteSpace(message) ? "Unable to load video." : message);
     }
 
@@ -198,6 +235,33 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
             return;
 
         aspectRatioFitter.aspectRatio = (float)texture.width / texture.height;
+    }
+
+    private void StopPlaybackInternal(bool resetOutput, bool notifyState)
+    {
+        StopPrepareTimeoutRoutine();
+
+        if (videoPlayer != null)
+        {
+            if (videoPlayer.isPlaying || videoPlayer.isPrepared)
+                videoPlayer.Stop();
+
+            videoPlayer.url = string.Empty;
+            videoPlayer.clip = null;
+            videoPlayer.targetTexture = null;
+        }
+
+        if (resetOutput && videoOutputImage != null)
+            videoOutputImage.texture = null;
+
+        _isPrepared = false;
+        _isPreparing = false;
+
+        if (notifyState)
+        {
+            PlayStateChanged?.Invoke(false);
+            TimeChanged?.Invoke(0d, 0d);
+        }
     }
 
     private void StopPrepareTimeoutRoutine()

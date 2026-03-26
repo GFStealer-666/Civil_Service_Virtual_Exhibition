@@ -7,8 +7,6 @@ using UnityEngine.UI;
 
 public class AE_ProjectDetailUI : MonoBehaviour
 {
-
-
     private const int MaxImageSlots = 4;
 
     [Header("Config")]
@@ -21,6 +19,9 @@ public class AE_ProjectDetailUI : MonoBehaviour
     [SerializeField] private AE_AdditionalProjectDetailUI additionalProjectDetailUI;
     [SerializeField] private AE_ProjectVideoPanel projectVideoUI;
 
+    [Header("Media")]
+    [SerializeField] private AE_ProjectNarrationController narrationController;
+    [SerializeField] private MediaSessionCoordinator mediaCoordinator;
 
     [Header("Root")]
     [SerializeField] private GameObject root;
@@ -37,32 +38,19 @@ public class AE_ProjectDetailUI : MonoBehaviour
     [Header("Buttons")]
     [SerializeField] private Button moreInfoButton;
     [SerializeField] private Button narratorButton;
+    [SerializeField] private TMP_Text narratorButtonLabel;
     [SerializeField] private Button videoButton;
 
+    [Header("Narrator Button Labels")]
+    [SerializeField] private string narratorPlayLabel = "Play";
+    [SerializeField] private string narratorCancelLabel = "Cancel";
+    [SerializeField] private string narratorStopLabel = "Stop";
 
-
-    [Header("Narrator Messages")]
-    [SerializeField] private string narratorIdleMessage = "";
-    [SerializeField] private string narratorLoadingMessage = "Loading narrator audio...";
-    [SerializeField] private string narratorPlayingMessage = "Narrator is playing.";
-    [SerializeField] private string narratorFailedMessage = "Failed to load narrator audio.";
-    [SerializeField] private string narratorCompletedMessage = "Narrator playback finished.";
-    [SerializeField] private string narratorStoppedMessage = "Narrator playback stopped.";
-
-    [Header("Audio")]
-    [SerializeField] private ExhibitionAudioSource narratorAudioSource;
-    [Header("Overlay")]
-    [SerializeField] private StatusOverlay overlay;
     private GovernmentProjectDto _currentProject;
     private string _currentAgencyName;
 
-    private Coroutine _narrationDownloadRoutine;
-    private Coroutine _narrationMonitorRoutine;
-
     private readonly List<Coroutine> _imageLoadRoutines = new();
     private readonly List<Object> _runtimeAssets = new();
-
-    private MediaState _narratorState = MediaState.Idle;
 
     public bool HasProject => _currentProject != null;
 
@@ -76,6 +64,9 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         if (videoButton != null)
             videoButton.onClick.AddListener(HandleVideoClicked);
+
+        if (narrationController != null)
+            narrationController.StateChanged += HandleNarrationStateChanged;
     }
 
     private void OnDestroy()
@@ -89,8 +80,10 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (videoButton != null)
             videoButton.onClick.RemoveListener(HandleVideoClicked);
 
+        if (narrationController != null)
+            narrationController.StateChanged -= HandleNarrationStateChanged;
+
         StopAllRunningCoroutines();
-        StopNarrationInternal(false);
         ClearRuntimeAssets();
     }
 
@@ -100,7 +93,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
         _currentAgencyName = agencyName;
 
         StopAllRunningCoroutines();
-        StopNarrationInternal(false);
+        narrationController?.ResetSession(false);
         ClearRuntimeAssets();
 
         if (root != null)
@@ -108,14 +101,13 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         BindText();
         BindImageSlots();
-        SetNarratorState(MediaState.Idle);
         RefreshButtons();
     }
 
     public void Hide()
     {
         StopAllRunningCoroutines();
-        StopNarrationInternal(true);
+        narrationController?.ResetSession(true);
         ClearRuntimeAssets();
 
         if (additionalProjectDetailUI != null)
@@ -128,16 +120,17 @@ public class AE_ProjectDetailUI : MonoBehaviour
         _currentAgencyName = string.Empty;
 
         ApplyEmptyState();
-        SetNarratorState(MediaState.Idle);
 
         if (root != null)
             root.SetActive(false);
+
+        RefreshButtons();
     }
 
     public void StopNarration()
     {
-        StopNarrationInternal(true);
-        SetNarratorState(MediaState.Stopped);
+        narrationController?.StopMedia();
+        RefreshButtons();
     }
 
     private void BindText()
@@ -193,36 +186,16 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
     private void HandleNarratorClicked()
     {
-        if (_currentProject == null)
+        if (_currentProject == null || narrationController == null)
             return;
-
-        if (_narratorState == MediaState.Downloading)
-            return;
-
-        if (_narratorState == MediaState.Playing)
-        {
-            StopNarration();
-            return;
-        }
 
         string url = BuildProjectTtsUrl(_currentProject);
         Debug.Log($"[AE_ProjectDetailUI] Narrator URL = {url}");
 
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            SetNarratorState(MediaState.Failed, "Narrator URL is empty.");
-            overlay?.ShowFailed("ไม่สามารถโหลดเสียงบรรยาย", "ไม่พบลิงก์เสียงบรรยาย");
-            return;
-        }
-
-        if (_narrationDownloadRoutine != null)
-        {
-            StopCoroutine(_narrationDownloadRoutine);
-            _narrationDownloadRoutine = null;
-        }
-
-        _narrationDownloadRoutine = StartCoroutine(DownloadAndPlayNarration(url));
+        narrationController.ToggleFromUrl(url);
+        RefreshButtons();
     }
+
     private void HandleVideoClicked()
     {
         if (_currentProject == null)
@@ -234,10 +207,21 @@ public class AE_ProjectDetailUI : MonoBehaviour
             return;
         }
 
-        StopNarration();
+        IMediaControllable videoMedia = projectVideoUI as IMediaControllable;
+
+        if (videoMedia != null && mediaCoordinator != null)
+            mediaCoordinator.TakeFocus(videoMedia);
+        else
+            narrationController?.StopMedia();
 
         projectVideoUI.Show(_currentProject, _currentAgencyName);
     }
+
+    private void HandleNarrationStateChanged(MediaPlaybackState state)
+    {
+        RefreshButtons();
+    }
+
     private void BindImageSlots()
     {
         ClearImageSlots();
@@ -282,20 +266,53 @@ public class AE_ProjectDetailUI : MonoBehaviour
             _imageLoadRoutines.Add(routine);
         }
     }
+
     private void RefreshButtons()
     {
+        bool hasProject = _currentProject != null;
+
         if (moreInfoButton != null)
-            moreInfoButton.interactable = _currentProject != null;
+            moreInfoButton.interactable = hasProject;
 
         if (narratorButton != null)
-            narratorButton.interactable = _currentProject != null && _narratorState != MediaState.Downloading;
+            narratorButton.interactable = hasProject && narrationController != null;
 
         if (videoButton != null)
         {
-            bool hasVideo = _currentProject != null && !string.IsNullOrWhiteSpace(_currentProject.videoUrl);
-            // videoButton.interactable = hasVideo;
+            bool hasVideo = hasProject && !string.IsNullOrWhiteSpace(_currentProject.videoUrl);
+            videoButton.interactable = hasVideo;
+        }
+
+        RefreshNarratorButtonLabel();
+    }
+
+    private void RefreshNarratorButtonLabel()
+    {
+        if (narratorButtonLabel == null)
+            return;
+
+        if (_currentProject == null || narrationController == null)
+        {
+            narratorButtonLabel.text = narratorPlayLabel;
+            return;
+        }
+
+        switch (narrationController.State)
+        {
+            case MediaPlaybackState.Loading:
+                narratorButtonLabel.text = narratorCancelLabel;
+                break;
+
+            case MediaPlaybackState.Playing:
+                narratorButtonLabel.text = narratorStopLabel;
+                break;
+
+            default:
+                narratorButtonLabel.text = narratorPlayLabel;
+                break;
         }
     }
+
     private void ClearImageSlots()
     {
         for (int i = 0; i < imageSlots.Count; i++)
@@ -311,215 +328,6 @@ public class AE_ProjectDetailUI : MonoBehaviour
             color.a = 1f;
             imageSlots[i].color = color;
         }
-    }
-
-    private IEnumerator DownloadAndPlayNarration(string url)
-    {
-        SetNarratorState(MediaState.Downloading);
-        overlay?.ShowLoading("กำลังดาวน์โหลดเสียงบรรยาย", "กรุณารอสักครู่");
-
-        using UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.MPEG);
-        ApplyAuthorizationHeader(request);
-        request.SetRequestHeader("Accept", "audio/mpeg,audio/*,*/*");
-
-        DownloadHandlerAudioClip downloadHandler = request.downloadHandler as DownloadHandlerAudioClip;
-        if (downloadHandler != null)
-            downloadHandler.streamAudio = false;
-
-        yield return request.SendWebRequest();
-
-        _narrationDownloadRoutine = null;
-
-        string contentType = request.GetResponseHeader("Content-Type");
-        Debug.Log($"[AE_ProjectDetailUI] TTS response | code={request.responseCode} | type={contentType} | error={request.error}");
-
-        if (request.result != UnityWebRequest.Result.Success)
-        {
-            string message = $"{narratorFailedMessage} ({request.error})";
-            SetNarratorState(MediaState.Failed, message);
-
-            overlay?.ShowFailed(
-                "โหลดเสียงบรรยายไม่สำเร็จ",
-                "กรุณาลองใหม่อีกครั้ง"
-            );
-            yield break;
-        }
-
-        AudioClip clip = DownloadHandlerAudioClip.GetContent(request);
-        if (clip == null)
-        {
-            Debug.LogError($"[AE_ProjectDetailUI] Narration clip is null. Content-Type={contentType}");
-
-            SetNarratorState(MediaState.Failed, narratorFailedMessage);
-            overlay?.ShowFailed(
-                "โหลดเสียงบรรยายไม่สำเร็จ",
-                "ไม่พบข้อมูลเสียงบรรยาย"
-            );
-            yield break;
-        }
-
-        if (narratorAudioSource == null || narratorAudioSource.AudioSource == null)
-        {
-            SetNarratorState(MediaState.Failed, "Narrator AudioSource is missing.");
-
-            overlay?.ShowFailed(
-                "ไม่สามารถเล่นเสียงบรรยาย",
-                "ไม่พบ Audio Source"
-            );
-            yield break;
-        }
-
-        ApplyNarrationBgmMute(true);
-
-        narratorAudioSource.AudioSource.Stop();
-        narratorAudioSource.AudioSource.clip = clip;
-        narratorAudioSource.AudioSource.Play();
-
-        SetNarratorState(MediaState.Playing);
-
-        overlay?.ShowSuccess(
-            "พร้อมใช้งานเสียงบรรยาย",
-            "กำลังเริ่มเล่น",
-            true
-        );
-
-        if (_narrationMonitorRoutine != null)
-        {
-            StopCoroutine(_narrationMonitorRoutine);
-            _narrationMonitorRoutine = null;
-        }
-
-        _narrationMonitorRoutine = StartCoroutine(MonitorNarrationPlayback());
-    }
-
-    private IEnumerator MonitorNarrationPlayback()
-    {
-        if (narratorAudioSource == null || narratorAudioSource.AudioSource == null)
-        {
-            ApplyNarrationBgmMute(false);
-            SetNarratorState(MediaState.Failed, "Narrator AudioSource is missing.");
-            _narrationMonitorRoutine = null;
-            yield break;
-        }
-
-        AudioSource source = narratorAudioSource.AudioSource;
-
-        while (source != null && source.isPlaying)
-            yield return null;
-
-        ApplyNarrationBgmMute(false);
-        SetNarratorState(MediaState.Completed);
-        _narrationMonitorRoutine = null;
-    }
-
-    private void StopNarrationInternal(bool restoreBgm)
-    {
-        if (_narrationDownloadRoutine != null)
-        {
-            StopCoroutine(_narrationDownloadRoutine);
-            _narrationDownloadRoutine = null;
-        }
-
-        if (_narrationMonitorRoutine != null)
-        {
-            StopCoroutine(_narrationMonitorRoutine);
-            _narrationMonitorRoutine = null;
-        }
-
-        if (narratorAudioSource != null && narratorAudioSource.AudioSource != null)
-        {
-            narratorAudioSource.AudioSource.Stop();
-            narratorAudioSource.AudioSource.clip = null;
-        }
-
-        if (restoreBgm)
-            ApplyNarrationBgmMute(false);
-    }
-
-    private void ApplyNarrationBgmMute(bool mute)
-    {
-        if (ExhibitionAudioManager.Instance == null)
-            return;
-
-        if (mute)
-            ExhibitionAudioManager.Instance.SetTemporaryBgmVolume(0f);
-        else
-            ExhibitionAudioManager.Instance.ClearTemporaryBgmVolume();
-    }
-
-    private void SetNarratorState(MediaState state, string overrideMessage = null)
-    {
-        _narratorState = state;
-
-        if (narratorButton != null)
-            narratorButton.interactable = _currentProject != null && state != MediaState.Downloading;
-
-        RefreshButtons();
-    }
-
-    private string GetNarratorStateMessage(MediaState state)
-    {
-        switch (state)
-        {
-            case MediaState.Downloading:
-                return narratorLoadingMessage;
-            case MediaState.Playing:
-                return narratorPlayingMessage;
-            case MediaState.Failed:
-                return narratorFailedMessage;
-            case MediaState.Completed:
-                return narratorCompletedMessage;
-            case MediaState.Stopped:
-                return narratorStoppedMessage;
-            default:
-                return narratorIdleMessage;
-        }
-    }
-
-    private string BuildProjectTtsUrl(GovernmentProjectDto project)
-    {
-        if (project == null)
-            return string.Empty;
-
-        string projectId = FirstNotEmpty(project.id, project.runtimeId);
-        if (string.IsNullOrWhiteSpace(projectId))
-            return string.Empty;
-
-        if (ApiService.Instance != null)
-        {
-            return useEnglishNarrator
-                ? ApiService.Instance.GetAgencyExhibitionTtsEngUrl(projectId)
-                : ApiService.Instance.GetAgencyExhibitionTtsThUrl(projectId);
-        }
-
-        if (apiConfig != null)
-        {
-            return useEnglishNarrator
-                ? apiConfig.GetAgencyExhibitionTtsEngUrl(projectId)
-                : apiConfig.GetAgencyExhibitionTtsThUrl(projectId);
-        }
-
-        return string.Empty;
-    }
-
-    private string GetProjectTitle(GovernmentProjectDto project)
-    {
-        if (project == null)
-            return string.Empty;
-
-        return useEnglishContent
-            ? FirstNotEmpty(project.nameEn, project.name)
-            : FirstNotEmpty(project.name, project.nameEn);
-    }
-
-    private string GetProjectDescription(GovernmentProjectDto project)
-    {
-        if (project == null)
-            return string.Empty;
-
-        return useEnglishContent
-            ? FirstNotEmpty(project.descriptionEn, project.description)
-            : FirstNotEmpty(project.description, project.descriptionEn);
     }
 
     private IEnumerator LoadImageIntoImage(string url, Image targetImage, int slotIndex)
@@ -583,18 +391,6 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
     private void StopAllRunningCoroutines()
     {
-        if (_narrationDownloadRoutine != null)
-        {
-            StopCoroutine(_narrationDownloadRoutine);
-            _narrationDownloadRoutine = null;
-        }
-
-        if (_narrationMonitorRoutine != null)
-        {
-            StopCoroutine(_narrationMonitorRoutine);
-            _narrationMonitorRoutine = null;
-        }
-
         for (int i = 0; i < _imageLoadRoutines.Count; i++)
         {
             if (_imageLoadRoutines[i] != null)
@@ -633,6 +429,52 @@ public class AE_ProjectDetailUI : MonoBehaviour
             request.SetRequestHeader("Authorization", $"Bearer {accessToken}");
     }
 
+    private string BuildProjectTtsUrl(GovernmentProjectDto project)
+    {
+        if (project == null)
+            return string.Empty;
+
+        string projectId = FirstNotEmpty(project.id, project.runtimeId);
+        if (string.IsNullOrWhiteSpace(projectId))
+            return string.Empty;
+
+        if (ApiService.Instance != null)
+        {
+            return useEnglishNarrator
+                ? ApiService.Instance.GetAgencyExhibitionTtsEngUrl(projectId)
+                : ApiService.Instance.GetAgencyExhibitionTtsThUrl(projectId);
+        }
+
+        if (apiConfig != null)
+        {
+            return useEnglishNarrator
+                ? apiConfig.GetAgencyExhibitionTtsEngUrl(projectId)
+                : apiConfig.GetAgencyExhibitionTtsThUrl(projectId);
+        }
+
+        return string.Empty;
+    }
+
+    private string GetProjectTitle(GovernmentProjectDto project)
+    {
+        if (project == null)
+            return string.Empty;
+
+        return useEnglishContent
+            ? FirstNotEmpty(project.nameEn, project.name)
+            : FirstNotEmpty(project.name, project.nameEn);
+    }
+
+    private string GetProjectDescription(GovernmentProjectDto project)
+    {
+        if (project == null)
+            return string.Empty;
+
+        return useEnglishContent
+            ? FirstNotEmpty(project.descriptionEn, project.description)
+            : FirstNotEmpty(project.description, project.descriptionEn);
+    }
+
     private string TruncateWithEllipsis(string value, int maxCharacters)
     {
         if (string.IsNullOrWhiteSpace(value))
@@ -657,14 +499,4 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         return string.Empty;
     }
-}
-
-public enum MediaState
-{
-    Idle,
-    Downloading,
-    Playing,
-    Failed,
-    Completed,
-    Stopped
 }

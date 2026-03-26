@@ -27,6 +27,7 @@ public class ApiService : MonoBehaviour
     public string PublicServiceUrl => config != null ? config.PublicServiceUrl : string.Empty;
     public string HallOfHonorUrl => config != null ? config.HallofHonorUrl : string.Empty;
     public string GetQuizMe => config != null ? config.GetQuizMe : string.Empty;
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -39,10 +40,7 @@ public class ApiService : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         if (config == null)
-        {
             Debug.LogError("[ApiService] ApiConfig is not assigned.");
-        }
-
     }
 
     public string GetAgencyExhibitionTtsEngUrl(string projectId)
@@ -59,6 +57,7 @@ public class ApiService : MonoBehaviour
     {
         return config != null ? config.GetAgencyExhibitionTtsUrl(projectId, language) : string.Empty;
     }
+
     public string GetHallOfHonorTtsEngUrl(string officerId)
     {
         return config != null ? config.GetHallOfHonorTtsEngUrl(officerId) : string.Empty;
@@ -75,6 +74,7 @@ public class ApiService : MonoBehaviour
             ? GetHallOfHonorTtsEngUrl(officerId)
             : GetHallOfHonorTtsThUrl(officerId);
     }
+
     public UnityWebRequest Get(string url, string bearerToken = null)
     {
         UnityWebRequest request = UnityWebRequest.Get(url);
@@ -107,6 +107,20 @@ public class ApiService : MonoBehaviour
         return request;
     }
 
+    public UnityWebRequest GetAudioClip(string url, AudioType audioType, string bearerToken = null)
+    {
+        UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(url, audioType);
+
+        ApplyCommonHeaders(request, bearerToken);
+        request.SetRequestHeader("Accept", "audio/mpeg,audio/*,*/*");
+
+        DownloadHandlerAudioClip downloadHandler = request.downloadHandler as DownloadHandlerAudioClip;
+        if (downloadHandler != null)
+            downloadHandler.streamAudio = false;
+
+        return request;
+    }
+
     private UnityWebRequest CreateJsonRequest(string method, string url, string jsonBody, string bearerToken)
     {
         UnityWebRequest request = new UnityWebRequest(url, method);
@@ -118,16 +132,35 @@ public class ApiService : MonoBehaviour
 
         return request;
     }
+    
+    public string ResolveUrl(string rawUrl)
+    {
+        if (string.IsNullOrWhiteSpace(rawUrl))
+            return string.Empty;
+
+        string trimmed = rawUrl.Trim();
+
+        if (System.Uri.TryCreate(trimmed, System.UriKind.Absolute, out System.Uri absoluteUri))
+            return absoluteUri.ToString();
+
+        string baseUrl = BaseUrl;
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            return trimmed;
+
+        if (!trimmed.StartsWith("/"))
+            trimmed = "/" + trimmed;
+
+        return baseUrl.TrimEnd('/') + trimmed;
+    }
 
     private void ApplyCommonHeaders(UnityWebRequest request, string bearerToken)
     {
+        if (request == null)
+            return;
+
         request.SetRequestHeader("Accept", "application/json");
 
         if (!string.IsNullOrWhiteSpace(bearerToken))
-        {
-            Debug.Log("======================================================");
-            Debug.Log($"{bearerToken}");
             request.SetRequestHeader("Authorization", $"Bearer {bearerToken}");
-        }
     }
 }

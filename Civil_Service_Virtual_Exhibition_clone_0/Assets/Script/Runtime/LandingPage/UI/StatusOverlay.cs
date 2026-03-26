@@ -16,15 +16,18 @@ public class StatusOverlay : MonoBehaviour
 
     [Header("Root")]
     [SerializeField] private GameObject panelRoot;
+    [SerializeField] private GameObject overlay;
 
     [Header("State Objects")]
     [SerializeField] private GameObject loadingState;
     [SerializeField] private GameObject successState;
     [SerializeField] private GameObject failedState;
-    [SerializeField] private GameObject overlay; // block raycast 
+
     [Header("Loading State Wiring")]
     [SerializeField] private TMP_Text loadingTitleText;
     [SerializeField] private TMP_Text loadingSubtitleText;
+    [SerializeField] private Button loadingCancelButton;
+    [SerializeField] private TMP_Text loadingCancelButtonText;
 
     [Header("Success State Wiring")]
     [SerializeField] private TMP_Text successTitleText;
@@ -38,14 +41,19 @@ public class StatusOverlay : MonoBehaviour
     [Header("Timing")]
     [SerializeField] private float successAutoDismissSeconds = 1.5f;
     [SerializeField] private float loadingDotInterval = 0.5f;
+
     [Header("Optional")]
     [SerializeField] private bool useOverlay = true;
     private Action _onFailedDismissed;
-    private Coroutine _loadingDotsCoroutine;
-    private Coroutine _autoDismissCoroutine;
+    private Action _onLoadingCanceled;
 
-    private string _loadingSubtitleBase;
+    private Coroutine _autoDismissCoroutine;
+    private Coroutine _dotsCoroutine;
+
+    private TMP_Text _animatedSubtitleTarget;
+    private string _animatedSubtitleBase = string.Empty;
     private State _currentState = State.Hidden;
+    private bool _showOverlayBlocker = true;
 
     public State CurrentState => _currentState;
 
@@ -54,6 +62,9 @@ public class StatusOverlay : MonoBehaviour
         if (failedOkButton != null)
             failedOkButton.onClick.AddListener(DismissFailed);
 
+        if (loadingCancelButton != null)
+            loadingCancelButton.onClick.AddListener(HandleLoadingCanceled);
+
         Hide();
     }
 
@@ -61,70 +72,142 @@ public class StatusOverlay : MonoBehaviour
     {
         if (failedOkButton != null)
             failedOkButton.onClick.RemoveListener(DismissFailed);
+
+        if (loadingCancelButton != null)
+            loadingCancelButton.onClick.RemoveListener(HandleLoadingCanceled);
     }
 
-    public void ShowLoading(string title, string subtitle)
+    public void ShowLoading(
+    string title,
+    string subtitle,
+    bool showBlocker = true,
+    bool cancelable = false,
+    string cancelButtonLabel = "Cancel",
+    Action onCancel = null,
+    bool animateDots = true)
     {
         StopOverlayCoroutines();
-        
+
+        _showOverlayBlocker = showBlocker;
+        _onFailedDismissed = null;
+        _onLoadingCanceled = onCancel;
+
         SetVisible(true);
         Apply(State.Loading);
 
         if (loadingTitleText != null)
-            loadingTitleText.text = title;
-
-        _loadingSubtitleBase = subtitle ?? string.Empty;
+            loadingTitleText.text = title ?? string.Empty;
 
         if (loadingSubtitleText != null)
-            loadingSubtitleText.text = _loadingSubtitleBase;
+            loadingSubtitleText.text = subtitle ?? string.Empty;
 
-        _loadingDotsCoroutine = StartCoroutine(AnimateLoadingDots());
+        if (loadingCancelButton != null)
+            loadingCancelButton.gameObject.SetActive(cancelable);
+
+        if (loadingCancelButtonText != null)
+            loadingCancelButtonText.text = string.IsNullOrWhiteSpace(cancelButtonLabel)
+                ? "Cancel"
+                : cancelButtonLabel;
+
+        if (animateDots)
+            StartDotsAnimation(loadingSubtitleText, subtitle);
     }
-
-    public void ShowSuccess(string title, string subtitle, bool autoDismiss = true, Action onDone = null)
+    public void ShowLoadingWaiting(
+    string title,
+    string subtitle,
+    bool showBlocker = true,
+    bool cancelable = false,
+    string cancelButtonLabel = "Cancel",
+    Action onCancel = null)
+    {
+        ShowLoading(
+            title,
+            subtitle,
+            showBlocker,
+            cancelable,
+            cancelButtonLabel,
+            onCancel,
+            animateDots: true
+        );
+    }
+    public void ShowSuccess(
+    string title,
+    string subtitle,
+    bool autoDismiss = true,
+    Action onDone = null,
+    bool animateDots = false,
+    bool showBlocker = true)
     {
         StopOverlayCoroutines();
+
+        _showOverlayBlocker = showBlocker;
+        _onFailedDismissed = null;
+        _onLoadingCanceled = null;
 
         SetVisible(true);
         Apply(State.Success);
 
         if (successTitleText != null)
-            successTitleText.text = title;
+            successTitleText.text = title ?? string.Empty;
 
         if (successSubtitleText != null)
-            successSubtitleText.text = subtitle;
+            successSubtitleText.text = subtitle ?? string.Empty;
+
+        if (animateDots)
+            StartDotsAnimation(successSubtitleText, subtitle);
 
         if (autoDismiss)
             _autoDismissCoroutine = StartCoroutine(AutoDismiss(successAutoDismissSeconds, onDone));
-        else
-            onDone?.Invoke();
     }
 
-    public void ShowFailed(string title, string subtitle, Action onDismissed = null)
+    public void ShowSuccessWaiting(string title, string subtitle, bool showBlocker = true)
+    {
+        ShowSuccess(
+            title,
+            subtitle,
+            autoDismiss: false,
+            onDone: null,
+            animateDots: true,
+            showBlocker: showBlocker
+        );
+    }
+
+    public void ShowFailed(
+        string title,
+        string subtitle,
+        Action onDismissed = null,
+        bool showBlocker = true)
     {
         StopOverlayCoroutines();
+
+        _showOverlayBlocker = showBlocker;
+        _onLoadingCanceled = null;
+        _onFailedDismissed = onDismissed;
 
         SetVisible(true);
         Apply(State.Failed);
 
         if (failedTitleText != null)
-            failedTitleText.text = title;
+            failedTitleText.text = title ?? string.Empty;
 
         if (failedSubtitleText != null)
-            failedSubtitleText.text = subtitle;
-
-        _onFailedDismissed = onDismissed;
+            failedSubtitleText.text = subtitle ?? string.Empty;
     }
 
     public void Hide()
     {
         StopOverlayCoroutines();
+
         _onFailedDismissed = null;
+        _onLoadingCanceled = null;
 
         Apply(State.Hidden);
-        SetVisible(false);
 
-        overlay.SetActive(false);
+        if (panelRoot != null)
+            panelRoot.SetActive(false);
+
+        if (overlay != null)
+            overlay.SetActive(false);
     }
 
     private void Apply(State state)
@@ -146,35 +229,55 @@ public class StatusOverlay : MonoBehaviour
         if (panelRoot != null)
             panelRoot.SetActive(show);
 
-        if(useOverlay || !overlay.activeSelf)
-            overlay.SetActive(true);
+        if (overlay != null)
+            overlay.SetActive(show && useOverlay && _showOverlayBlocker);
+    }
+
+    private void HandleLoadingCanceled()
+    {
+        Action callback = _onLoadingCanceled;
+
+        Hide();
+
+        _onLoadingCanceled = null;
+        callback?.Invoke();
     }
 
     private void DismissFailed()
     {
+        Action callback = _onFailedDismissed;
+
         Hide();
 
-        Action callback = _onFailedDismissed;
         _onFailedDismissed = null;
         callback?.Invoke();
     }
 
-    private IEnumerator AnimateLoadingDots()
+    private void StartDotsAnimation(TMP_Text target, string baseText)
     {
-        if (loadingSubtitleText == null)
+        if (target == null)
+            return;
+
+        _animatedSubtitleTarget = target;
+        _animatedSubtitleBase = baseText ?? string.Empty;
+        _dotsCoroutine = StartCoroutine(AnimateDots());
+    }
+
+    private IEnumerator AnimateDots()
+    {
+        if (_animatedSubtitleTarget == null)
             yield break;
 
         int dotCount = 0;
 
         while (true)
         {
-            string dots = new string('.', dotCount);
-            loadingSubtitleText.text = _loadingSubtitleBase + dots;
+            _animatedSubtitleTarget.text = _animatedSubtitleBase + new string('.', dotCount);
 
             yield return new WaitForSeconds(loadingDotInterval);
 
             dotCount++;
-            if (dotCount > 3)
+            if (dotCount > 4)
                 dotCount = 0;
         }
     }
@@ -189,10 +292,10 @@ public class StatusOverlay : MonoBehaviour
 
     private void StopOverlayCoroutines()
     {
-        if (_loadingDotsCoroutine != null)
+        if (_dotsCoroutine != null)
         {
-            StopCoroutine(_loadingDotsCoroutine);
-            _loadingDotsCoroutine = null;
+            StopCoroutine(_dotsCoroutine);
+            _dotsCoroutine = null;
         }
 
         if (_autoDismissCoroutine != null)
@@ -200,5 +303,8 @@ public class StatusOverlay : MonoBehaviour
             StopCoroutine(_autoDismissCoroutine);
             _autoDismissCoroutine = null;
         }
+
+        _animatedSubtitleTarget = null;
+        _animatedSubtitleBase = string.Empty;
     }
 }

@@ -13,10 +13,10 @@ public class AE_ProjectVideoControlsView : MonoBehaviour
     [SerializeField] private TMP_Text timeLabel;
     [SerializeField] private TMP_Text statusText;
 
-    private AE_ProjectVideoPlayerController _player;
+    private IAE_ProjectVideoPlaybackController  _player;
     private bool _isDraggingSlider;
 
-    public void Bind(AE_ProjectVideoPlayerController player)
+    public void Bind(IAE_ProjectVideoPlaybackController  player)
     {
         Unbind();
 
@@ -38,12 +38,15 @@ public class AE_ProjectVideoControlsView : MonoBehaviour
             pauseButton.onClick.AddListener(HandlePauseClicked);
 
         if (timelineSlider != null)
+        {
             timelineSlider.onValueChanged.AddListener(HandleSliderChanged);
+            timelineSlider.minValue = 0f;
+            timelineSlider.maxValue = 1f;
+            timelineSlider.wholeNumbers = false;
+            timelineSlider.value = 0f;
+        }
 
-        SetInteractable(false);
-        SetStatus(string.Empty);
-        SetTime(0d, 0d);
-        UpdatePlayPauseButtons(false);
+        ResetView();
     }
 
     public void Unbind()
@@ -67,6 +70,9 @@ public class AE_ProjectVideoControlsView : MonoBehaviour
             timelineSlider.onValueChanged.RemoveListener(HandleSliderChanged);
 
         _player = null;
+        _isDraggingSlider = false;
+
+        ResetView();
     }
 
     public void BeginSliderDrag()
@@ -89,19 +95,28 @@ public class AE_ProjectVideoControlsView : MonoBehaviour
         SetInteractable(true);
         SetStatus(string.Empty);
         UpdatePlayPauseButtons(false);
+
+        if (timelineSlider != null)
+            timelineSlider.value = 0f;
     }
 
     private void HandleFailed(string message)
     {
-        SetInteractable(false);
+        //SetInteractable(false);
         SetStatus(message);
         UpdatePlayPauseButtons(false);
         SetTime(0d, 0d);
+
+        if (timelineSlider != null)
+            timelineSlider.value = 0f;
     }
 
     private void HandleFinished()
     {
         UpdatePlayPauseButtons(false);
+
+        if (timelineSlider != null)
+            timelineSlider.value = 1f;
     }
 
     private void HandlePlayStateChanged(bool isPlaying)
@@ -146,7 +161,14 @@ public class AE_ProjectVideoControlsView : MonoBehaviour
 
     private void SetInteractable(bool interactable)
     {
-        
+        if (playButton != null)
+            playButton.interactable = interactable;
+
+        if (pauseButton != null)
+            pauseButton.interactable = interactable;
+
+        if (timelineSlider != null)
+            timelineSlider.interactable = interactable;
     }
 
     private void SetStatus(string message)
@@ -173,5 +195,18 @@ public class AE_ProjectVideoControlsView : MonoBehaviour
         int remainSeconds = totalSeconds % 60;
 
         return $"{minutes:00}:{remainSeconds:00}";
+    }
+
+    public void ResetView()
+    {
+        _isDraggingSlider = false;
+
+        //SetInteractable(false);
+        SetStatus(string.Empty);
+        SetTime(0d, 0d);
+        UpdatePlayPauseButtons(false);
+
+        if (timelineSlider != null)
+            timelineSlider.value = 0f;
     }
 }

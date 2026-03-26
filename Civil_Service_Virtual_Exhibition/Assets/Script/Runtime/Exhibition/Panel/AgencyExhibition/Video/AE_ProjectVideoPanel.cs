@@ -8,22 +8,13 @@ public class AE_ProjectVideoPanel : MonoBehaviour
     [SerializeField] private GameObject panelRoot;
     [SerializeField] private Button closeButton;
 
-    [Header("Overlay")]
-    [SerializeField] private StatusOverlay overlay;
-
     [Header("Header")]
     [SerializeField] private TMP_Text projectNameText;
     [SerializeField] private TMP_Text agencyNameText;
 
     [Header("References")]
-    [SerializeField] private AE_ProjectVideoPlayerController playerController;
+    [SerializeField] private AE_ProjectVideoSessionController videoSessionController;
     [SerializeField] private AE_ProjectVideoControlsView controlsView;
-
-    [Header("Overlay Messages")]
-    [SerializeField] private string overlayLoadingTitle = "กำลังเตรียมวิดีโอ";
-    [SerializeField] private string overlayLoadingSubtitle = "กรุณารอสักครู่";
-    [SerializeField] private string overlayFailedTitle = "โหลดวิดีโอไม่สำเร็จ";
-    [SerializeField] private string overlayFailedSubtitle = "กรุณาลองใหม่อีกครั้ง";
 
     private GovernmentProjectDto _currentProject;
     private string _currentAgencyName;
@@ -31,34 +22,35 @@ public class AE_ProjectVideoPanel : MonoBehaviour
     private void Awake()
     {
         if (closeButton != null)
-            closeButton.onClick.AddListener(Hide);
+            closeButton.onClick.AddListener(HandleCloseClicked);
 
-        if (playerController != null)
+        if (controlsView != null && videoSessionController != null)
+            controlsView.Bind(videoSessionController);
+
+        if (videoSessionController != null)
         {
-            playerController.Prepared += HandlePrepared;
-            playerController.Failed += HandleFailed;
+            videoSessionController.LoadingCanceled += HandleLoadingCanceled;
+            videoSessionController.FailureAcknowledged += HandleFailureAcknowledged;
         }
-
-        if (controlsView != null && playerController != null)
-            controlsView.Bind(playerController);
 
         if (panelRoot != null)
             panelRoot.SetActive(false);
+
+        controlsView?.ResetView();
     }
 
     private void OnDestroy()
     {
         if (closeButton != null)
-            closeButton.onClick.RemoveListener(Hide);
+            closeButton.onClick.RemoveListener(HandleCloseClicked);
 
-        if (playerController != null)
+        if (videoSessionController != null)
         {
-            playerController.Prepared -= HandlePrepared;
-            playerController.Failed -= HandleFailed;
+            videoSessionController.LoadingCanceled -= HandleLoadingCanceled;
+            videoSessionController.FailureAcknowledged -= HandleFailureAcknowledged;
         }
 
-        if (controlsView != null)
-            controlsView.Unbind();
+        controlsView?.Unbind();
     }
 
     public void Show(GovernmentProjectDto project, string agencyName)
@@ -70,29 +62,69 @@ public class AE_ProjectVideoPanel : MonoBehaviour
             panelRoot.SetActive(true);
 
         BindHeader();
+        controlsView?.ResetView();
 
-        string url = _currentProject != null ? _currentProject.videoUrl : string.Empty;
-        if (string.IsNullOrWhiteSpace(url))
+        if (videoSessionController == null)
         {
-            overlay?.Hide();
-            playerController?.StopPlayback();
+            Debug.LogWarning("[AE_ProjectVideoPanel] VideoSessionController is not assigned.");
             return;
         }
 
-        overlay?.ShowLoading(overlayLoadingTitle, overlayLoadingSubtitle);
-        playerController?.Prepare(url);
+        videoSessionController.PrepareAndPlay(
+            _currentProject != null ? _currentProject.videoUrl : string.Empty
+        );
     }
 
     public void Hide()
     {
-        overlay?.Hide();
-        playerController?.StopPlayback();
+        ReturnToProjectDetail(true);
+    }
 
-        _currentProject = null;
-        _currentAgencyName = string.Empty;
+    private void HandleCloseClicked()
+    {
+        if (videoSessionController != null &&
+            (videoSessionController.State == MediaPlaybackState.Loading ||
+             videoSessionController.IsPreparing))
+        {
+            videoSessionController.CancelMediaLoading();
+            return;
+        }
+
+        ReturnToProjectDetail(true);
+    }
+
+    private void HandleLoadingCanceled()
+    {
+        ReturnToProjectDetail(false);
+    }
+
+    private void HandleFailureAcknowledged()
+    {
+        ReturnToProjectDetail(true);
+    }
+
+    private void ReturnToProjectDetail(bool resetSession)
+    {
+        if (resetSession)
+            videoSessionController?.ResetSession();
+
+        controlsView?.ResetView();
+        ClearVideoPanelData();
 
         if (panelRoot != null)
             panelRoot.SetActive(false);
+    }
+
+    private void ClearVideoPanelData()
+    {
+        _currentProject = null;
+        _currentAgencyName = string.Empty;
+
+        if (projectNameText != null)
+            projectNameText.text = string.Empty;
+
+        if (agencyNameText != null)
+            agencyNameText.text = string.Empty;
     }
 
     private void BindHeader()
@@ -102,17 +134,6 @@ public class AE_ProjectVideoPanel : MonoBehaviour
 
         if (agencyNameText != null)
             agencyNameText.text = _currentAgencyName ?? string.Empty;
-    }
-
-    private void HandlePrepared()
-    {
-        overlay?.Hide();
-        playerController?.Play();
-    }
-
-    private void HandleFailed(string _)
-    {
-        overlay?.ShowFailed(overlayFailedTitle, overlayFailedSubtitle);
     }
 
     private string FirstNotEmpty(params string[] values)

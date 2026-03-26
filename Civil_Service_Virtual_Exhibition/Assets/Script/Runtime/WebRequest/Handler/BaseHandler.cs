@@ -32,9 +32,11 @@ public abstract class BaseHandler : MonoBehaviour
         string title,
         string subtitle,
         bool autoDismiss = true,
-        Action onDone = null)
+        Action onDone = null,
+        bool animateDots = true,
+        bool showBlock = true)
     {
-        overlay?.ShowSuccess(title, subtitle, autoDismiss, onDone);
+        overlay?.ShowSuccess(title, subtitle, autoDismiss, onDone, animateDots , showBlock);
     }
 
     protected IEnumerator PostRequest(
@@ -75,11 +77,11 @@ public abstract class BaseHandler : MonoBehaviour
         onSuccess?.Invoke(req.downloadHandler.text);
     }
 
-    protected void EnterMainScene(LoginData  loginData)
+    protected void EnterMainScene(LoginData loginData)
     {
         if (loginData == null || loginData.player == null)
         {
-            ShowFailedOverlay("Login data is missing.");
+            ShowFailedOverlay("ข้อมูลการล็อคอินหายไป");
             return;
         }
 
@@ -115,16 +117,14 @@ public abstract class BaseHandler : MonoBehaviour
             $"Gender={localData.Gender}, Org={localData.Organization}, Email={player.email}, Token={localData.PlayerToken}"
         );
 
-        ShowSuccessOverlay(
-            "เข้าสู่ระบบสำเร็จ",
-            "กรุณารอสักครู่",
-            false,
-            () => StartCoroutine(StartNetworkFlow())
-        );
+        ShowSuccessOverlay("เข้าสู่ระบบสำเร็จ", "กรุณารอสักครู่");
+        StartCoroutine(StartNetworkFlow());
     }
 
     private IEnumerator StartNetworkFlow()
     {
+        Debug.Log("[BaseHandler] StartNetworkFlow called.");
+
         if (NetworkLauncher.Instance == null)
         {
             Debug.LogError("[BaseHandler] NetworkLauncher.Instance is null.");
@@ -146,10 +146,14 @@ public abstract class BaseHandler : MonoBehaviour
             yield break;
         }
 
+        Debug.Log($"[BaseHandler] Joining room: {initialRoom.name}");
+
         var task = NetworkLauncher.Instance.JoinInitialRoom(initialRoom);
 
         while (!task.IsCompleted)
             yield return null;
+
+        Debug.Log("[BaseHandler] JoinInitialRoom completed.");
 
         if (task.IsFaulted)
         {
@@ -157,6 +161,8 @@ public abstract class BaseHandler : MonoBehaviour
             ShowFailedOverlay("Failed to join room.");
             yield break;
         }
+
+        Debug.Log($"[BaseHandler] JoinInitialRoom result: {task.Result}");
 
         if (!task.Result)
         {

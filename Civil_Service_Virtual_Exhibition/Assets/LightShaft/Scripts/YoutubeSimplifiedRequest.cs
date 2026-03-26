@@ -452,7 +452,7 @@ namespace LightShaft.Scripts
 
         private void OnYoutubeError(string errorType)
         {
-            Debug.Log("<color=red>" + errorType + "</color>");
+            //Debug.Log("<color=red>" + errorType + "</color>");
         }
 
         private bool TryNormalizeYoutubeUrlLocal(string url, out string normalizedUrl)
