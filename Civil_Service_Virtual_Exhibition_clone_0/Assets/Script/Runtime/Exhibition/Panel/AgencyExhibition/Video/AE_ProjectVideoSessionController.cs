@@ -140,6 +140,8 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
 
     public void StopMedia()
     {
+        ApplyVideoBgmMute(false);
+
         overlay?.Hide();
         youtubePlayerController?.StopPlayback();
         _currentResolvedUrl = string.Empty;
@@ -148,6 +150,8 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
 
     public void ResetSession()
     {
+        ApplyVideoBgmMute(false);
+
         overlay?.Hide();
         youtubePlayerController?.StopPlayback();
         _currentResolvedUrl = string.Empty;
@@ -196,6 +200,7 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
 
     private void HandleBackendFailed(string message)
     {
+        ApplyVideoBgmMute(false);
         Debug.LogWarning($"[AE_ProjectVideoSessionController] Video failed: {message}");
 
         ShowFailureOverlay(
@@ -210,6 +215,7 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
     {
         PlayStateChanged?.Invoke(isPlaying);
 
+        ApplyVideoBgmMute(isPlaying);
         if (isPlaying)
         {
             SetState(MediaPlaybackState.Playing);
@@ -232,6 +238,7 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
 
     private void HandleBackendFinished()
     {
+        ApplyVideoBgmMute(false);
         Finished?.Invoke();
         SetState(MediaPlaybackState.Completed);
     }
@@ -250,6 +257,8 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
 
     private void HandleFailureDismissed()
     {
+        ApplyVideoBgmMute(false);
+        
         overlay?.Hide();
         youtubePlayerController?.StopPlayback();
         _currentResolvedUrl = string.Empty;
@@ -263,5 +272,16 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
 
         State = state;
         StateChanged?.Invoke(State);
+    }
+
+    private void ApplyVideoBgmMute(bool mute)
+    {
+        if (ExhibitionAudioManager.Instance == null)
+            return;
+
+        if (mute)
+            ExhibitionAudioManager.Instance.SetTemporaryBgmVolume(0f);
+        else
+            ExhibitionAudioManager.Instance.ClearTemporaryBgmVolume();
     }
 }

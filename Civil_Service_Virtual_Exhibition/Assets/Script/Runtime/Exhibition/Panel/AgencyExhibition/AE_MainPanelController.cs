@@ -31,8 +31,6 @@ public class AE_MainPanelController : MonoBehaviour
     [SerializeField] private GameObject projectDetailPageRoot;
 
     [Header("Project Selection")]
-    [SerializeField] private TMP_Text projectSelectionAgencyTitleText;
-    [SerializeField] private TMP_Text projectSelectionSubtitleText;
     [SerializeField] private Button projectSelectionBackButton;
     [SerializeField] private AE_ProjectSelectionUI projectSelectionPanel;
 
@@ -42,6 +40,7 @@ public class AE_MainPanelController : MonoBehaviour
 
     private Coroutine _ministryLogoLoadRoutine;
     private string _currentMinistryKey;
+    private string _currentMinistryLogoUrl;
     private ExhibitionAgencyData _selectedAgency;
 
     public bool IsOpen => panelRoot != null && panelRoot.activeSelf;
@@ -65,8 +64,6 @@ public class AE_MainPanelController : MonoBehaviour
 
         if (panelRoot != null)
             panelRoot.SetActive(false);
-
-        // ShowMainPage();
     }
 
     private void OnDestroy()
@@ -85,6 +82,12 @@ public class AE_MainPanelController : MonoBehaviour
 
         if (projectDetailBackButton != null)
             projectDetailBackButton.onClick.RemoveListener(ShowProjectSelectionPage);
+
+        if (_ministryLogoLoadRoutine != null)
+        {
+            StopCoroutine(_ministryLogoLoadRoutine);
+            _ministryLogoLoadRoutine = null;
+        }
     }
 
     public void Open(string ministryKey)
@@ -117,7 +120,7 @@ public class AE_MainPanelController : MonoBehaviour
 
         if (store == null || !store.HasData)
         {
-            Debug.LogWarning("[MinistryExhibitionPanelController] GovernmentCatalogStore has no data yet.");
+            Debug.LogWarning("[AE_MainPanelController] Catalog repository has no data.");
             ApplyHeaderFallback(_currentMinistryKey);
             SetAgencyItems(new List<ExhibitionAgencyData>());
             return;
@@ -127,7 +130,7 @@ public class AE_MainPanelController : MonoBehaviour
 
         if (ministry == null)
         {
-            Debug.LogWarning($"[MinistryExhibitionPanelController] Ministry not found: {_currentMinistryKey}");
+            Debug.LogWarning("[AE_MainPanelController] Ministry not found: " + _currentMinistryKey);
             ApplyHeaderFallback(_currentMinistryKey);
             SetAgencyItems(new List<ExhibitionAgencyData>());
             return;
@@ -139,10 +142,11 @@ public class AE_MainPanelController : MonoBehaviour
         if (subtitleText != null)
             subtitleText.text = "เลือกหน่วยงานที่ต้องการเยี่ยมชม";
 
-        SetMinistryLogo(ministry.ministryLogo);
+        _currentMinistryLogoUrl = ministry.ministryLogo;
+        SetMinistryLogo(_currentMinistryLogoUrl);
 
         List<GovernmentAgencyDto> agencies = store.GetAgenciesByMinistry(ministry.runtimeId);
-        List<ExhibitionAgencyData> items = new List<ExhibitionAgencyData>(agencies.Count);
+        List<ExhibitionAgencyData> items = new List<ExhibitionAgencyData>();
 
         for (int i = 0; i < agencies.Count; i++)
         {
@@ -170,7 +174,7 @@ public class AE_MainPanelController : MonoBehaviour
     {
         if (ministryPanel == null)
         {
-            Debug.LogError("[MinistryExhibitionPanelController] Paginated panel is missing.");
+            Debug.LogError("[AE_MainPanelController] Ministry panel reference is missing.");
             return;
         }
 
@@ -185,6 +189,7 @@ public class AE_MainPanelController : MonoBehaviour
         if (subtitleText != null)
             subtitleText.text = "เลือกหน่วยงานที่ต้องการเยี่ยมชม";
 
+        _currentMinistryLogoUrl = string.Empty;
         SetMinistryLogo(null);
     }
 
@@ -193,7 +198,7 @@ public class AE_MainPanelController : MonoBehaviour
         if (data == null)
             return;
 
-        Debug.Log($"[MinistryExhibitionPanelController] Agency selected: {data.AgencyRuntimeId}");
+        Debug.Log("[AE_MainPanelController] Agency selected: " + data.AgencyRuntimeId);
         BuildProjectSelection(data);
     }
 
@@ -203,25 +208,19 @@ public class AE_MainPanelController : MonoBehaviour
 
         if (_selectedAgency == null)
         {
-            Debug.LogWarning("[MinistryExhibitionPanelController] Selected agency is null.");
+            Debug.LogWarning("[AE_MainPanelController] Selected agency is null.");
             return;
         }
 
         AE_CatalogRepository store = AE_CatalogRepository.Instance;
         if (store == null || !store.HasData)
         {
-            Debug.LogWarning("[MinistryExhibitionPanelController] Store has no data.");
+            Debug.LogWarning("[AE_MainPanelController] Catalog repository has no data.");
             return;
         }
 
-        if (projectSelectionAgencyTitleText != null)
-            projectSelectionAgencyTitleText.text = _selectedAgency.Title;
-
-        if (projectSelectionSubtitleText != null)
-            projectSelectionSubtitleText.text = "โครงการภายใต้การดูแลของหน่วยงาน";
-
         List<GovernmentProjectDto> projects = store.GetProjectsByAgency(_selectedAgency.AgencyRuntimeId);
-        List<ExhibitionProjectData> projectItems = new List<ExhibitionProjectData>(projects.Count);
+        List<ExhibitionProjectData> projectItems = new List<ExhibitionProjectData>();
 
         for (int i = 0; i < projects.Count; i++)
         {
@@ -247,7 +246,7 @@ public class AE_MainPanelController : MonoBehaviour
         }
 
         if (projectSelectionPanel != null)
-            projectSelectionPanel.SetItems(projectItems);
+            projectSelectionPanel.BindSelection(_selectedAgency, projectItems, _currentMinistryLogoUrl);
 
         ShowProjectSelectionPage();
     }
@@ -257,12 +256,12 @@ public class AE_MainPanelController : MonoBehaviour
         if (data == null)
             return;
 
-        Debug.Log($"[MinistryExhibitionPanelController] Project selected: {data.ProjectRuntimeId}");
+        Debug.Log("[AE_MainPanelController] Project selected: " + data.ProjectRuntimeId);
 
         GovernmentProjectDto selectedProject = FindProjectDto(data);
         if (selectedProject == null)
         {
-            Debug.LogWarning($"[MinistryExhibitionPanelController] Project DTO not found: {data.ProjectRuntimeId}");
+            Debug.LogWarning("[AE_MainPanelController] Project DTO not found: " + data.ProjectRuntimeId);
             return;
         }
 
@@ -323,7 +322,7 @@ public class AE_MainPanelController : MonoBehaviour
 
         if (string.IsNullOrWhiteSpace(logoUrl))
         {
-            Debug.Log("[MinistryExhibitionPanelController] Ministry logo url is empty. Using default sprite.");
+            Debug.Log("[AE_MainPanelController] Ministry logo url is empty. Using default sprite.");
             return;
         }
 
@@ -332,69 +331,58 @@ public class AE_MainPanelController : MonoBehaviour
 
     private IEnumerator LoadSpriteIntoImage(string url, Image targetImage)
     {
-        using UnityWebRequest request = UnityWebRequest.Get(url);
-        request.downloadHandler = new DownloadHandlerBuffer();
-        request.SetRequestHeader("Accept", "image/png,image/jpeg,image/*,*/*");
-
-        yield return request.SendWebRequest();
-
-        Debug.Log(
-            $"[MinistryExhibitionPanelController] Image response => " +
-            $"result={request.result} | " +
-            $"responseCode={request.responseCode} | " +
-            $"content-type={request.GetResponseHeader("Content-Type")} | " +
-            $"content-length={request.GetResponseHeader("Content-Length")} | " +
-            $"url={url}"
-        );
-
-        if (request.result != UnityWebRequest.Result.Success)
+        using (UnityWebRequest request = UnityWebRequest.Get(url))
         {
-            Debug.LogWarning(
-                $"[MinistryExhibitionPanelController] Failed to download image bytes from url: {url}\n" +
-                $"Error: {request.error}"
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Accept", "image/png,image/jpeg,image/*,*/*");
+
+            yield return request.SendWebRequest();
+
+            if (request.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogWarning(
+                    "[AE_MainPanelController] Failed to download image bytes from url: " + url + "\n" +
+                    "Error: " + request.error
+                );
+
+                _ministryLogoLoadRoutine = null;
+                yield break;
+            }
+
+            byte[] bytes = request.downloadHandler.data;
+
+            if (bytes == null || bytes.Length == 0)
+            {
+                Debug.LogWarning("[AE_MainPanelController] Downloaded image bytes are empty. Url: " + url);
+                _ministryLogoLoadRoutine = null;
+                yield break;
+            }
+
+            Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            bool loaded = texture.LoadImage(bytes, false);
+
+            if (!loaded)
+            {
+                Destroy(texture);
+                Debug.LogWarning("[AE_MainPanelController] Texture load failed. Url: " + url);
+                _ministryLogoLoadRoutine = null;
+                yield break;
+            }
+
+            Sprite sprite = Sprite.Create(
+                texture,
+                new Rect(0f, 0f, texture.width, texture.height),
+                new Vector2(0.5f, 0.5f)
             );
+
+            if (targetImage != null)
+            {
+                targetImage.sprite = sprite;
+                targetImage.preserveAspect = true;
+            }
+
             _ministryLogoLoadRoutine = null;
-            yield break;
         }
-
-        byte[] bytes = request.downloadHandler.data;
-
-        if (bytes == null || bytes.Length == 0)
-        {
-            Debug.LogWarning($"[MinistryExhibitionPanelController] Downloaded image bytes are empty. Url: {url}");
-            _ministryLogoLoadRoutine = null;
-            yield break;
-        }
-
-        Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
-        bool loaded = texture.LoadImage(bytes, false);
-
-        if (!loaded)
-        {
-            string contentType = request.GetResponseHeader("Content-Type");
-            Debug.LogWarning(
-                $"[MinistryExhibitionPanelController] Texture2D.LoadImage failed. " +
-                $"content-type={contentType} | bytes={bytes.Length} | url={url}"
-            );
-
-            Destroy(texture);
-            _ministryLogoLoadRoutine = null;
-            yield break;
-        }
-
-        Sprite sprite = Sprite.Create(
-            texture,
-            new Rect(0f, 0f, texture.width, texture.height),
-            new Vector2(0.5f, 0.5f)
-        );
-
-        if (targetImage != null)
-        {
-            targetImage.sprite = sprite;
-            targetImage.preserveAspect = true;
-        }
-
-        _ministryLogoLoadRoutine = null;
     }
 
     private void ShowMainPage()
