@@ -13,6 +13,9 @@ public class HOH_CatalogRepository : MonoBehaviour
     [SerializeField] private bool preloadOnStart = true;
     [SerializeField] private bool dontDestroyOnLoad = true;
 
+    [Header("Resolver")]
+    [SerializeField] private HOH_FilterResolver filterResolver;
+
     public bool IsLoading { get; private set; }
     public bool HasData => RawData != null;
     public string LastError { get; private set; }
@@ -44,6 +47,9 @@ public class HOH_CatalogRepository : MonoBehaviour
 
         if (dontDestroyOnLoad)
             DontDestroyOnLoad(gameObject);
+
+        if (filterResolver == null)
+            filterResolver = FindObjectOfType<HOH_FilterResolver>();
     }
 
     private void Start()
@@ -121,29 +127,6 @@ public class HOH_CatalogRepository : MonoBehaviour
             : null;
     }
 
-    public HOH_CategoryDto FindCategory(string key)
-    {
-        if (string.IsNullOrWhiteSpace(key))
-            return null;
-
-        List<HOH_CategoryDto> categories = GetCategories();
-
-        for (int i = 0; i < categories.Count; i++)
-        {
-            HOH_CategoryDto item = categories[i];
-            if (item == null)
-                continue;
-
-            if (string.Equals(item.runtimeId, key, StringComparison.OrdinalIgnoreCase))
-                return item;
-
-            if (string.Equals(item.type, key, StringComparison.OrdinalIgnoreCase))
-                return item;
-        }
-
-        return null;
-    }
-
     public List<HOH_UnitDto> GetUnitsByCategory(string categoryId)
     {
         if (string.IsNullOrWhiteSpace(categoryId))
@@ -172,30 +155,6 @@ public class HOH_CatalogRepository : MonoBehaviour
         return _unitsById.TryGetValue(unitId, out HOH_UnitDto unit)
             ? unit
             : null;
-    }
-
-    public HOH_UnitDto FindUnit(string key)
-    {
-        if (string.IsNullOrWhiteSpace(key))
-            return null;
-
-        foreach (KeyValuePair<string, HOH_UnitDto> pair in _unitsById)
-        {
-            HOH_UnitDto item = pair.Value;
-            if (item == null)
-                continue;
-
-            if (string.Equals(item.runtimeId, key, StringComparison.OrdinalIgnoreCase))
-                return item;
-
-            if (string.Equals(item.unit, key, StringComparison.OrdinalIgnoreCase))
-                return item;
-
-            if (string.Equals(item.unitEn, key, StringComparison.OrdinalIgnoreCase))
-                return item;
-        }
-
-        return null;
     }
 
     public List<HOH_PersonDto> GetPersonsByUnit(string unitId)
@@ -313,17 +272,53 @@ public class HOH_CatalogRepository : MonoBehaviour
             if (category == null)
                 continue;
 
-            if (category.units == null)
-                category.units = new List<HOH_UnitDto>();
+            category.runtimeKind = category.GetCategoryKind();
 
-            for (int j = 0; j < category.units.Count; j++)
+            if (category.ministries == null)
+                category.ministries = new List<HOH_MinistryGroupDto>();
+
+            category.units = new List<HOH_UnitDto>();
+
+            for (int j = 0; j < category.ministries.Count; j++)
             {
-                HOH_UnitDto unit = category.units[j];
-                if (unit == null)
+                HOH_MinistryGroupDto group = category.ministries[j];
+                if (group == null)
                     continue;
 
-                if (unit.persons == null)
-                    unit.persons = new List<HOH_PersonDto>();
+                if (group.units == null)
+                    group.units = new List<HOH_UnitDto>();
+
+                for (int k = 0; k < group.units.Count; k++)
+                {
+                    HOH_UnitDto unit = group.units[k];
+                    if (unit == null)
+                        continue;
+
+                    if (unit.persons == null)
+                        unit.persons = new List<HOH_PersonDto>();
+
+                    if (string.IsNullOrWhiteSpace(unit.ministry))
+                        unit.ministry = group.ministry;
+
+                    if (string.IsNullOrWhiteSpace(unit.ministryEn))
+                        unit.ministryEn = group.ministryEn;
+
+                    unit.runtimeFilterKey = !string.IsNullOrWhiteSpace(group.ministryTypeEn)
+                        ? group.ministryTypeEn
+                        : group.ministryType;
+
+                    if (filterResolver != null &&
+                        filterResolver.TryResolve(unit.runtimeFilterKey, out HOH_FilterOption option))
+                    {
+                        unit.runtimeFilter = option;
+                    }
+                    else
+                    {
+                        unit.runtimeFilter = HOH_FilterOption.All;
+                    }
+
+                    category.units.Add(unit);
+                }
             }
         }
     }
@@ -345,6 +340,7 @@ public class HOH_CatalogRepository : MonoBehaviour
 
             category.runtimeId = BuildCategoryId(category, i);
             HOH_CategoryKind kind = category.GetCategoryKind();
+            category.runtimeKind = kind;
 
             if (!_categoriesById.ContainsKey(category.runtimeId))
                 _categoriesById.Add(category.runtimeId, category);
@@ -355,9 +351,11 @@ public class HOH_CatalogRepository : MonoBehaviour
             if (!_unitsByCategoryId.ContainsKey(category.runtimeId))
                 _unitsByCategoryId.Add(category.runtimeId, new List<HOH_UnitDto>());
 
-            for (int j = 0; j < category.units.Count; j++)
+            List<HOH_UnitDto> sourceUnits = category.units ?? new List<HOH_UnitDto>();
+
+            for (int j = 0; j < sourceUnits.Count; j++)
             {
-                HOH_UnitDto unit = category.units[j];
+                HOH_UnitDto unit = sourceUnits[j];
                 if (unit == null)
                     continue;
 

@@ -208,7 +208,7 @@ public class HOH_PanelController : MonoBehaviour
 
         foreach (HOH_FilterOption filter in filters)
         {
-            if (filterResolver.Matches(categoryKind, unit, filter))
+            if (filterResolver.Matches(unit, filter))
                 return true;
         }
 

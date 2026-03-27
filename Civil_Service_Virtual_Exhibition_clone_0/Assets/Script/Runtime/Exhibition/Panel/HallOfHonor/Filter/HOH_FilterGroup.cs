@@ -11,11 +11,14 @@ public enum HOH_FilterOption
     Social = 2,
     Security = 3,
     Infrastructure = 4,
+    Service = 5,
 
-    North = 5,
-    Northeast = 6,
-    Central = 7,
-    South = 8
+    North = 6,
+    Northeast = 7,
+    Central = 8,
+    East = 9,
+    West = 10,
+    South = 11
 }
 
 [Serializable]
@@ -36,7 +39,6 @@ public class HOH_FilterGroup : MonoBehaviour
     private bool _isApplying;
 
     public IReadOnlyCollection<HOH_FilterOption> CurrentFilters => _currentFilters;
-
     public bool IsAllSelected => _currentFilters.Count == 0;
 
     private void Awake()
@@ -110,6 +112,7 @@ public class HOH_FilterGroup : MonoBehaviour
         {
             if (notify)
                 RaiseChanged();
+
             return;
         }
 

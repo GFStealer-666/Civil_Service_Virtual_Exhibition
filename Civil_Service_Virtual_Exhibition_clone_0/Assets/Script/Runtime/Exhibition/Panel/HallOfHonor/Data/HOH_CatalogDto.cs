@@ -20,9 +20,11 @@ public class HOH_ResponseDto
 public class HOH_CategoryDto
 {
     public string type;
-    public List<HOH_UnitDto> units = new();
+    public List<HOH_MinistryGroupDto> ministries = new();
 
+    [NonSerialized] public List<HOH_UnitDto> units = new();
     [NonSerialized] public string runtimeId;
+    [NonSerialized] public HOH_CategoryKind runtimeKind;
 
     public HOH_CategoryKind GetCategoryKind()
     {
@@ -37,6 +39,16 @@ public class HOH_CategoryDto
 }
 
 [Serializable]
+public class HOH_MinistryGroupDto
+{
+    public string ministry;
+    public string ministryEn;
+    public string ministryType;
+    public string ministryTypeEn;
+    public List<HOH_UnitDto> units = new();
+}
+
+[Serializable]
 public class HOH_UnitDto
 {
     public string unit;
@@ -48,6 +60,8 @@ public class HOH_UnitDto
 
     [NonSerialized] public string runtimeId;
     [NonSerialized] public string parentCategoryId;
+    [NonSerialized] public string runtimeFilterKey;
+    [NonSerialized] public HOH_FilterOption runtimeFilter = HOH_FilterOption.All;
 }
 
 [Serializable]
