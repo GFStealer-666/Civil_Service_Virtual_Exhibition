@@ -1,21 +1,9 @@
-using System.Collections;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.UI;
 
 public class HOH_OfficerDetailUI : MonoBehaviour
 {
-    private enum NarratorState
-    {
-        Idle,
-        Downloading,
-        Playing,
-        Failed,
-        Completed,
-        Stopped
-    }
-
     [Header("Linked Panels")]
     [SerializeField] private HOH_OfficerAdditionalDetailUI additionalDetailUI;
 
@@ -35,36 +23,18 @@ public class HOH_OfficerDetailUI : MonoBehaviour
     [SerializeField] private GameObject narratorButtonRoot;
     [SerializeField] private bool narratorAvailable = true;
 
+    [Header("Narration")]
+    [SerializeField] private HOH_OfficerNarrationController narrationController;
+
     [Header("Config")]
-    
-    [SerializeField] private bool useEnglishNarrator = false;
     [SerializeField] private int shortDescriptionCharacterLimit = 150;
-    private ApiService Api => ApiService.Instance;
+
     [Header("Loader")]
     [SerializeField] private UniversalImageLoader photoLoader;
-
-    [Header("Overlay")]
-    [SerializeField] private StatusOverlay overlay;
-
-    [Header("Audio")]
-    [SerializeField] private ExhibitionAudioSource narratorAudioSource;
-
-    [Header("Overlay Messages")]
-    [SerializeField] private string overlayLoadingTitle = "กำลังดาวน์โหลดเสียงบรรยาย";
-    [SerializeField] private string overlayLoadingSubtitle = "กรุณารอสักครู่";
-    [SerializeField] private string overlaySuccessTitle = "พร้อมใช้งานเสียงบรรยาย";
-    [SerializeField] private string overlaySuccessSubtitle = "กำลังเริ่มเล่น";
-    [SerializeField] private string overlayFailedTitle = "โหลดเสียงบรรยายไม่สำเร็จ";
-    [SerializeField] private string overlayFailedSubtitle = "กรุณาลองใหม่อีกครั้ง";
 
     private HOH_PersonDto _currentPerson;
     private HOH_UnitDto _currentUnit;
     private HOH_OfficerSelectionPanelController _previousSelection;
-
-    private Coroutine _narrationDownloadRoutine;
-    private Coroutine _narrationMonitorRoutine;
-
-    private NarratorState _narratorState = NarratorState.Idle;
 
     public bool HasPerson => _currentPerson != null;
 
@@ -78,6 +48,11 @@ public class HOH_OfficerDetailUI : MonoBehaviour
 
         if (narratorButton != null)
             narratorButton.onClick.AddListener(HandleNarratorClicked);
+
+        if (narrationController != null)
+            narrationController.StateChanged += HandleNarrationStateChanged;
+
+        RefreshButtons();
     }
 
     private void OnDestroy()
@@ -91,8 +66,8 @@ public class HOH_OfficerDetailUI : MonoBehaviour
         if (narratorButton != null)
             narratorButton.onClick.RemoveListener(HandleNarratorClicked);
 
-        StopNarrationInternal(false);
-        overlay?.Hide();
+        if (narrationController != null)
+            narrationController.StateChanged -= HandleNarrationStateChanged;
     }
 
     public void Show(HOH_PersonDto person, HOH_UnitDto unit, HOH_OfficerSelectionPanelController previousSelection)
@@ -101,15 +76,14 @@ public class HOH_OfficerDetailUI : MonoBehaviour
         _currentUnit = unit;
         _previousSelection = previousSelection;
 
-        StopNarrationInternal(false);
-        overlay?.Hide();
+        narrationController?.BindPerson(_currentPerson);
 
         if (root != null)
             root.SetActive(true);
 
         BindText();
         BindPhoto();
-        SetNarratorState(NarratorState.Idle);
+        RefreshButtons();
     }
 
     public void Hide()
@@ -117,17 +91,17 @@ public class HOH_OfficerDetailUI : MonoBehaviour
         if (additionalDetailUI != null)
             additionalDetailUI.HideSilently();
 
-        StopNarrationInternal(true);
-        overlay?.Hide();
+        narrationController?.ClearTarget(true);
 
         _currentPerson = null;
         _currentUnit = null;
 
         ApplyEmptyState();
-        SetNarratorState(NarratorState.Idle);
 
         if (root != null)
             root.SetActive(false);
+
+        RefreshButtons();
 
         if (_previousSelection != null)
             _previousSelection.ReopenFromChild();
@@ -135,29 +109,31 @@ public class HOH_OfficerDetailUI : MonoBehaviour
 
     public void HideSilently()
     {
-        StopNarrationInternal(true);
-        overlay?.Hide();
+        narrationController?.ClearTarget(true);
 
         _currentPerson = null;
         _currentUnit = null;
 
         ApplyEmptyState();
-        SetNarratorState(NarratorState.Idle);
 
         if (root != null)
             root.SetActive(false);
+
+        RefreshButtons();
     }
 
     public void ReopenFromChild()
     {
         if (root != null)
             root.SetActive(true);
+
+        RefreshButtons();
     }
 
     public void StopNarration()
     {
-        StopNarrationInternal(true);
-        SetNarratorState(NarratorState.Stopped);
+        narrationController?.StopMedia();
+        RefreshButtons();
     }
 
     private void BindText()
@@ -229,7 +205,7 @@ public class HOH_OfficerDetailUI : MonoBehaviour
             return;
         }
 
-        StopNarration();
+        narrationController?.StopMedia();
 
         if (root != null)
             root.SetActive(false);
@@ -242,146 +218,18 @@ public class HOH_OfficerDetailUI : MonoBehaviour
         if (!narratorAvailable || _currentPerson == null)
             return;
 
-        if (_narratorState == NarratorState.Downloading)
-            return;
-
-        if (_narratorState == NarratorState.Playing)
+        if (narrationController == null)
         {
-            StopNarration();
+            Debug.LogWarning("[HOH_OfficerDetailUI] NarrationController is not assigned.");
             return;
         }
 
-        string url = BuildOfficerTtsUrl(_currentPerson);
-        Debug.Log($"[HOH_OfficerDetailUI] Narrator URL = {url}");
-
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            SetNarratorState(NarratorState.Failed, "Narrator URL is empty.");
-            overlay?.ShowFailed(overlayFailedTitle, "ไม่พบลิงก์เสียงบรรยาย");
-            return;
-        }
-
-        if (_narrationDownloadRoutine != null)
-        {
-            StopCoroutine(_narrationDownloadRoutine);
-            _narrationDownloadRoutine = null;
-        }
-
-        _narrationDownloadRoutine = StartCoroutine(DownloadAndPlayNarration(url));
+        narrationController.ToggleBoundPerson();
+        RefreshButtons();
     }
 
-    private IEnumerator DownloadAndPlayNarration(string url)
+    private void HandleNarrationStateChanged(MediaPlaybackState state)
     {
-        SetNarratorState(NarratorState.Downloading);
-        overlay?.ShowLoading(overlayLoadingTitle, overlayLoadingSubtitle);
-
-        using UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(url, AudioType.UNKNOWN);
-        ApplyAuthorizationHeader(request);
-
-        yield return request.SendWebRequest();
-
-        _narrationDownloadRoutine = null;
-
-        if (request.result != UnityWebRequest.Result.Success)
-        {
-            overlay?.ShowFailed(overlayFailedTitle, overlayFailedSubtitle);
-            yield break;
-        }
-
-        AudioClip clip = DownloadHandlerAudioClip.GetContent(request);
-        if (clip == null)
-        {
-            overlay?.ShowFailed(overlayFailedTitle, "ไม่พบข้อมูลเสียงบรรยาย");
-            yield break;
-        }
-
-        if (narratorAudioSource == null || narratorAudioSource.AudioSource == null)
-        {
-            SetNarratorState(NarratorState.Failed, "Narrator AudioSource is missing.");
-            overlay?.ShowFailed("ไม่สามารถเล่นเสียงบรรยาย", "ยังไม่ได้ตั้งค่า Audio Source");
-            yield break;
-        }
-
-        ApplyNarrationBgmMute(true);
-
-        narratorAudioSource.AudioSource.Stop();
-        narratorAudioSource.AudioSource.clip = clip;
-        narratorAudioSource.AudioSource.Play();
-
-        SetNarratorState(NarratorState.Playing);
-        overlay?.ShowSuccess(overlaySuccessTitle, overlaySuccessSubtitle, true);
-
-        if (_narrationMonitorRoutine != null)
-        {
-            StopCoroutine(_narrationMonitorRoutine);
-            _narrationMonitorRoutine = null;
-        }
-
-        _narrationMonitorRoutine = StartCoroutine(MonitorNarrationPlayback());
-    }
-
-    private IEnumerator MonitorNarrationPlayback()
-    {
-        if (narratorAudioSource == null || narratorAudioSource.AudioSource == null)
-        {
-            ApplyNarrationBgmMute(false);
-            SetNarratorState(NarratorState.Failed, "Narrator AudioSource is missing.");
-            _narrationMonitorRoutine = null;
-            yield break;
-        }
-
-        AudioSource source = narratorAudioSource.AudioSource;
-
-        while (source != null && source.isPlaying)
-            yield return null;
-
-        ApplyNarrationBgmMute(false);
-        SetNarratorState(NarratorState.Completed);
-        _narrationMonitorRoutine = null;
-    }
-
-    private void StopNarrationInternal(bool restoreBgm)
-    {
-        if (_narrationDownloadRoutine != null)
-        {
-            StopCoroutine(_narrationDownloadRoutine);
-            _narrationDownloadRoutine = null;
-        }
-
-        if (_narrationMonitorRoutine != null)
-        {
-            StopCoroutine(_narrationMonitorRoutine);
-            _narrationMonitorRoutine = null;
-        }
-
-        if (narratorAudioSource != null && narratorAudioSource.AudioSource != null)
-        {
-            narratorAudioSource.AudioSource.Stop();
-            narratorAudioSource.AudioSource.clip = null;
-        }
-
-        if (restoreBgm)
-            ApplyNarrationBgmMute(false);
-    }
-
-    private void ApplyNarrationBgmMute(bool mute)
-    {
-        if (ExhibitionAudioManager.Instance == null)
-            return;
-
-        if (mute)
-            ExhibitionAudioManager.Instance.SetTemporaryBgmVolume(0f);
-        else
-            ExhibitionAudioManager.Instance.ClearTemporaryBgmVolume();
-    }
-
-    private void SetNarratorState(NarratorState state, string overrideMessage = null)
-    {
-        _narratorState = state;
-
-        if (narratorButtonRoot != null)
-            narratorButtonRoot.SetActive(narratorAvailable);
-
         RefreshButtons();
     }
 
@@ -390,39 +238,21 @@ public class HOH_OfficerDetailUI : MonoBehaviour
         if (moreInfoButton != null)
             moreInfoButton.interactable = _currentPerson != null;
 
+        if (narratorButtonRoot != null)
+            narratorButtonRoot.SetActive(narratorAvailable);
+
         if (narratorButton != null)
         {
+            bool isLoading =
+                narrationController != null &&
+                narrationController.State == MediaPlaybackState.Loading;
+
             narratorButton.interactable =
                 narratorAvailable &&
+                narrationController != null &&
                 _currentPerson != null &&
-                _narratorState != NarratorState.Downloading;
+                !isLoading;
         }
-    }
-    private string BuildOfficerTtsUrl(HOH_PersonDto person)
-    {
-        if (person == null)
-            return string.Empty;
-
-        string officerId = FirstNotEmpty(person.id, person.runtimeId);
-        if (string.IsNullOrWhiteSpace(officerId))
-            return string.Empty;
-
-        if (Api == null)
-            return string.Empty;
-
-        return useEnglishNarrator
-            ? Api.GetHallOfHonorTtsEngUrl(officerId)
-            : Api.GetHallOfHonorTtsThUrl(officerId);
-    }
-
-    private void ApplyAuthorizationHeader(UnityWebRequest request)
-    {
-        if (request == null)
-            return;
-
-        string accessToken = PlayerPrefs.GetString("access_token", string.Empty);
-        if (!string.IsNullOrWhiteSpace(accessToken))
-            request.SetRequestHeader("Authorization", $"Bearer {accessToken}");
     }
 
     private string BuildFullName(HOH_PersonDto person)
