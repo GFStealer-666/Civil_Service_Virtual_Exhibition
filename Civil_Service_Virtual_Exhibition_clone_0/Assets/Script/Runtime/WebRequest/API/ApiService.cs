@@ -1,3 +1,4 @@
+using System;
 using System.Text;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -22,11 +23,12 @@ public class ApiService : MonoBehaviour
     public string GetQuizUrl => config != null ? config.GetQuizUrl : string.Empty;
     public string QuizSubmitUrl => config != null ? config.QuizSubmitUrl : string.Empty;
     public string GetQuizLeaderboardUrl => config != null ? config.GetQuizLeaderboardUrl : string.Empty;
+    public string GetQuizMe => config != null ? config.GetQuizMe : string.Empty;
 
     public string GovernmentCatalogUrl => config != null ? config.GovernmentCatalogUrl : string.Empty;
     public string PublicServiceUrl => config != null ? config.PublicServiceUrl : string.Empty;
+    public string PublicServiceCenterUrl => config != null ? config.PublicServiceCenterUrl : string.Empty;
     public string HallOfHonorUrl => config != null ? config.HallofHonorUrl : string.Empty;
-    public string GetQuizMe => config != null ? config.GetQuizMe : string.Empty;
 
     private void Awake()
     {
@@ -77,24 +79,24 @@ public class ApiService : MonoBehaviour
 
     public UnityWebRequest Get(string url, string bearerToken = null)
     {
-        UnityWebRequest request = UnityWebRequest.Get(url);
+        UnityWebRequest request = UnityWebRequest.Get(ResolveUrl(url));
         ApplyCommonHeaders(request, bearerToken);
         return request;
     }
 
     public UnityWebRequest PostJson(string url, string jsonBody, string bearerToken = null)
     {
-        return CreateJsonRequest(UnityWebRequest.kHttpVerbPOST, url, jsonBody, bearerToken);
+        return CreateJsonRequest(UnityWebRequest.kHttpVerbPOST, ResolveUrl(url), jsonBody, bearerToken);
     }
 
     public UnityWebRequest PutJson(string url, string jsonBody, string bearerToken = null)
     {
-        return CreateJsonRequest(UnityWebRequest.kHttpVerbPUT, url, jsonBody, bearerToken);
+        return CreateJsonRequest(UnityWebRequest.kHttpVerbPUT, ResolveUrl(url), jsonBody, bearerToken);
     }
 
     public UnityWebRequest Delete(string url, string bearerToken = null)
     {
-        UnityWebRequest request = new UnityWebRequest(url, UnityWebRequest.kHttpVerbDELETE);
+        UnityWebRequest request = new UnityWebRequest(ResolveUrl(url), UnityWebRequest.kHttpVerbDELETE);
         request.downloadHandler = new DownloadHandlerBuffer();
         ApplyCommonHeaders(request, bearerToken);
         return request;
@@ -102,15 +104,14 @@ public class ApiService : MonoBehaviour
 
     public UnityWebRequest GetTexture(string url, string bearerToken = null)
     {
-        UnityWebRequest request = UnityWebRequestTexture.GetTexture(url);
+        UnityWebRequest request = UnityWebRequestTexture.GetTexture(ResolveUrl(url));
         ApplyCommonHeaders(request, bearerToken);
         return request;
     }
 
     public UnityWebRequest GetAudioClip(string url, AudioType audioType, string bearerToken = null)
     {
-        UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(url, audioType);
-
+        UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(ResolveUrl(url), audioType);
         ApplyCommonHeaders(request, bearerToken);
         request.SetRequestHeader("Accept", "audio/mpeg,audio/*,*/*");
 
@@ -119,6 +120,25 @@ public class ApiService : MonoBehaviour
             downloadHandler.streamAudio = false;
 
         return request;
+    }
+
+    public string ResolveUrl(string rawUrl)
+    {
+        if (string.IsNullOrWhiteSpace(rawUrl))
+            return string.Empty;
+
+        string trimmed = rawUrl.Trim();
+
+        if (Uri.TryCreate(trimmed, UriKind.Absolute, out Uri absoluteUri))
+            return absoluteUri.ToString();
+
+        if (string.IsNullOrWhiteSpace(BaseUrl))
+            return trimmed;
+
+        if (trimmed.StartsWith("/"))
+            return $"{BaseUrl}{trimmed}";
+
+        return $"{BaseUrl}/{trimmed.TrimStart('/')}";
     }
 
     private UnityWebRequest CreateJsonRequest(string method, string url, string jsonBody, string bearerToken)
@@ -132,32 +152,9 @@ public class ApiService : MonoBehaviour
 
         return request;
     }
-    
-    public string ResolveUrl(string rawUrl)
-    {
-        if (string.IsNullOrWhiteSpace(rawUrl))
-            return string.Empty;
-
-        string trimmed = rawUrl.Trim();
-
-        if (System.Uri.TryCreate(trimmed, System.UriKind.Absolute, out System.Uri absoluteUri))
-            return absoluteUri.ToString();
-
-        string baseUrl = BaseUrl;
-        if (string.IsNullOrWhiteSpace(baseUrl))
-            return trimmed;
-
-        if (!trimmed.StartsWith("/"))
-            trimmed = "/" + trimmed;
-
-        return baseUrl.TrimEnd('/') + trimmed;
-    }
 
     private void ApplyCommonHeaders(UnityWebRequest request, string bearerToken)
     {
-        if (request == null)
-            return;
-
         request.SetRequestHeader("Accept", "application/json");
 
         if (!string.IsNullOrWhiteSpace(bearerToken))

@@ -22,6 +22,8 @@ public class ApiConfig : ScriptableObject
     [SerializeField] private string governmentCatalogEndpoint = "/api/game/submissions/all";
     [Header("Public Service")]
     [SerializeField] private string publicServiceUrl ="/api/public/activities/all";
+    [SerializeField] private string publicServiceCenterEndpoint = "/api/public/services/all";
+
     [Header("Hall of Frame")]
     [SerializeField] private string hallofHonorUrl = "/api/public/civil-servants/all";
     [Header("TTS")]
@@ -43,6 +45,7 @@ public class ApiConfig : ScriptableObject
     public string GetQuizMe => Build(getQuizLeaderboardMe);
     public string GovernmentCatalogUrl => Build(governmentCatalogEndpoint);
     public string PublicServiceUrl => Build(publicServiceUrl);
+    public string PublicServiceCenterUrl => Build(publicServiceCenterEndpoint);
     public string HallofHonorUrl => Build(hallofHonorUrl);
     public string GetAgencyExhibitionTtsEngUrl(string projectId)
     {
@@ -126,10 +129,19 @@ public class ApiConfig : ScriptableObject
         getQuizEndpoint = NormalizeEndpoint(getQuizEndpoint);
         submitQuizEndpoint = NormalizeEndpoint(submitQuizEndpoint);
         getQuizLeaderboardEndpoint = NormalizeEndpoint(getQuizLeaderboardEndpoint);
+        getQuizLeaderboardMe = NormalizeEndpoint(getQuizLeaderboardMe);
 
         governmentCatalogEndpoint = NormalizeEndpoint(governmentCatalogEndpoint);
+
+        publicServiceUrl = NormalizeEndpoint(publicServiceUrl);
+        publicServiceCenterEndpoint = NormalizeEndpoint(publicServiceCenterEndpoint);
+
+        hallofHonorUrl = NormalizeEndpoint(hallofHonorUrl);
+
         agencyExhibitionTtsEngEndpoint = NormalizeEndpoint(agencyExhibitionTtsEngEndpoint);
         agencyExhibitionTtsThEndpoint = NormalizeEndpoint(agencyExhibitionTtsThEndpoint);
+        hallofHonorTtsEngEndpoint = NormalizeEndpoint(hallofHonorTtsEngEndpoint);
+        hallofHonorTtsThEndPoint = NormalizeEndpoint(hallofHonorTtsThEndPoint);
     }
 #endif
 }

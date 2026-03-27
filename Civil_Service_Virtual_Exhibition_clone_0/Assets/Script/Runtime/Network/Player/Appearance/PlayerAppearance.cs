@@ -6,9 +6,9 @@ using UnityEngine;
 public class PlayerAppearance : NetworkBehaviour
 {
     private readonly Dictionary<string, Material> _materialMap = new();
-    private PlayerProfile         _profile;
+    private PlayerProfile _profile;
     private AppearanceSlotMapping _mapping;
-    private bool                  _uiSeeded = false;
+    private bool _uiSeeded = false;
 
     public override void Spawned()
     {
@@ -30,8 +30,10 @@ public class PlayerAppearance : NetworkBehaviour
 
         var renderers = GetComponentsInChildren<SkinnedMeshRenderer>(true);
         foreach (var smr in renderers)
-            if (smr.materials.Length > 0)
+        {
+            if (smr.materials != null && smr.materials.Length > 0 && smr.materials[0] != null)
                 _materialMap[smr.gameObject.name] = smr.materials[0];
+        }
 
         Debug.Log($"[PlayerAppearance] Material map: {_materialMap.Count} entries");
     }
@@ -72,20 +74,17 @@ public class PlayerAppearance : NetworkBehaviour
 
             Color color = _profile.GetColor(slot);
 
-            // Skip unset (black/transparent) slots
             if (color == Color.clear || color == new Color(0, 0, 0, 0))
                 continue;
 
             ApplySlot(slot, color);
         }
 
+        SyncSpecialMeshes();
+
         if (!_uiSeeded && HasInputAuthority && ColorsAreReady())
         {
             _uiSeeded = true;
-
-            // var ui = FindFirstObjectByType<AppearanceCustomizeUI>();
-            // ui?.RefreshSlotColors();
-
             Debug.Log("[PlayerAppearance] UI slot colors refreshed.");
         }
     }
@@ -101,19 +100,33 @@ public class PlayerAppearance : NetworkBehaviour
             if (c != Color.clear && c != new Color(0, 0, 0, 0))
                 return true;
         }
+
         return false;
     }
 
     private void ApplySlot(AppearanceSlot slot, Color color)
     {
         var names = _mapping.GetMeshNames(slot);
-        if (names == null) return;
+        if (names == null || names.Length == 0) return;
 
         foreach (var meshName in names)
         {
             if (_materialMap.TryGetValue(meshName, out var mat))
                 mat.color = color;
         }
+    }
+
+    private void SyncSpecialMeshes()
+    {
+        CopyColor("m_Suit", "m_SuitBag");
+    }
+
+    private void CopyColor(string sourceMeshName, string targetMeshName)
+    {
+        if (!_materialMap.TryGetValue(sourceMeshName, out var sourceMat)) return;
+        if (!_materialMap.TryGetValue(targetMeshName, out var targetMat)) return;
+
+        targetMat.color = sourceMat.color;
     }
 
     public Color GetMaterialColor(AppearanceSlot slot)

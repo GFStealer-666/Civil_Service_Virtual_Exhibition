@@ -29,8 +29,8 @@ public class VideoPlayerDisableWatcher : MonoBehaviour
     private void OnDisable()
     {
         LogState("OnDisable");
-        Debug.LogError("[VideoPlayerDisableWatcher] Something disabled this component or its GameObject.\n" +
-                       UnityEngine.StackTraceUtility.ExtractStackTrace());
+       // Debug.LogError("[VideoPlayerDisableWatcher] Something disabled this component or its GameObject.\n" +
+                      // UnityEngine.StackTraceUtility.ExtractStackTrace());
     }
 
     private void Update()
