@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
 
-public class AE_ProjectVideoPlayerController : MonoBehaviour, IAE_ProjectVideoPlaybackController
+public class AE_ProjectVideoPlayerController : MonoBehaviour
 {
     public event Action Prepared;
     public event Action<string> Failed;
@@ -19,6 +19,7 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour, IAE_ProjectVideoPl
     [SerializeField] private float prepareTimeoutSeconds = 8f;
 
     private Coroutine _prepareTimeoutRoutine;
+    private Coroutine _seekRoutine;
     private bool _isPrepared;
     private bool _isPreparing;
     private bool _cancelPrepareRequested;
@@ -53,6 +54,12 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour, IAE_ProjectVideoPl
         }
 
         StopPrepareTimeoutRoutine();
+
+        if (_seekRoutine != null)
+        {
+            StopCoroutine(_seekRoutine);
+            _seekRoutine = null;
+        }
     }
 
     private void Update()
@@ -77,12 +84,6 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour, IAE_ProjectVideoPl
             return;
         }
 
-        if (LooksLikeYoutubeUrl(url))
-        {
-            Failed?.Invoke("This video uses a YouTube page URL. Unity VideoPlayer needs a direct video file URL.");
-            return;
-        }
-
         StopPlaybackInternal(resetOutput: true, notifyState: true);
 
         _cancelPrepareRequested = false;
@@ -98,19 +99,6 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour, IAE_ProjectVideoPl
 
         StopPrepareTimeoutRoutine();
         _prepareTimeoutRoutine = StartCoroutine(PrepareTimeoutRoutine(prepareTimeoutSeconds));
-    }
-
-    private bool LooksLikeYoutubeUrl(string url)
-    {
-        if (string.IsNullOrWhiteSpace(url))
-            return false;
-
-        string lower = url.Trim().ToLowerInvariant();
-
-        return lower.Contains("youtube.com/watch") ||
-               lower.Contains("youtu.be/") ||
-               lower.Contains("youtube.com/shorts/") ||
-               lower.Contains("youtube.com/live/");
     }
 
     public void Play()
@@ -154,9 +142,56 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour, IAE_ProjectVideoPl
         if (videoPlayer.length <= 0.01d)
             return;
 
-        double targetTime = Mathf.Clamp01(normalizedValue) * videoPlayer.length;
+        if (!videoPlayer.canSetTime)
+        {
+            Debug.LogWarning("[AE_ProjectVideoPlayerController] VideoPlayer cannot seek this source.");
+            return;
+        }
+
+        if (_seekRoutine != null)
+            StopCoroutine(_seekRoutine);
+
+        _seekRoutine = StartCoroutine(SeekRoutine(Mathf.Clamp01(normalizedValue)));
+    }
+
+    private IEnumerator SeekRoutine(float normalizedValue)
+    {
+        if (videoPlayer == null)
+        {
+            _seekRoutine = null;
+            yield break;
+        }
+
+        bool resumeAfterSeek = videoPlayer.isPlaying;
+        double duration = videoPlayer.length;
+
+        double targetTime = normalizedValue * duration;
+
+        if (targetTime >= duration)
+            targetTime = Math.Max(0d, duration - 0.05d);
+
+        videoPlayer.Pause();
         videoPlayer.time = targetTime;
+
+        int waitedFrames = 0;
+        const int maxFrames = 15;
+        const double tolerance = 0.25d;
+
+        while (videoPlayer != null && waitedFrames < maxFrames)
+        {
+            if (Math.Abs(videoPlayer.time - targetTime) <= tolerance)
+                break;
+
+            waitedFrames++;
+            yield return null;
+        }
+
         TimeChanged?.Invoke(videoPlayer.time, videoPlayer.length);
+
+        if (videoPlayer != null && _isPrepared && resumeAfterSeek)
+            videoPlayer.Play();
+
+        _seekRoutine = null;
     }
 
     private IEnumerator PrepareTimeoutRoutine(float timeoutSeconds)
@@ -221,6 +256,15 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour, IAE_ProjectVideoPl
 
     private void HandleLoopPointReached(VideoPlayer source)
     {
+        if (source == null)
+            return;
+
+        if (source.isLooping)
+        {
+            TimeChanged?.Invoke(0d, source.length);
+            return;
+        }
+
         PlayStateChanged?.Invoke(false);
         Finished?.Invoke();
     }
@@ -240,6 +284,12 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour, IAE_ProjectVideoPl
     private void StopPlaybackInternal(bool resetOutput, bool notifyState)
     {
         StopPrepareTimeoutRoutine();
+
+        if (_seekRoutine != null)
+        {
+            StopCoroutine(_seekRoutine);
+            _seekRoutine = null;
+        }
 
         if (videoPlayer != null)
         {

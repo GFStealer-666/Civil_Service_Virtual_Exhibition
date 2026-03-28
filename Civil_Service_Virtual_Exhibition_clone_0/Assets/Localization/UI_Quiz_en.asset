@@ -40,10 +40,6 @@ MonoBehaviour:
       appropriate answer in each situation.
     m_Metadata:
       m_Items: []
-  - m_Id: 1229866229762
-    m_Localized: Round {0}
-    m_Metadata:
-      m_Items: []
   - m_Id: 1229866229763
     m_Localized: Leaderboard
     m_Metadata:
@@ -69,7 +65,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 1229866229769
-    m_Localized: Confirm Answer
+    m_Localized: Answer
     m_Metadata:
       m_Items: []
   - m_Id: 1229866229770
@@ -110,15 +106,102 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 1229866229779
-    m_Localized: 'Your score: {0} points  Your rank: #{1}'
+    m_Localized: 'Your score: {0} points  Your rank: {1}'
     m_Metadata:
       m_Items: []
   - m_Id: 1229866229780
-    m_Localized: Rank {0}
+    m_Localized: Rank
     m_Metadata:
       m_Items: []
   - m_Id: 1229866229781
     m_Localized: '{0} points'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3034817847296
+    m_Localized: 'Phase 1 '
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3449248636928
+    m_Localized: Phase 2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3454416019456
+    m_Localized: Phase 3
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3468743761920
+    m_Localized: Phase 4
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108431851520
+    m_Localized: Loading...
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10156179808256
+    m_Localized: Quiz repository is missing.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10199263698944
+    m_Localized: Failed to load leaderboard.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173684568064
+    m_Localized: 'Name: {0} | Your score: {1} points | Your rank: {2}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539584
+    m_Localized: Exit quiz?
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539585
+    m_Localized: If you leave the quiz now, you will not be able to play again for
+      24 hours.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539586
+    m_Localized: Unable to start quiz
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539587
+    m_Localized: You already played this quiz. Please wait {0} before playing again.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539588
+    m_Localized: '{0} hours {1} minutes {2} seconds'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539589
+    m_Localized: '{0} minutes {1} seconds'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539590
+    m_Localized: '{0} seconds'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539591
+    m_Localized: Failed to start quiz
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539592
+    m_Localized: Unable to load quiz.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539593
+    m_Localized: No quiz questions found.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 100389135147008
+    m_Localized: Points
+    m_Metadata:
+      m_Items: []
+  - m_Id: 103278456954880
+    m_Localized: 'Cancel
+
+'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 103381083185152
+    m_Localized: Confirm
     m_Metadata:
       m_Items: []
   references:

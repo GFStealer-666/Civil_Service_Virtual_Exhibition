@@ -23,7 +23,8 @@ public class QuizLocalizationPresenter : MonoBehaviour
     [SerializeField] private TMP_Text playSubtitleText;
     [SerializeField] private TMP_Text totalQuestionsText;
     [SerializeField] private TMP_Text confirmAnswerButtonText;
-
+    [SerializeField] private TMP_Text confirmToLeaveText;
+    [SerializeField] private TMP_Text confirmToStayText;
     [Header("Complete Panel")]
     [SerializeField] private TMP_Text completeTitleText;
     [SerializeField] private TMP_Text completeSubtitleText;
@@ -195,7 +196,6 @@ public class QuizLocalizationPresenter : MonoBehaviour
             scoreHeaderText,
             T(LocalizationKeys.Quiz.LeaderboardScoreHeader, "คะแนน")
         );
-
         ApplyQuestionProgress();
         ApplyMyScoreSummary();
     }

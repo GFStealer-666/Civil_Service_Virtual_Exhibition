@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 
 public class QuizUIOverlay : MonoBehaviour
@@ -32,8 +34,18 @@ public class QuizUIOverlay : MonoBehaviour
     [SerializeField] private TMP_Text quitConfirmMessageText;
     [SerializeField] private Button quitConfirmLeaveButton;
     [SerializeField] private Button quitConfirmStayButton;
+    [SerializeField] private TMP_Text quitConfirmLeaveButtonText;
+    [SerializeField] private TMP_Text quitConfirmStayButtonText;
 
     private int _selectedChoiceIndex = -1;
+
+    private int _currentQuestionIndex;
+    private int _totalQuestionCount;
+    private bool _hasQuestionCounter;
+
+    private string _lastQuitTitleFallback;
+    private string _lastQuitMessageFallback;
+    private bool _isShowingQuitPopup;
 
     public event Action StartClicked;
     public event Action<int> ConfirmClicked;
@@ -88,6 +100,29 @@ public class QuizUIOverlay : MonoBehaviour
 
         SetConfirmInteractable(false);
         HideQuitConfirmation();
+        RefreshLocalizedStaticTexts();
+    }
+
+    private void OnEnable()
+    {
+        LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+        RefreshLocalizedStaticTexts();
+    }
+
+    private void OnDisable()
+    {
+        LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+    }
+
+    private void OnLocaleChanged(Locale _)
+    {
+        RefreshLocalizedStaticTexts();
+
+        if (_hasQuestionCounter)
+            RefreshQuestionCounter();
+
+        if (_isShowingQuitPopup)
+            RefreshQuitPopupTexts();
     }
 
     public void ShowStart()
@@ -162,10 +197,11 @@ public class QuizUIOverlay : MonoBehaviour
         _selectedChoiceIndex = -1;
         SetConfirmInteractable(false);
 
-        if (questionCounterText != null)
-        {
-            questionCounterText.text = $"จำนวนข้อทั้งหมด <b>{currentIndex}/{totalCount}</b> ข้อ";
-        }
+        _currentQuestionIndex = currentIndex;
+        _totalQuestionCount = totalCount;
+        _hasQuestionCounter = true;
+
+        RefreshQuestionCounter();
 
         if (questionText != null)
         {
@@ -193,7 +229,8 @@ public class QuizUIOverlay : MonoBehaviour
 
     public void UpdateTimer(float remainingSeconds)
     {
-        if (timerText == null) return;
+        if (timerText == null)
+            return;
 
         int seconds = Mathf.Max(0, Mathf.FloorToInt(remainingSeconds));
         timerText.text = seconds.ToString();
@@ -229,7 +266,7 @@ public class QuizUIOverlay : MonoBehaviour
     {
         if (finalScoreText != null)
         {
-            finalScoreText.text = $"Score: {totalScore}";
+            finalScoreText.text = $"{totalScore}";
         }
     }
 
@@ -260,11 +297,14 @@ public class QuizUIOverlay : MonoBehaviour
 
     public void ShowQuitConfirmation(string title, string message)
     {
-        if (quitConfirmTitleText != null)
-            quitConfirmTitleText.text = title ?? string.Empty;
+        _lastQuitTitleFallback = string.IsNullOrWhiteSpace(title) ? "ออกจากควิซ?" : title;
+        _lastQuitMessageFallback = string.IsNullOrWhiteSpace(message)
+            ? "หากออกจากควิซตอนนี้ คุณจะไม่สามารถเล่นได้อีกเป็นเวลา 24 ชั่วโมง"
+            : message;
 
-        if (quitConfirmMessageText != null)
-            quitConfirmMessageText.text = message ?? string.Empty;
+        _isShowingQuitPopup = true;
+
+        RefreshQuitPopupTexts();
 
         if (quitConfirmPanel != null)
         {
@@ -275,6 +315,8 @@ public class QuizUIOverlay : MonoBehaviour
 
     public void HideQuitConfirmation()
     {
+        _isShowingQuitPopup = false;
+
         if (quitConfirmPanel != null)
         {
             quitConfirmPanel.SetActive(false);
@@ -283,7 +325,8 @@ public class QuizUIOverlay : MonoBehaviour
 
     private void HandleChoiceToggleChanged(int choiceIndex, bool isOn)
     {
-        if (!isOn) return;
+        if (!isOn)
+            return;
 
         _selectedChoiceIndex = choiceIndex;
         SetConfirmInteractable(true);
@@ -303,5 +346,77 @@ public class QuizUIOverlay : MonoBehaviour
         {
             confirmButton.interactable = value;
         }
+    }
+
+    private void RefreshLocalizedStaticTexts()
+    {
+        if (quitConfirmLeaveButtonText != null)
+        {
+            quitConfirmLeaveButtonText.text = T(
+                LocalizationKeys.Quiz.QuitConfirmConfirmButton,
+                "ตกลง"
+            );
+        }
+
+        if (quitConfirmStayButtonText != null)
+        {
+            quitConfirmStayButtonText.text = T(
+                LocalizationKeys.Quiz.QuitConfirmCancelButton,
+                "ยกเลิก"
+            );
+        }
+    }
+
+    private void RefreshQuestionCounter()
+    {
+        if (questionCounterText == null)
+            return;
+
+        string format = T(
+            LocalizationKeys.Quiz.PlayTotalQuestionsFormat,
+            "จำนวนข้อทั้งหมด {0}/{1} ข้อ"
+        );
+
+        try
+        {
+            questionCounterText.text = string.Format(
+                format,
+                _currentQuestionIndex,
+                _totalQuestionCount
+            );
+        }
+        catch (FormatException)
+        {
+            questionCounterText.text = $"จำนวนข้อทั้งหมด {_currentQuestionIndex}/{_totalQuestionCount} ข้อ";
+        }
+    }
+
+    private void RefreshQuitPopupTexts()
+    {
+        if (quitConfirmTitleText != null)
+        {
+            quitConfirmTitleText.text = T(
+                LocalizationKeys.Quiz.QuitConfirmTitle,
+                _lastQuitTitleFallback
+            );
+        }
+
+        if (quitConfirmMessageText != null)
+        {
+            quitConfirmMessageText.text = T(
+                LocalizationKeys.Quiz.QuitConfirmMessage,
+                _lastQuitMessageFallback
+            );
+        }
+    }
+
+    private string T(string key, string fallback)
+    {
+        string value = LocalizationSettings.StringDatabase.GetLocalizedString(
+            LocalizationKeys.Tables.Quiz,
+            key
+        );
+
+        return string.IsNullOrEmpty(value) ? fallback : value;
     }
 }

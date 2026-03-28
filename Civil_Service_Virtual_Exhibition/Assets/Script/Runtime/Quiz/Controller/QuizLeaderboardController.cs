@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 
 public class QuizLeaderboardController : MonoBehaviour
 {
@@ -33,9 +35,33 @@ public class QuizLeaderboardController : MonoBehaviour
     private bool _hasSessionResult;
     private bool _isRefreshing;
 
+    private QuizMeDataDto _cachedMeData;
+
+    private string _lastLocalizedStatusKey;
+    private string _lastLocalizedStatusFallback;
+    private string _lastRawStatusText;
+
+    private void OnEnable()
+    {
+        LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+        UpdateMySummary(_cachedMeData);
+        RefreshStatusText();
+    }
+
     private void Start()
     {
         RefreshLeaderboard();
+    }
+
+    private void OnDisable()
+    {
+        LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
+    }
+
+    private void OnLocaleChanged(Locale _)
+    {
+        UpdateMySummary(_cachedMeData);
+        RefreshStatusText();
     }
 
     public void HandleQuizFinished(int correctCount, int totalQuestions, int finalUiScore)
@@ -113,12 +139,20 @@ public class QuizLeaderboardController : MonoBehaviour
     {
         _isRefreshing = true;
 
-        SetStatus("Loading...");
+        SetStatusLocalized(
+            LocalizationKeys.Quiz.LeaderboardLoading,
+            "Loading..."
+        );
+
         ClearSpawned();
 
         if (repository == null)
         {
-            SetStatus("Quiz repository is missing.");
+            SetStatusLocalized(
+                LocalizationKeys.Quiz.LeaderboardRepositoryMissing,
+                "Quiz repository is missing."
+            );
+
             _isRefreshing = false;
             yield break;
         }
@@ -136,40 +170,50 @@ public class QuizLeaderboardController : MonoBehaviour
             meResult = result;
         });
 
+        _cachedMeData = meResult != null && meResult.success && meResult.response != null
+            ? meResult.response.data
+            : null;
+
         if (leaderboardResult == null)
         {
-            SetStatus("Failed to load leaderboard.");
-            UpdateMySummary(null);
+            SetStatusLocalized(
+                LocalizationKeys.Quiz.LeaderboardLoadFailed,
+                "Failed to load leaderboard."
+            );
+
+            UpdateMySummary(_cachedMeData);
             _isRefreshing = false;
             yield break;
         }
 
         if (!leaderboardResult.success || leaderboardResult.response == null || leaderboardResult.response.data == null)
         {
-            SetStatus(string.IsNullOrWhiteSpace(leaderboardResult.message)
-                ? "Failed to load leaderboard."
-                : leaderboardResult.message);
+            if (string.IsNullOrWhiteSpace(leaderboardResult.message))
+            {
+                SetStatusLocalized(
+                    LocalizationKeys.Quiz.LeaderboardLoadFailed,
+                    "Failed to load leaderboard."
+                );
+            }
+            else
+            {
+                SetStatusRaw(leaderboardResult.message);
+            }
 
-            UpdateMySummary(meResult != null && meResult.success && meResult.response != null
-                ? meResult.response.data
-                : null);
-
+            UpdateMySummary(_cachedMeData);
             _isRefreshing = false;
             yield break;
         }
 
         BuildLeaderboard(leaderboardResult.response.data);
-
-        UpdateMySummary(meResult != null && meResult.success && meResult.response != null
-            ? meResult.response.data
-            : null);
+        UpdateMySummary(_cachedMeData);
 
         _isRefreshing = false;
     }
 
     private void BuildLeaderboard(QuizLeaderboardDataDto data)
     {
-        SetStatus(string.Empty);
+        SetStatusRaw(string.Empty);
 
         if (data != null && data.top10 != null && data.top10.Length > 0)
         {
@@ -184,8 +228,6 @@ public class QuizLeaderboardController : MonoBehaviour
                 SpawnEntry(entry);
             }
         }
-
-        
     }
 
     private static int CompareByRank(LeaderboardEntryDto a, LeaderboardEntryDto b)
@@ -263,20 +305,15 @@ public class QuizLeaderboardController : MonoBehaviour
                 ? LocalPlayerData.Instance.PlayerName
                 : "-";
 
-        if (data != null)
-        {
-            mySummaryText.text =
-                "ชื่อ: " + playerName +
-                " | คะแนนของคุณ: " + data.totalScore +
-                " คะแนน | อันดับของคุณ: " + data.rank;
+        int score = data != null ? data.totalScore : _lastFinalUiScore;
+        string rankText = data != null ? data.rank.ToString() : "-";
 
-            return;
-        }
-
-        mySummaryText.text =
-            "ชื่อ: " + playerName +
-            " | คะแนนของคุณ: " + _lastFinalUiScore +
-            " คะแนน | อันดับของคุณ: -";
+        mySummaryText.text = F(
+            LocalizationKeys.Quiz.LeaderboardMyScoreFormat,
+            "คะแนนของคุณ: {0} คะแนน | อันดับของคุณ: {1}",
+            score,
+            rankText
+        );
     }
 
     private void ClearSpawned()
@@ -290,12 +327,65 @@ public class QuizLeaderboardController : MonoBehaviour
         _spawnedObjects.Clear();
     }
 
-    private void SetStatus(string text)
+    private void SetStatusLocalized(string key, string fallback)
+    {
+        _lastLocalizedStatusKey = key;
+        _lastLocalizedStatusFallback = fallback;
+        _lastRawStatusText = null;
+
+        ApplyStatusText(T(key, fallback));
+    }
+
+    private void SetStatusRaw(string text)
+    {
+        _lastLocalizedStatusKey = null;
+        _lastLocalizedStatusFallback = null;
+        _lastRawStatusText = text;
+
+        ApplyStatusText(text);
+    }
+
+    private void RefreshStatusText()
+    {
+        if (!string.IsNullOrEmpty(_lastLocalizedStatusKey))
+        {
+            ApplyStatusText(T(_lastLocalizedStatusKey, _lastLocalizedStatusFallback));
+            return;
+        }
+
+        ApplyStatusText(_lastRawStatusText);
+    }
+
+    private void ApplyStatusText(string text)
     {
         if (statusText == null)
             return;
 
         statusText.text = text;
         statusText.gameObject.SetActive(!string.IsNullOrWhiteSpace(text));
+    }
+
+    private string T(string key, string fallback)
+    {
+        string value = LocalizationSettings.StringDatabase.GetLocalizedString(
+            LocalizationKeys.Tables.Quiz,
+            key
+        );
+
+        return string.IsNullOrEmpty(value) ? fallback : value;
+    }
+
+    private string F(string key, string fallback, params object[] args)
+    {
+        string format = T(key, fallback);
+
+        try
+        {
+            return string.Format(format, args);
+        }
+        catch (FormatException)
+        {
+            return fallback;
+        }
     }
 }

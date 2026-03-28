@@ -148,13 +148,22 @@ public class AE_ProjectVideoControlsView : MonoBehaviour
 
     public void EndSliderDrag()
     {
-        _isDraggingSlider = false;
         MarkUserActivity();
 
         if (_player == null || timelineSlider == null)
+        {
+            _isDraggingSlider = false;
             return;
+        }
 
-        _player.SeekNormalized(timelineSlider.value);
+        float seekValue = timelineSlider.value;
+
+        _player.SeekNormalized(seekValue);
+
+        if (_player.Duration > 0.01d)
+            SetTime(seekValue * _player.Duration, _player.Duration);
+
+        _isDraggingSlider = false;
     }
 
     private void HandlePrepared()
@@ -202,10 +211,16 @@ public class AE_ProjectVideoControlsView : MonoBehaviour
         MarkUserActivity();
     }
 
-    private void HandleTimeChanged(double current, double duration)
+   private void HandleTimeChanged(double current, double duration)
     {
-        if (!_isDraggingSlider && timelineSlider != null && duration > 0.01d)
-            timelineSlider.SetValueWithoutNotify((float)(current / duration));
+        if (!_isDraggingSlider && timelineSlider != null)
+        {
+            float normalized = duration > 0.01d
+                ? Mathf.Clamp01((float)(current / duration))
+                : 0f;
+
+            timelineSlider.SetValueWithoutNotify(normalized);
+        }
 
         SetTime(current, duration);
     }

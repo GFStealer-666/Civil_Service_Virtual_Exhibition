@@ -84,6 +84,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6198363309620302305}
+  - component: {fileID: 6991455831715084238}
   - component: {fileID: 5200757243446988370}
   - component: {fileID: 350473867423092675}
   m_Layer: 5
@@ -112,6 +113,29 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 423.15332, y: 87.25238}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &6991455831715084238
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 258436326865255945}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff4a6980c4a4ebe9d3db88785d62f00, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  correction: 0
+  isForceFullLineHeight: 0
+  isTokenize: 1
+  separator: 
+  tmpText: {fileID: 350473867423092675}
+  lastKnownText: "\u0E01\u0E32\u0E23\u0E1B\u0E23\u0E31\u0E1A\u0E1B\u0E23\u0E38\u0E07\u0E2B\u0E25\u0E31\u0E01\u0E01\u0E32\u0E23\u0E41\u0E25\u0E30\u0E41\u0E19\u0E27\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E01\u0E33\u0E01\u0E31\u0E1A\u0E14\u0E39\u0E41\u0E25\u0E01\u0E34\u0E08\u0E01\u0E32\u0E23\u0E17\u0E35\u0E48\u0E14\u0E35\u0E43\u0E19\u0E23\u0E31\u0E10\u0E27\u0E34\u0E2A\u0E32\u0E2B\u0E01\u0E34\u0E08"
+  outputString: "\u0E01\u0E32\u0E23\u0E1B\u0E23\u0E31\u0E1A\u0E1B\u0E23\u0E38\u0E07\u200B\u0E2B\u0E25\u0E31\u0E01\u0E01\u0E32\u0E23\u200B\u0E41\u0E25\u0E30\u200B\u0E41\u0E19\u0E27\u0E17\u0E32\u0E07\u200B\u0E01\u0E32\u0E23\u0E01\u0E33\u0E01\u0E31\u0E1A\u200B\u0E14\u0E39\u0E41\u0E25\u200B\u0E01\u0E34\u0E08\u0E01\u0E32\u0E23\u200B\u0E17\u0E35\u0E48\u200B\u0E14\u0E35\u200B\u0E43\u0E19\u200B\u0E23\u0E31\u0E10\u0E27\u0E34\u0E2A\u0E32\u0E2B\u0E01\u0E34\u0E08"
+  lastWordCount: 11
+  guiMode: 0
+  guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
+  isInitialized: 1
 --- !u!222 &5200757243446988370
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -167,11 +191,11 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 22
+  m_fontSize: 28
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 22
+  m_fontSizeMin: 18
   m_fontSizeMax: 28
   m_fontStyle: 0
   m_HorizontalAlignment: 2

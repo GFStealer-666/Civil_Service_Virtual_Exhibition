@@ -7,7 +7,7 @@ public class LeaderboardEntryView : MonoBehaviour
     [SerializeField] private TMP_Text usernameText;
     [SerializeField] private TMP_Text scoreText;
 
-    public void Bind(LeaderboardEntryDto data)
+    public void Bind(LeaderboardEntryDto data )
     {
         if (data == null)
             return;
@@ -19,6 +19,6 @@ public class LeaderboardEntryView : MonoBehaviour
             usernameText.text = string.IsNullOrWhiteSpace(data.characterName) ? "-" : data.characterName;
 
         if (scoreText != null)
-            scoreText.text = $"{data.totalScore} คะแนน";
+            scoreText.text = $"{data.totalScore}";
     }
 }

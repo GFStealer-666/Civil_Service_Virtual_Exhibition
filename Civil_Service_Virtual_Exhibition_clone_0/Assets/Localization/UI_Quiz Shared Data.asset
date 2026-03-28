@@ -31,10 +31,6 @@ MonoBehaviour:
     m_Key: quiz.intro.description
     m_Metadata:
       m_Items: []
-  - m_Id: 1229866229762
-    m_Key: quiz.intro.round_label_format
-    m_Metadata:
-      m_Items: []
   - m_Id: 1229866229763
     m_Key: quiz.intro.leaderboard_button
     m_Metadata:
@@ -104,11 +100,95 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 1229866229780
-    m_Key: quiz.rank_card.rank_format
+    m_Key: quiz.rank_card
     m_Metadata:
       m_Items: []
   - m_Id: 1229866229781
     m_Key: quiz.rank_card.score_format
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3034817847296
+    m_Key: quiz.score.phase1
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3449248636928
+    m_Key: quiz.score.phase2
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3454416019456
+    m_Key: quiz.score.phase3
+    m_Metadata:
+      m_Items: []
+  - m_Id: 3468743761920
+    m_Key: quiz.score.phase4
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10108431851520
+    m_Key: quiz.leaderboard.loading
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10156179808256
+    m_Key: quiz.leaderboard.repository_missing
+    m_Metadata:
+      m_Items: []
+  - m_Id: 10199263698944
+    m_Key: quiz.leaderboard.load_failed
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173684568064
+    m_Key: quiz.leaderboard.my_summary_format
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539584
+    m_Key: quiz.quit_confirm.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539585
+    m_Key: quiz.quit_confirm.message
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539586
+    m_Key: quiz.cooldown.blocked_title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539587
+    m_Key: quiz.cooldown.blocked_reason_format
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539588
+    m_Key: quiz.cooldown.time_format_hms
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539589
+    m_Key: quiz.cooldown.time_format_ms
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539590
+    m_Key: quiz.cooldown.time_format_s
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539591
+    m_Key: quiz.start_failed.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539592
+    m_Key: quiz.start_failed.load_quiz
+    m_Metadata:
+      m_Items: []
+  - m_Id: 99173705539593
+    m_Key: quiz.start_failed.no_questions
+    m_Metadata:
+      m_Items: []
+  - m_Id: 100389135147008
+    m_Key: quiz.leaderboard.point
+    m_Metadata:
+      m_Items: []
+  - m_Id: 103278456954880
+    m_Key: quiz.quit_confirm.cancel_button
+    m_Metadata:
+      m_Items: []
+  - m_Id: 103381083185152
+    m_Key: quiz.quit_confirm.confirm_button
     m_Metadata:
       m_Items: []
   m_Metadata:

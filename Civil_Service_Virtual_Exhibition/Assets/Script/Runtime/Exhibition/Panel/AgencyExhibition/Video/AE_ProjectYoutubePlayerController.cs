@@ -127,21 +127,28 @@ public class AE_ProjectYoutubePlayerController : YoutubePlayer, IAE_ProjectVideo
 
     public void SeekNormalized(float normalizedValue)
     {
-        if (!allowSeeking || !_isPrepared)
+        if (!_isPrepared || videoPlayer == null)
             return;
 
-        double duration = ReadDuration();
-        if (duration <= 0.01d)
+        if (videoPlayer.length <= 0.01d)
             return;
 
-        double targetTime = Mathf.Clamp01(normalizedValue) * duration;
+        if (!videoPlayer.canSetTime)
+        {
+            Debug.LogWarning("[AE_ProjectVideoPlayerController] This video source cannot seek.");
+            return;
+        }
 
-        if (videoQuality == YoutubeVideoQuality.Standard || audioPlayer == null)
-            videoPlayer.time = targetTime;
-        else
-            audioPlayer.time = targetTime;
+        double targetTime = Mathf.Clamp01(normalizedValue) * videoPlayer.length;
 
-        TimeChanged?.Invoke(ReadCurrentTime(), duration);
+        bool wasPlaying = videoPlayer.isPlaying;
+        videoPlayer.Pause();
+        videoPlayer.time = targetTime;
+
+        TimeChanged?.Invoke(targetTime, videoPlayer.length);
+
+        if (wasPlaying)
+            videoPlayer.Play();
     }
 
     private void HandleReady()

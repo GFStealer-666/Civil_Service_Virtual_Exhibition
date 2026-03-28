@@ -131,5 +131,26 @@ public static class LocalizationKeys
 
         public const string RankCardRankFormat = "quiz.rank_card.rank_format";
         public const string RankCardScoreFormat = "quiz.rank_card.score_format";
+
+        public const string LeaderboardLoading = "quiz.leaderboard.loading";
+        public const string LeaderboardRepositoryMissing = "quiz.leaderboard.repository_missing";
+        public const string LeaderboardLoadFailed = "quiz.leaderboard.load_failed";
+
+        public const string QuitConfirmTitle = "quiz.quit_confirm.title";
+        public const string QuitConfirmMessage = "quiz.quit_confirm.message";
+
+        public const string CooldownBlockedTitle = "quiz.cooldown.blocked_title";
+        public const string CooldownBlockedReasonFormat = "quiz.cooldown.blocked_reason_format";
+        public const string CooldownTimeFormatHoursMinutesSeconds = "quiz.cooldown.time_format_hms";
+        public const string CooldownTimeFormatMinutesSeconds = "quiz.cooldown.time_format_ms";
+        public const string CooldownTimeFormatSeconds = "quiz.cooldown.time_format_s";
+
+        public const string StartFailedTitle = "quiz.start_failed.title";
+        public const string StartFailedLoadQuiz = "quiz.start_failed.load_quiz";
+        public const string StartFailedNoQuestions = "quiz.start_failed.no_questions";
+
+        public const string QuitConfirmCancelButton = "quiz.quit_confirm.cancel_button";
+        public const string QuitConfirmConfirmButton = "quiz.quit_confirm.confirm_button";
+
     }
 }
