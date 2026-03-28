@@ -4,20 +4,6 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-[Serializable]
-public class PSC_MinistrySpriteBinding
-{
-    public string key;
-    public Sprite sprite;
-}
-
-[Serializable]
-public class PSC_OrganizationSpriteBinding
-{
-    public string key;
-    public Sprite sprite;
-}
-
 public class PSC_OrganizationSelectionPanelController : MonoBehaviour
 {
     [Header("Root")]
@@ -27,8 +13,10 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
     [Header("Data")]
     [SerializeField] private PSC_Repository repository;
     [SerializeField] private PSC_ServiceDetailPanelController serviceDetailPanel;
+
     [Header("Header")]
     [SerializeField] private Image ministryLogoImage;
+    [SerializeField] private UniversalImageLoader ministryLogoLoader;
     [SerializeField] private Sprite fallbackMinistryLogo;
     [SerializeField] private TMP_Text welcomeTitleText;
     [SerializeField] private TMP_Text ministryNameText;
@@ -52,10 +40,7 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
     [SerializeField] private bool pushUiBlockOnOpen = true;
     [SerializeField] private string welcomeTextThai = "ยินดีต้อนรับสู่";
     [SerializeField] private string welcomeTextEnglish = "Welcome to";
-
-    [Header("Sprite Mapping")]
-    [SerializeField] private List<PSC_MinistrySpriteBinding> ministrySpriteBindings = new();
-    [SerializeField] private List<PSC_OrganizationSpriteBinding> organizationSpriteBindings = new();
+    [SerializeField] private bool useEnglishText = false;
 
     public PSC_ServiceMinistryDto SelectedMinistry { get; private set; }
     public PSC_ServiceOrganizationDto SelectedOrganization { get; private set; }
@@ -101,6 +86,7 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
     public void Close()
     {
         ClearItems();
+        ClearHeader();
 
         SelectedOrganization = null;
         SelectedMinistry = null;
@@ -151,20 +137,36 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
             return;
 
         if (welcomeTitleText != null)
-            welcomeTitleText.text = welcomeTextThai;
+            welcomeTitleText.text = useEnglishText ? welcomeTextEnglish : welcomeTextThai;
 
         if (ministryNameText != null)
             ministryNameText.text = GetMinistryDisplayName(SelectedMinistry);
 
         if (organizationCountText != null)
-            organizationCountText.text = $"จำนวน {SelectedMinistry.runtimeOrganizationCount} หน่วยงาน";
+            organizationCountText.text = useEnglishText
+                ? BuildEnglishCountText(SelectedMinistry.runtimeOrganizationCount)
+                : BuildThaiCountText(SelectedMinistry.runtimeOrganizationCount);
+
+        BindMinistryLogo(SelectedMinistry);
+    }
+
+    private void BindMinistryLogo(PSC_ServiceMinistryDto ministry)
+    {
+        string logoUrl = ministry != null ? ministry.ministryLogo : string.Empty;
 
         if (ministryLogoImage != null)
         {
-            Sprite sprite = ResolveMinistrySprite(SelectedMinistry);
-            ministryLogoImage.sprite = sprite != null ? sprite : fallbackMinistryLogo;
-            ministryLogoImage.enabled = ministryLogoImage.sprite != null;
+            ministryLogoImage.sprite = fallbackMinistryLogo;
+            ministryLogoImage.enabled = true;
         }
+
+        if (ministryLogoLoader == null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(logoUrl))
+            return;
+
+        ministryLogoLoader.Load(logoUrl);
     }
 
     private void RefreshList()
@@ -190,7 +192,8 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
             return;
         }
 
-        List<PSC_ServiceOrganizationDto> organizations = repository.GetOrganizationsByMinistry(SelectedMinistry.runtimeId);
+        List<PSC_ServiceOrganizationDto> organizations =
+            repository.GetOrganizationsByMinistry(SelectedMinistry.runtimeId);
 
         if (organizations == null || organizations.Count == 0)
         {
@@ -206,14 +209,7 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
 
             PSC_OrganizationItemView view = Instantiate(itemPrefab, contentRoot);
             view.gameObject.SetActive(true);
-
-            Sprite logo = ResolveOrganizationSprite(organization);
-
-            view.Bind(
-                organization,
-                HandleItemClicked,
-                logo
-            );
+            view.Bind(organization, HandleItemClicked);
 
             _spawnedItems.Add(view);
         }
@@ -230,6 +226,24 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
         }
 
         _spawnedItems.Clear();
+    }
+
+    private void ClearHeader()
+    {
+        if (welcomeTitleText != null)
+            welcomeTitleText.text = string.Empty;
+
+        if (ministryNameText != null)
+            ministryNameText.text = string.Empty;
+
+        if (organizationCountText != null)
+            organizationCountText.text = string.Empty;
+
+        if (ministryLogoImage != null)
+        {
+            ministryLogoImage.sprite = fallbackMinistryLogo;
+            ministryLogoImage.enabled = ministryLogoImage.sprite != null;
+        }
     }
 
     private void SetEmptyState(bool visible, string message)
@@ -255,73 +269,22 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
         if (ministry == null)
             return string.Empty;
 
+        if (useEnglishText && !string.IsNullOrWhiteSpace(ministry.ministryEn))
+            return ministry.ministryEn;
+
         return !string.IsNullOrWhiteSpace(ministry.ministry)
             ? ministry.ministry
             : ministry.ministryEn;
     }
 
-    private Sprite ResolveMinistrySprite(PSC_ServiceMinistryDto ministry)
+    private string BuildThaiCountText(int count)
     {
-        if (ministry == null || ministrySpriteBindings == null)
-            return null;
-
-        string[] keys =
-        {
-            ministry.runtimeId,
-            ministry.ministry,
-            ministry.ministryEn
-        };
-
-        for (int i = 0; i < ministrySpriteBindings.Count; i++)
-        {
-            PSC_MinistrySpriteBinding binding = ministrySpriteBindings[i];
-            if (binding == null || binding.sprite == null || string.IsNullOrWhiteSpace(binding.key))
-                continue;
-
-            for (int k = 0; k < keys.Length; k++)
-            {
-                if (IsKeyMatch(binding.key, keys[k]))
-                    return binding.sprite;
-            }
-        }
-
-        return null;
+        return $"จำนวน {count} หน่วยงาน";
     }
 
-    private Sprite ResolveOrganizationSprite(PSC_ServiceOrganizationDto organization)
+    private string BuildEnglishCountText(int count)
     {
-        if (organization == null || organizationSpriteBindings == null)
-            return null;
-
-        string[] keys =
-        {
-            organization.runtimeId,
-            organization.name,
-            organization.nameEn
-        };
-
-        for (int i = 0; i < organizationSpriteBindings.Count; i++)
-        {
-            PSC_OrganizationSpriteBinding binding = organizationSpriteBindings[i];
-            if (binding == null || binding.sprite == null || string.IsNullOrWhiteSpace(binding.key))
-                continue;
-
-            for (int k = 0; k < keys.Length; k++)
-            {
-                if (IsKeyMatch(binding.key, keys[k]))
-                    return binding.sprite;
-            }
-        }
-
-        return null;
-    }
-
-    private bool IsKeyMatch(string left, string right)
-    {
-        if (string.IsNullOrWhiteSpace(left) || string.IsNullOrWhiteSpace(right))
-            return false;
-
-        return string.Equals(left.Trim(), right.Trim(), StringComparison.OrdinalIgnoreCase);
+        return count == 1 ? "1 organization" : $"{count} organizations";
     }
 
     private void ResolveReferences()

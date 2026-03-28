@@ -53,7 +53,7 @@ public class LoginHandler : BaseHandler
 
         if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         {
-            ShowFailedOverlay("กรุณากรอกอีเมลและรหัสผ่าน");
+            ShowFailedOverlay(L("กรุณากรอกอีเมลและรหัสผ่าน", "Please enter your email and password."));
             return;
         }
 
@@ -80,7 +80,7 @@ public class LoginHandler : BaseHandler
                 LoginResponse res = JsonUtility.FromJson<LoginResponse>(json);
                 if (res == null)
                 {
-                    ShowFailedOverlay("รูปแบบข้อมูลตอบกลับไม่ถูกต้อง");
+                    ShowFailedOverlay(L("รูปแบบข้อมูลตอบกลับไม่ถูกต้อง", "Invalid response format."));
                     SetButtons(true);
                     return;
                 }
@@ -89,16 +89,16 @@ public class LoginHandler : BaseHandler
                 {
                     ShowFailedOverlay(
                         string.IsNullOrWhiteSpace(res.message)
-                            ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง"
+                            ? L("อีเมลหรือรหัสผ่านไม่ถูกต้อง", "Incorrect email or password.")
                             : res.message
                     );
                     SetButtons(true);
                     return;
-                }
+                }   
 
                 if (res.data == null || res.data.player == null)
                 {
-                    ShowFailedOverlay("ไม่พบข้อมูลผู้ใช้งาน");
+                    ShowFailedOverlay(L("ไม่พบข้อมูลผู้ใช้งาน", "User data not found."));
                     SetButtons(true);
                     return;
                 }
@@ -128,9 +128,10 @@ public class LoginHandler : BaseHandler
                 Debug.Log($"[LoginHandler] Guest response: {json}");
 
                 LoginResponse res = JsonUtility.FromJson<LoginResponse>(json);
+
                 if (res == null)
                 {
-                    ShowFailedOverlay("รูปแบบข้อมูลตอบกลับไม่ถูกต้อง");
+                    ShowFailedOverlay(L("รูปแบบข้อมูลตอบกลับไม่ถูกต้อง", "Invalid response format."));
                     SetButtons(true);
                     return;
                 }
@@ -139,7 +140,7 @@ public class LoginHandler : BaseHandler
                 {
                     ShowFailedOverlay(
                         string.IsNullOrWhiteSpace(res.message)
-                            ? "ไม่สามารถเข้าใช้งานแบบ Guest ได้"
+                            ? L("ไม่สามารถเข้าใช้งานแบบ Guest ได้", "Guest login is unavailable.")
                             : res.message
                     );
                     SetButtons(true);
@@ -148,7 +149,7 @@ public class LoginHandler : BaseHandler
 
                 if (res.data == null)
                 {
-                    ShowFailedOverlay("ไม่พบข้อมูลการเข้าสู่ระบบ");
+                    ShowFailedOverlay(L("ไม่พบข้อมูลการเข้าสู่ระบบ", "Login data not found."));
                     SetButtons(true);
                     return;
                 }
@@ -161,17 +162,14 @@ public class LoginHandler : BaseHandler
                 if (string.IsNullOrWhiteSpace(player.characterName))
                     player.characterName = $"Guest_{UnityEngine.Random.Range(1000, 9999)}";
 
-                if (string.IsNullOrWhiteSpace(player.gender))
-                    player.gender = PlayerGender.Male.ToString();
-
                 if (string.IsNullOrWhiteSpace(player.department))
-                    player.department = "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อกอิน";
+                    player.department = L("ไม่มีข้อมูลเนื่องจากไม่ได้ล็อกอิน", "Unavailable while not logged in");
 
                 if (string.IsNullOrWhiteSpace(player.email))
-                    player.email = "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อกอิน";
+                    player.email = L("ไม่มีข้อมูลเนื่องจากไม่ได้ล็อกอิน", "Unavailable while not logged in");
 
                 if (string.IsNullOrWhiteSpace(player.phone))
-                    player.phone = "ไม่มีข้อมูลเนื่องจากไม่ได้ล็อกอิน";
+                    player.phone = L("ไม่มีข้อมูลเนื่องจากไม่ได้ล็อกอิน", "Unavailable while not logged in");
 
                 player.isAnonymous = true;
 

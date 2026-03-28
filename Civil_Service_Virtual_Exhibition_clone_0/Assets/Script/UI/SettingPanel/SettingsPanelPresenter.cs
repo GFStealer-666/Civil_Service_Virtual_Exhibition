@@ -1,6 +1,8 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 
 public class SettingsPanelPresenter : MonoBehaviour
 {
@@ -16,13 +18,20 @@ public class SettingsPanelPresenter : MonoBehaviour
 
     private void OnEnable()
     {
+        LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
         RefreshView();
         RegisterEvents();
     }
 
     private void OnDisable()
     {
+        LocalizationSettings.SelectedLocaleChanged -= OnLocaleChanged;
         UnregisterEvents();
+    }
+
+    private void OnLocaleChanged(Locale _)
+    {
+        RefreshView();
     }
 
     public void RefreshView()
@@ -32,11 +41,21 @@ public class SettingsPanelPresenter : MonoBehaviour
 
         _isBinding = true;
 
+        string emailPrefix = GetLocalizedText(
+            LocalizationKeys.CentralHub.EmailPrefix,
+            "อีเมล :"
+        );
+
+        string phonePrefix = GetLocalizedText(
+            LocalizationKeys.CentralHub.PhonePrefix,
+            "เบอร์ติดต่อ :"
+        );
+
         if (emailText != null)
-            emailText.text = $"อีเมล : {local.Email}";
+            emailText.text = $"{emailPrefix} {local.Email}";
 
         if (phoneText != null)
-            phoneText.text = $"เบอร์ติดต่อ : {local.PhoneNumber}";
+            phoneText.text = $"{phonePrefix} {local.PhoneNumber}";
 
         if (bgmSlider != null)
             bgmSlider.value = local.BgmVolume;
@@ -79,5 +98,14 @@ public class SettingsPanelPresenter : MonoBehaviour
         if (ExhibitionAudioManager.Instance == null) return;
 
         ExhibitionAudioManager.Instance.SetEffectVolume(value);
+    }
+    private string GetLocalizedText(string key, string fallback)
+    {
+        string value = LocalizationSettings.StringDatabase.GetLocalizedString(
+            LocalizationKeys.Tables.CentralHub,
+            key
+        );
+
+        return string.IsNullOrEmpty(value) ? fallback : value;
     }
 }

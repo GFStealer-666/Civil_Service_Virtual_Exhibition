@@ -96,7 +96,13 @@ public class RegisterHandler : BaseHandler
         string firstName  = firstNameInput.text.Trim();
         string lastName   = lastNameInput.text.Trim();
         string phone      = phoneInput.text.Trim();
-        string department = departmentDropdown.options[departmentDropdown.value].text;
+        var organizationSetup = departmentDropdown != null
+            ? departmentDropdown.GetComponent<OrganizationDropdownSetup>()
+            : null;
+
+        string department = organizationSetup != null
+            ? organizationSetup.GetSelectedOrganization()
+            : departmentDropdown.options[departmentDropdown.value].text;
 
         // Delegate to the component that owns gender logic
         var genderSetup = genderDropdown.GetComponent<GenderDropdownSetup>();
@@ -104,7 +110,7 @@ public class RegisterHandler : BaseHandler
 
         if (password != confirm)
         {
-            ShowFailedOverlay("รหัสผ่านไม่ตรงกัน");
+            ShowFailedOverlay(L("รหัสผ่านไม่ตรงกัน", "Passwords do not match."));
             return;
         }
         
@@ -146,7 +152,7 @@ public class RegisterHandler : BaseHandler
                 if (res == null)
                 {
                     ShowFailedOverlay(
-                        "รูปแบบข้อมูลตอบกลับไม่ถูกต้อง",
+                        L("รูปแบบข้อมูลตอบกลับไม่ถูกต้อง", "Invalid response format."),
                         onDismissed: () => submitBtn.interactable = AllFieldsFilled()
                     );
                     return;
@@ -156,7 +162,7 @@ public class RegisterHandler : BaseHandler
                 {
                     ShowFailedOverlay(
                         string.IsNullOrEmpty(res.message)
-                            ? "สมัครสมาชิกไม่สำเร็จ"
+                            ? L("สมัครสมาชิกไม่สำเร็จ", "Registration failed.")
                             : res.message,
                         onDismissed: () => submitBtn.interactable = AllFieldsFilled()
                     );
@@ -164,16 +170,16 @@ public class RegisterHandler : BaseHandler
                 }
 
                 ShowSuccessOverlay(
-                    "สมัครสมาชิกสำเร็จ",
-                    "กรุณาเข้าสู่ระบบ",
-                    true,
-                    () =>
-                    {
-                        submitBtn.interactable = true;
-                        ClearRegisterForm();
-                        pageManager.ShowLogin();
-                    }
-                );
+                L("สมัครสมาชิกสำเร็จ", "Registration successful"),
+                L("กรุณาเข้าสู่ระบบ", "Please log in"),
+                true,
+                () =>
+                {
+                    submitBtn.interactable = true;
+                    ClearRegisterForm();
+                    pageManager.ShowLogin();
+                }
+            );
             },
             onError: _ =>
             {

@@ -23,7 +23,12 @@ public class ForgotPasswordHandler : BaseHandler
     private void OnSubmitClicked()
     {
         string email = emailInput.text.Trim();
-        if (string.IsNullOrEmpty(email)) { ShowFailedOverlay("กรุณากรอกอีเมล"); return; }
+        if (string.IsNullOrEmpty(email))
+        {
+            ShowFailedOverlay(L("กรุณากรอกอีเมล", "Please enter your email."));
+            return;
+        }
+
         StartCoroutine(DoReset(email));
     }
 
@@ -46,7 +51,7 @@ public class ForgotPasswordHandler : BaseHandler
                 if (res == null)
                 {
                     ShowFailedOverlay(
-                        "รูปแบบข้อมูลตอบกลับไม่ถูกต้อง",
+                        L("รูปแบบข้อมูลตอบกลับไม่ถูกต้อง", "Invalid response format."),
                         onDismissed: () => submitBtn.interactable = true
                     );
                     return;
@@ -56,7 +61,7 @@ public class ForgotPasswordHandler : BaseHandler
                 {
                     ShowFailedOverlay(
                         string.IsNullOrEmpty(res.message)
-                            ? "ไม่พบอีเมลนี้ในระบบ"
+                            ? L("ไม่พบอีเมลนี้ในระบบ", "This email was not found.")
                             : res.message,
                         onDismissed: () => submitBtn.interactable = true
                     );
@@ -64,8 +69,8 @@ public class ForgotPasswordHandler : BaseHandler
                 }
 
                 ShowSuccessOverlay(
-                    "ส่งลิงก์ยืนยันไปทางอีเมล",
-                    "กรุณาเข้าสู่ระบบ",
+                    L("ส่งลิงก์ยืนยันไปทางอีเมล", "Verification link sent to your email"),
+                    L("กรุณาเข้าสู่ระบบ", "Please log in"),
                     true,
                     () =>
                     {

@@ -25,7 +25,7 @@ public class PSC_ServiceMinistryDto
     public string ministryEn;
     public string ministryType;
     public string ministryTypeEn;
-    public string ministryImage;
+    public string ministryLogo;
     public PSC_ServiceOrganizationDto[] organizations;
 
     [NonSerialized] public string runtimeId;
@@ -41,6 +41,7 @@ public class PSC_ServiceOrganizationDto
 {
     public string name;
     public string nameEn;
+    public string logoUrl;
     public string organizationImage;
     public PSC_ServiceItemDto[] services;
 

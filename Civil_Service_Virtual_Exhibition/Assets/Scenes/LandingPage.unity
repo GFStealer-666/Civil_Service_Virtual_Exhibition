@@ -1232,7 +1232,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -154.00003}
-  m_SizeDelta: {x: 274.1, y: 50}
+  m_SizeDelta: {x: 500, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &133628512
 MonoBehaviour:
@@ -1281,7 +1281,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 32.65
+  m_fontSize: 33.05
   m_fontSizeBase: 30.93
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -3232,7 +3232,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3dda951fe549ed541835c4e1c086dd0e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  organizationOptions: []
+  options: []
+  placeholderColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+  selectedColor: {r: 0.15, g: 0.15, b: 0.15, a: 1}
 --- !u!1 &371310753
 GameObject:
   m_ObjectHideFlags: 0
@@ -6155,6 +6157,7 @@ MonoBehaviour:
   failedTitleText: {fileID: 1015869134}
   failedSubtitleText: {fileID: 133628512}
   failedOkButton: {fileID: 1877639015}
+  failedOkButtonText: {fileID: 1928959021}
   successAutoDismissSeconds: 1.8
   loadingDotInterval: 0.5
   useOverlay: 1
@@ -6901,7 +6904,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 0
+  m_Interactable: 1
   m_TargetGraphic: {fileID: 761969363}
   m_OnClick:
     m_PersistentCalls:
@@ -7966,6 +7969,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b0a988c1c9d1074792bf68fd126dc8d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  options:
+  - value: 
+    thaiLabel: "\u0E40\u0E25\u0E37\u0E2D\u0E01\u0E40\u0E1E\u0E28"
+    englishLabel: Select gender
+  - value: male
+    thaiLabel: "\u0E0A\u0E32\u0E22"
+    englishLabel: Male
+  - value: female
+    thaiLabel: "\u0E2B\u0E0D\u0E34\u0E07"
+    englishLabel: Female
+  placeholderColor: {r: 0.35, g: 0.35, b: 0.35, a: 1}
+  selectedColor: {r: 0.15, g: 0.15, b: 0.15, a: 1}
 --- !u!114 &836763232
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10372,7 +10387,7 @@ GameObject:
   - component: {fileID: 1061586913}
   - component: {fileID: 1061586912}
   m_Layer: 0
-  m_Name: StatusHeaderText (1)
+  m_Name: StatusSubtittleText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -10395,7 +10410,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -170}
-  m_SizeDelta: {x: 200, y: 50}
+  m_SizeDelta: {x: 500, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1061586912
 MonoBehaviour:
@@ -11697,7 +11712,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 18.2779, y: -170}
-  m_SizeDelta: {x: 236.5558, y: 50}
+  m_SizeDelta: {x: 500, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1168427874
 MonoBehaviour:
@@ -11753,7 +11768,7 @@ MonoBehaviour:
   m_fontSizeMin: 18
   m_fontSizeMax: 72
   m_fontStyle: 0
-  m_HorizontalAlignment: 1
+  m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
@@ -19403,6 +19418,7 @@ GameObject:
   - component: {fileID: 2039808620}
   - component: {fileID: 2039808622}
   - component: {fileID: 2039808623}
+  - component: {fileID: 2039808624}
   m_Layer: 5
   m_Name: AgreeTermText
   m_TagString: Untagged
@@ -19539,10 +19555,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   tmpText: {fileID: 2039808620}
-  linkID: 
+  linkID: confirm_register
   onLinkClicked:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 2039808624}
+        m_TargetAssemblyTypeName: ExternalLinkButton, Assembly-CSharp
+        m_MethodName: OpenLink
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2039808623
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19583,6 +19611,19 @@ MonoBehaviour:
   references:
     version: 2
     RefIds: []
+--- !u!114 &2039808624
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2039808618}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e2add039161216241a5e1c391c387511, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  url: https://thaicivilserviceday.mhesi.go.th/privacy
 --- !u!1 &2042872855
 GameObject:
   m_ObjectHideFlags: 0

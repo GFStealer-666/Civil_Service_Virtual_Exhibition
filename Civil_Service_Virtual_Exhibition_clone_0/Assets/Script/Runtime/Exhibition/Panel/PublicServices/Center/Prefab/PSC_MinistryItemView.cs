@@ -10,6 +10,7 @@ public class PSC_MinistryItemView : MonoBehaviour
     [SerializeField] private TMP_Text ministryNameText;
     [SerializeField] private TMP_Text countText;
     [SerializeField] private Image logoImage;
+    [SerializeField] private UniversalImageLoader logoLoader;
     [SerializeField] private Sprite fallbackLogo;
 
     [Header("Display")]
@@ -52,11 +53,26 @@ public class PSC_MinistryItemView : MonoBehaviour
                 : $"{count} บริการ";
         }
 
+        BindLogo(data);
+    }
+
+    private void BindLogo(PSC_ServiceMinistryDto data)
+    {
+        string imageUrl = data != null ? data.ministryLogo : string.Empty;
+
         if (logoImage != null)
         {
             logoImage.sprite = fallbackLogo;
-            logoImage.enabled = logoImage.sprite != null;
+            logoImage.enabled = true;
         }
+
+        if (logoLoader == null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(imageUrl))
+            return;
+
+        logoLoader.Load(imageUrl);
     }
 
     private string GetDisplayName(PSC_ServiceMinistryDto data)

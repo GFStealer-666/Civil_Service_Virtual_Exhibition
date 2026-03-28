@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,6 +8,8 @@ using UnityEngine.Localization.Settings;
 public class LanguageSelectionPanelController : MonoBehaviour
 {
     private const string HasChosenLanguageKey = "app.language.has_chosen";
+
+    public static event Action LanguageChanged;
 
     [Header("Root")]
     [SerializeField] private GameObject panelRoot;
@@ -95,6 +98,7 @@ public class LanguageSelectionPanelController : MonoBehaviour
         }
 
         LocalizationSettings.SelectedLocale = locale;
+
         PlayerPrefs.SetInt(HasChosenLanguageKey, 1);
         PlayerPrefs.Save();
 
@@ -106,7 +110,10 @@ public class LanguageSelectionPanelController : MonoBehaviour
         SetObjectsActive(rootsToShowAfterSelection, true);
         SetObjectsActive(rootsToHideAfterSelection, false);
 
+        LanguageChanged?.Invoke();
+
         _isApplyingLanguage = false;
+        SetButtonsInteractable(true);
     }
 
     private void SetButtonsInteractable(bool interactable)

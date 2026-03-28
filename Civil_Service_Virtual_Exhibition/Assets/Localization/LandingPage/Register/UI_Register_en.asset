@@ -32,7 +32,7 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 3743177072640
-    m_Localized: Accept term of service
+    m_Localized: <link="confirm_register"><u>Accept term of service</u></link>
     m_Metadata:
       m_Items: []
   references:

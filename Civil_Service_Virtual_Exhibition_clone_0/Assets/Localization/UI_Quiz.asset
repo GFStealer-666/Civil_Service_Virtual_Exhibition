@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5be51871efa6c3e4eae1703925c8f5ac, type: 3}
+  m_Name: UI_Quiz
+  m_EditorClassIdentifier: 
+  m_SharedTableData: {fileID: 11400000, guid: 3aa0a760136d6a34a9a86d29de281ece, type: 2}
+  m_Tables:
+  - {fileID: 11400000, guid: cc607ecb34d52f8499557a3827a10c27, type: 2}
+  - {fileID: 11400000, guid: 01f56a6f4be54324db8010bd9d9cf040, type: 2}
+  m_Extensions: []
+  m_Group: UI
+  references:
+    version: 2
+    RefIds: []

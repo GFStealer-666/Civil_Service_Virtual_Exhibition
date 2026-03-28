@@ -22,6 +22,11 @@ MonoBehaviour:
     m_ReadOnly: 1
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 3aa0a760136d6a34a9a86d29de281ece
+    m_Address: Assets/Localization/UI_Quiz Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 4ae1e484ffca76449822b0bf4a775607
     m_Address: Assets/Localization/LandingPager/Initial/UI_Landing Shared Data.asset
     m_ReadOnly: 1
@@ -34,6 +39,11 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: afae2447c51414f4a9f4ca66f0e28833
     m_Address: Assets/Localization/UI_Common Shared Data.asset
+    m_ReadOnly: 1
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: c35043dc15756df43bda55a5da7332a2
+    m_Address: Assets/Localization/UI_CentralHub Shared Data.asset
     m_ReadOnly: 1
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

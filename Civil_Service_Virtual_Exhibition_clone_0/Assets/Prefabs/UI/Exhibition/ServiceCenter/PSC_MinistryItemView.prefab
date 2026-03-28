@@ -404,15 +404,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rootButton: {fileID: 1441836909784649273}
-  logoImage: {fileID: 5305556243232139210}
   ministryNameText: {fileID: 8082380547369821008}
   countText: {fileID: 4642971079182984770}
-  selectedStateObject: {fileID: 0}
-  backgroundImage: {fileID: 0}
-  normalBackgroundColor: {r: 1, g: 1, b: 1, a: 1}
-  selectedBackgroundColor: {r: 0.92, g: 0.85, b: 0.68, a: 1}
+  logoImage: {fileID: 5305556243232139210}
+  logoLoader: {fileID: 2718223656373409043}
   fallbackLogo: {fileID: 0}
-  displayOrganizationCount: 1
+  useEnglishText: 0
+  showOrganizationCount: 1
 --- !u!1 &4037483535603619417
 GameObject:
   m_ObjectHideFlags: 0

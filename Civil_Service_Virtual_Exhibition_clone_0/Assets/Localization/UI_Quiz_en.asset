@@ -1,0 +1,126 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: UI_Quiz_en
+  m_EditorClassIdentifier: 
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: 3aa0a760136d6a34a9a86d29de281ece, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 21839568896
+    m_Localized: 'CIVIL SERVICE
+
+      KNOWLEDGE CHALLENGE'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229862035456
+    m_Localized: Learn the role of civil servants through real experiences and situations
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229760
+    m_Localized: Start Activity
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229761
+    m_Localized: A scenario-based quiz game designed to help participants learn the
+      roles, duties, and values of being a civil servant through simulated situations
+      that may occur in real public service work. Players practice judgment, communication,
+      ethical decision-making, and proper civil service conduct by choosing the most
+      appropriate answer in each situation.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229762
+    m_Localized: Round {0}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229763
+    m_Localized: Leaderboard
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229764
+    m_Localized: Rewards
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229765
+    m_Localized: How to Play
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229766
+    m_Localized: Time Left
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229767
+    m_Localized: Seconds
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229768
+    m_Localized: Total Questions {0}/{1}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229769
+    m_Localized: Confirm Answer
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229770
+    m_Localized: Congratulations
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229771
+    m_Localized: You have completed the quiz
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229772
+    m_Localized: Thank you for joining the activity. We hope you gained more knowledge
+      and understanding about the role and importance of civil servants.
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229773
+    m_Localized: Back to Home
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229774
+    m_Localized: Top Scorers
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229775
+    m_Localized: Leaderboard - Quiz Activity
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229776
+    m_Localized: Rank
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229777
+    m_Localized: Name
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229778
+    m_Localized: Score
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229779
+    m_Localized: 'Your score: {0} points  Your rank: #{1}'
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229780
+    m_Localized: Rank {0}
+    m_Metadata:
+      m_Items: []
+  - m_Id: 1229866229781
+    m_Localized: '{0} points'
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

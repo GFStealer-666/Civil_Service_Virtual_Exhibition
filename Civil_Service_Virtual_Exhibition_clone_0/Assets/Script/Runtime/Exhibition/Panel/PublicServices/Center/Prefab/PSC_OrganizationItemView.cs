@@ -8,9 +8,9 @@ public class PSC_OrganizationItemView : MonoBehaviour
     [Header("UI")]
     [SerializeField] private Button rootButton;
     [SerializeField] private Image logoImage;
+    [SerializeField] private UniversalImageLoader logoLoader;
     [SerializeField] private TMP_Text organizationNameText;
-
-    [Header("Fallback")]
+    [SerializeField] private TMP_Text serviceCountText;
     [SerializeField] private Sprite fallbackLogo;
 
     private PSC_ServiceOrganizationDto _data;
@@ -30,29 +30,33 @@ public class PSC_OrganizationItemView : MonoBehaviour
             rootButton.onClick.RemoveListener(HandleClicked);
     }
 
-    public void Bind(
-        PSC_ServiceOrganizationDto data,
-        Action<PSC_ServiceOrganizationDto> onClicked,
-        Sprite logoOverride = null)
+    public void Bind(PSC_ServiceOrganizationDto data, Action<PSC_ServiceOrganizationDto> onClicked)
     {
         _data = data;
         _onClicked = onClicked;
 
         if (organizationNameText != null)
             organizationNameText.text = GetDisplayName(data);
-        if (logoImage != null)
-        {
-            logoImage.sprite = logoOverride != null ? logoOverride : fallbackLogo;
-            logoImage.enabled = logoImage.sprite != null;
-        }
+
+        if (serviceCountText != null)
+            serviceCountText.text = $"จำนวน {GetServiceCount(data)} บริการ";
+
+        BindLogo(data);
     }
 
-    private void HandleClicked()
+    private void BindLogo(PSC_ServiceOrganizationDto data)
     {
-        if (_data == null)
+        if (logoImage != null)
+        {
+            logoImage.sprite = fallbackLogo;
+            logoImage.enabled = logoImage.sprite != null;
+        }
+
+        if (logoLoader == null)
             return;
 
-        _onClicked?.Invoke(_data);
+        string imageUrl = data != null ? data.logoUrl : string.Empty;
+        logoLoader.Load(string.IsNullOrWhiteSpace(imageUrl) ? string.Empty : imageUrl);
     }
 
     private string GetDisplayName(PSC_ServiceOrganizationDto data)
@@ -66,9 +70,22 @@ public class PSC_OrganizationItemView : MonoBehaviour
         return data.nameEn;
     }
 
-    private string BuildServiceCountText(PSC_ServiceOrganizationDto data)
+    private int GetServiceCount(PSC_ServiceOrganizationDto data)
     {
-        int count = data != null ? data.runtimeServiceCount : 0;
-        return $"จำนวน {count} บริการ";
+        if (data == null)
+            return 0;
+
+        if (data.runtimeServiceCount > 0)
+            return data.runtimeServiceCount;
+
+        return data.services != null ? data.services.Length : 0;
+    }
+
+    private void HandleClicked()
+    {
+        if (_data == null)
+            return;
+
+        _onClicked?.Invoke(_data);
     }
 }

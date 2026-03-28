@@ -3,7 +3,7 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-
+using UnityEngine.Localization.Settings;
 public class StatusOverlay : MonoBehaviour
 {
     public enum State
@@ -37,6 +37,7 @@ public class StatusOverlay : MonoBehaviour
     [SerializeField] private TMP_Text failedTitleText;
     [SerializeField] private TMP_Text failedSubtitleText;
     [SerializeField] private Button failedOkButton;
+    [SerializeField] private TMP_Text failedOkButtonText;
 
     [Header("Timing")]
     [SerializeField] private float successAutoDismissSeconds = 1.5f;
@@ -67,7 +68,16 @@ public class StatusOverlay : MonoBehaviour
 
         Hide();
     }
+    protected bool IsThaiLanguage()
+    {
+        var locale = LocalizationSettings.SelectedLocale;
+        if (locale == null)
+            return true;
 
+        string code = locale.Identifier.Code;
+        return !string.IsNullOrEmpty(code) &&
+            code.StartsWith("th", StringComparison.OrdinalIgnoreCase);
+    }
     private void OnDestroy()
     {
         if (failedOkButton != null)
@@ -183,7 +193,7 @@ public class StatusOverlay : MonoBehaviour
         _showOverlayBlocker = showBlocker;
         _onLoadingCanceled = null;
         _onFailedDismissed = onDismissed;
-
+        failedOkButtonText.text = IsThaiLanguage() ? "ตกลง" : "OK";
         SetVisible(true);
         Apply(State.Failed);
 

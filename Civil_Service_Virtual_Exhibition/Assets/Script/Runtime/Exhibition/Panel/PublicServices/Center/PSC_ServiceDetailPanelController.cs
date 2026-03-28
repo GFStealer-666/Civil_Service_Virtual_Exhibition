@@ -1,9 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Networking;
 using UnityEngine.UI;
 
 public class PSC_ServiceDetailPanelController : MonoBehaviour
@@ -51,12 +49,7 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
     public event Action Closed;
 
     private readonly List<PSC_ServiceDetailItemView> _spawnedItems = new();
-
-    private Coroutine _ministryImageRoutine;
-    private Coroutine _organizationImageRoutine;
     private bool _uiBound;
-
-    private static readonly Dictionary<string, Sprite> SpriteCache = new Dictionary<string, Sprite>();
 
     private void Awake()
     {
@@ -92,7 +85,7 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
     public void Close()
     {
         ClearItems();
-        StopImageLoading();
+        ClearHeader();
 
         SelectedOrganization = null;
         SelectedMinistry = null;
@@ -123,34 +116,48 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
         RefreshList();
     }
 
-    private void OnDestroy()
-    {
-        StopImageLoading();
-    }
-
     private void RefreshHeader()
     {
         if (organizationNameText != null)
             organizationNameText.text = GetOrganizationDisplayName(SelectedOrganization);
 
-        string ministryImageUrl = SelectedMinistry != null ? SelectedMinistry.ministryImage : string.Empty;
-        string organizationImageUrl = SelectedOrganization != null ? SelectedOrganization.organizationImage : string.Empty;
+        string ministryLogoUrl = SelectedMinistry != null ? SelectedMinistry.ministryLogo : string.Empty;
+        string organizationLogoUrl = SelectedOrganization != null ? SelectedOrganization.logoUrl : string.Empty;
 
-        LoadImage(
+        BindHeaderImage(
             ministryImage,
             ministryImageLoader,
-            ministryImageUrl,
-            fallbackMinistrySprite,
-            ref _ministryImageRoutine
+            ministryLogoUrl,
+            fallbackMinistrySprite
         );
 
-        LoadImage(
+        BindHeaderImage(
             organizationImage,
             organizationImageLoader,
-            organizationImageUrl,
-            fallbackOrganizationSprite,
-            ref _organizationImageRoutine
+            organizationLogoUrl,
+            fallbackOrganizationSprite
         );
+    }
+
+    private void BindHeaderImage(
+        Image targetImage,
+        UniversalImageLoader loader,
+        string imageUrl,
+        Sprite fallbackSprite)
+    {
+        if (targetImage != null)
+        {
+            targetImage.sprite = fallbackSprite;
+            targetImage.enabled = true;
+        }
+
+        if (loader == null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(imageUrl))
+            return;
+
+        loader.Load(imageUrl);
     }
 
     private void RefreshList()
@@ -221,89 +228,6 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
         return organization.nameEn;
     }
 
-    private void LoadImage(
-        Image targetImage,
-        UniversalImageLoader loader,
-        string url,
-        Sprite fallback,
-        ref Coroutine routine)
-    {
-        if (routine != null)
-        {
-            StopCoroutine(routine);
-            routine = null;
-        }
-
-        if (loader != null)
-        {
-            if (targetImage != null)
-            {
-                targetImage.sprite = fallback;
-                targetImage.enabled = targetImage.sprite != null;
-            }
-
-            loader.Load(string.IsNullOrWhiteSpace(url) ? string.Empty : url);
-            return;
-        }
-
-        if (targetImage == null)
-            return;
-
-        if (string.IsNullOrWhiteSpace(url))
-        {
-            targetImage.sprite = fallback;
-            targetImage.enabled = targetImage.sprite != null;
-            return;
-        }
-
-        if (SpriteCache.TryGetValue(url, out Sprite cached))
-        {
-            targetImage.sprite = cached != null ? cached : fallback;
-            targetImage.enabled = targetImage.sprite != null;
-            return;
-        }
-
-        targetImage.sprite = fallback;
-        targetImage.enabled = targetImage.sprite != null;
-        routine = StartCoroutine(DownloadSpriteRoutine(url, targetImage, fallback));
-    }
-
-    private IEnumerator DownloadSpriteRoutine(string url, Image targetImage, Sprite fallback)
-    {
-        using UnityWebRequest request = UnityWebRequestTexture.GetTexture(url);
-        yield return request.SendWebRequest();
-
-        if (targetImage == null)
-            yield break;
-
-        if (request.result != UnityWebRequest.Result.Success)
-        {
-            targetImage.sprite = fallback;
-            targetImage.enabled = targetImage.sprite != null;
-            yield break;
-        }
-
-        Texture2D texture = DownloadHandlerTexture.GetContent(request);
-        if (texture == null)
-        {
-            targetImage.sprite = fallback;
-            targetImage.enabled = targetImage.sprite != null;
-            yield break;
-        }
-
-        Sprite sprite = Sprite.Create(
-            texture,
-            new Rect(0f, 0f, texture.width, texture.height),
-            new Vector2(0.5f, 0.5f)
-        );
-
-        if (!SpriteCache.ContainsKey(url))
-            SpriteCache.Add(url, sprite);
-
-        targetImage.sprite = sprite;
-        targetImage.enabled = true;
-    }
-
     private void ClearItems()
     {
         for (int i = 0; i < _spawnedItems.Count; i++)
@@ -315,18 +239,21 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
         _spawnedItems.Clear();
     }
 
-    private void StopImageLoading()
+    private void ClearHeader()
     {
-        if (_ministryImageRoutine != null)
+        if (organizationNameText != null)
+            organizationNameText.text = string.Empty;
+
+        if (ministryImage != null)
         {
-            StopCoroutine(_ministryImageRoutine);
-            _ministryImageRoutine = null;
+            ministryImage.sprite = fallbackMinistrySprite;
+            ministryImage.enabled = ministryImage.sprite != null;
         }
 
-        if (_organizationImageRoutine != null)
+        if (organizationImage != null)
         {
-            StopCoroutine(_organizationImageRoutine);
-            _organizationImageRoutine = null;
+            organizationImage.sprite = fallbackOrganizationSprite;
+            organizationImage.enabled = organizationImage.sprite != null;
         }
     }
 

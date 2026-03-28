@@ -8,6 +8,8 @@ public static class LocalizationKeys
         public const string Login = "UI_Login";
         public const string Register = "UI_Register";
         public const string ForgotPassword = "UI_ForgotPassword";
+        public const string CentralHub = "UI_CentralHub";
+        public const string Quiz = "UI_Quiz";
     }
 
     public static class Boot
@@ -71,7 +73,25 @@ public static class LocalizationKeys
         public const string Description = "auth.forgot_password.description";
         public const string Submit = "auth.forgot_password.submit";
     }
+    public static class CentralHub
+    {
+        public const string TabLessons = "centralhub.tab.lessons";
+        public const string TabSettings = "centralhub.tab.settings";
 
+        public const string ChatTitle = "centralhub.chat.title";
+        public const string ChatInputPlaceholder = "centralhub.chat.input_placeholder";
+
+        public const string SettingsTitle = "centralhub.settings.title";
+        public const string UserInfoTitle = "centralhub.settings.user_info_title";
+        public const string BackgroundVolume = "centralhub.settings.background_volume";
+        public const string EffectVolume = "centralhub.settings.effect_volume";
+
+        public const string AcceptTermsButton = "centralhub.settings.accept_terms_button";
+        public const string LogoutButton = "centralhub.settings.logout_button";
+        public const string CancelMembershipButton = "centralhub.settings.cancel_membership_button";
+        public const string EmailPrefix = "centralhub.settings.email_prefix";
+        public const string PhonePrefix = "centralhub.settings.phone_prefix";
+    }
     public static class Error
     {
         public const string ServerUnreachable = "error.server_unreachable";
@@ -80,5 +100,36 @@ public static class LocalizationKeys
         public const string InitialRoomMissing = "error.initial_room_missing";
         public const string JoinFailed = "error.join_failed";
         public const string RoomUnavailable = "error.room_unavailable";
+    }
+    public static class Quiz
+    {
+        public const string IntroTitle = "quiz.intro.title";
+        public const string IntroSubtitle = "quiz.intro.subtitle";
+        public const string IntroStartButton = "quiz.intro.start_button";
+        public const string IntroDescription = "quiz.intro.description";
+        public const string IntroRoundLabelFormat = "quiz.intro.round_label_format";
+        public const string IntroLeaderboardButton = "quiz.intro.leaderboard_button";
+        public const string IntroRewardsButton = "quiz.intro.rewards_button";
+        public const string IntroHowToPlayButton = "quiz.intro.how_to_play_button";
+
+        public const string PlayTimeRemaining = "quiz.play.time_remaining";
+        public const string PlaySeconds = "quiz.play.seconds";
+        public const string PlayTotalQuestionsFormat = "quiz.play.total_questions_format";
+        public const string PlayConfirmAnswer = "quiz.play.confirm_answer";
+
+        public const string CompleteTitle = "quiz.complete.title";
+        public const string CompleteSubtitle = "quiz.complete.subtitle";
+        public const string CompleteThankYou = "quiz.complete.thank_you";
+        public const string CompleteBackToHome = "quiz.complete.back_to_home";
+
+        public const string LeaderboardTitle = "quiz.leaderboard.title";
+        public const string LeaderboardSubtitle = "quiz.leaderboard.subtitle";
+        public const string LeaderboardRankHeader = "quiz.leaderboard.rank_header";
+        public const string LeaderboardNameHeader = "quiz.leaderboard.name_header";
+        public const string LeaderboardScoreHeader = "quiz.leaderboard.score_header";
+        public const string LeaderboardMyScoreFormat = "quiz.leaderboard.my_score_format";
+
+        public const string RankCardRankFormat = "quiz.rank_card.rank_format";
+        public const string RankCardScoreFormat = "quiz.rank_card.score_format";
     }
 }

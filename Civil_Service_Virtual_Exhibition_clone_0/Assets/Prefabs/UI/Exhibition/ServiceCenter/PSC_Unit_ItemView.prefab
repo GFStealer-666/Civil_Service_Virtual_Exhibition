@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 3994161214013610603}
   - component: {fileID: 1131172010478935355}
   - component: {fileID: 3175037640344972534}
+  - component: {fileID: 3536689594245312993}
   m_Layer: 5
   m_Name: PSC_Unit_ItemView
   m_TagString: Untagged
@@ -108,7 +109,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rootButton: {fileID: 3175037640344972534}
   logoImage: {fileID: 5320081930048141064}
+  logoLoader: {fileID: 3536689594245312993}
   organizationNameText: {fileID: 5648567684498756587}
+  serviceCountText: {fileID: 0}
   fallbackLogo: {fileID: 0}
 --- !u!114 &3175037640344972534
 MonoBehaviour:
@@ -154,6 +157,23 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &3536689594245312993
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 82195626015200724}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 88065452d0907804f9c881961f785a20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  targetImage: {fileID: 6996863123301438064}
+  fallbackSprite: {fileID: 0}
+  preserveAspect: 1
+  useApiService: 1
+  useCache: 1
 --- !u!1 &2702338430692446680
 GameObject:
   m_ObjectHideFlags: 0

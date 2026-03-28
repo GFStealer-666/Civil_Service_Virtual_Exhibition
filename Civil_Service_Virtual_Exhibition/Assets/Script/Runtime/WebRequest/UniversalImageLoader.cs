@@ -63,6 +63,7 @@ public class UniversalImageLoader : MonoBehaviour
 
         if (useCache && SpriteCache.TryGetValue(url, out Sprite cachedSprite) && cachedSprite != null)
         {
+            Debug.Log($"[Universal Loader] It's here");
             ApplySprite(cachedSprite);
             _pendingUrl = null;
             _pendingBearerToken = null;

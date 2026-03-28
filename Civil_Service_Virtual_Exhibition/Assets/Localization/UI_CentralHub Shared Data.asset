@@ -1,0 +1,84 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5b11a58205ec3474ca216360e9fa74a8, type: 3}
+  m_Name: UI_CentralHub Shared Data
+  m_EditorClassIdentifier: 
+  m_TableCollectionName: UI_CentralHub
+  m_TableCollectionNameGuidString: c35043dc15756df43bda55a5da7332a2
+  m_Entries:
+  - m_Id: 5783773184
+    m_Key: centralhub.tab.lessons
+    m_Metadata:
+      m_Items: []
+  - m_Id: 67989495808
+    m_Key: centralhub.tab.settings
+    m_Metadata:
+      m_Items: []
+  - m_Id: 70703210496
+    m_Key: centralhub.chat.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 149392547840
+    m_Key: centralhub.chat.input_placeholder
+    m_Metadata:
+      m_Items: []
+  - m_Id: 195160793088
+    m_Key: centralhub.settings.title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 237405822976
+    m_Key: centralhub.settings.user_info_title
+    m_Metadata:
+      m_Items: []
+  - m_Id: 276396072960
+    m_Key: centralhub.settings.background_volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: 313540829184
+    m_Key: centralhub.settings.effect_volume
+    m_Metadata:
+      m_Items: []
+  - m_Id: 350954020864
+    m_Key: centralhub.settings.accept_terms_button
+    m_Metadata:
+      m_Items: []
+  - m_Id: 387532546048
+    m_Key: centralhub.settings.logout_button
+    m_Metadata:
+      m_Items: []
+  - m_Id: 2437469265920
+    m_Key: centralhub.settings.cancel_membership_button
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6010320019456
+    m_Key: centralhub.settings.email_prefix
+    m_Metadata:
+      m_Items: []
+  - m_Id: 6102724730880
+    m_Key: centralhub.settings.phone_prefix
+    m_Metadata:
+      m_Items: []
+  - m_Id: 7211262500864
+    m_Key: centralhub.quiz.reward
+    m_Metadata:
+      m_Items: []
+  m_Metadata:
+    m_Items: []
+  m_KeyGenerator:
+    rid: 2145689886405951494
+  references:
+    version: 2
+    RefIds:
+    - rid: 2145689886405951494
+      type: {class: DistributedUIDGenerator, ns: UnityEngine.Localization.Tables, asm: Unity.Localization}
+      data:
+        m_CustomEpoch: 1774691926054
