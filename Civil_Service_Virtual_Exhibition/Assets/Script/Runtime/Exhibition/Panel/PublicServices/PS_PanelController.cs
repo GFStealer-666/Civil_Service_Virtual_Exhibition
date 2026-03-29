@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -7,13 +8,25 @@ public class PS_PanelController : MonoBehaviour
     [Header("Repository")]
     [SerializeField] private PS_CatalogRepository repository;
 
-    [Header("Category")]
+    [Header("Category Filter")]
     [SerializeField] private string targetCategory;
-    [SerializeField] private bool useEnglish = false;
 
-    [Header("Header UI")]
-    [SerializeField] private TMP_Text categoryTitleText;
+    [Header("Localized Header")]
+    [SerializeField] private TMP_Text titleText;
+    [SerializeField] private string titleTh;
+    [SerializeField] private string titleEn;
+
+    [Header("Localized Summary")]
     [SerializeField] private TMP_Text totalCountText;
+    [SerializeField] private string totalFormatTh = "ทั้งหมด {0} กิจกรรม";
+    [SerializeField] private string totalFormatEn = "Total {0} activities";
+
+    [Header("Localized Search Placeholder")]
+    [SerializeField] private TMP_Text searchPlaceholderText;
+    [SerializeField] private string searchPlaceholderTh = "ค้นหาชื่อกิจกรรมหรือหน่วยงาน";
+    [SerializeField] private string searchPlaceholderEn = "Search activity or department";
+
+    [Header("Status UI")]
     [SerializeField] private TMP_Text statusText;
 
     [Header("List UI")]
@@ -25,6 +38,7 @@ public class PS_PanelController : MonoBehaviour
     private readonly List<PS_ServiceItemView> _spawnedItems = new List<PS_ServiceItemView>();
 
     private string _searchKeyword = string.Empty;
+    private string _lastLocaleCode = string.Empty;
 
     private void OnEnable()
     {
@@ -33,14 +47,17 @@ public class PS_PanelController : MonoBehaviour
 
         if (repository == null)
         {
-            SetStatus("PS_ServiceRepository is missing.");
+            SetStatus(IsEnglish() ? "PS_CatalogRepository is missing." : "ไม่พบ PS_CatalogRepository");
             ShowLoading(false);
             ShowEmpty(true);
+            ApplyLocalizationOnly();
             return;
         }
 
         repository.OnDataLoaded += HandleRepositoryLoaded;
         repository.OnDataLoadFailed += HandleRepositoryLoadFailed;
+
+        _lastLocaleCode = GetLocaleCode();
 
         repository.Initialize();
         RefreshView();
@@ -55,16 +72,34 @@ public class PS_PanelController : MonoBehaviour
         repository.OnDataLoadFailed -= HandleRepositoryLoadFailed;
     }
 
+    private void Update()
+    {
+        string localeCode = GetLocaleCode();
+        if (string.Equals(_lastLocaleCode, localeCode, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _lastLocaleCode = localeCode;
+        RefreshView();
+    }
+
     public void SetSearchKeyword(string keyword)
     {
         _searchKeyword = keyword ?? string.Empty;
         RebuildList();
+        UpdateHeaderTexts();
     }
 
     public void SetCategory(string categoryName)
     {
         targetCategory = categoryName;
         RefreshView();
+    }
+
+    public void SetLocalizedTitle(string thaiTitle, string englishTitle)
+    {
+        titleTh = thaiTitle;
+        titleEn = englishTitle;
+        UpdateHeaderTexts();
     }
 
     public void RefreshFromRepository()
@@ -80,18 +115,20 @@ public class PS_PanelController : MonoBehaviour
     private void HandleRepositoryLoadFailed(string error)
     {
         ClearItems();
-        UpdateHeader();
+        UpdateHeaderTexts();
         ShowLoading(false);
         ShowEmpty(true);
-        SetStatus(string.IsNullOrWhiteSpace(error) ? "Load failed." : error);
+        SetStatus(string.IsNullOrWhiteSpace(error)
+            ? (IsEnglish() ? "Load failed." : "โหลดข้อมูลไม่สำเร็จ")
+            : error);
     }
 
     private void RefreshView()
     {
+        ApplyLocalizationOnly();
+
         if (repository == null)
             return;
-
-        UpdateHeader();
 
         if (repository.IsLoading && !repository.HasData)
         {
@@ -99,6 +136,7 @@ public class PS_PanelController : MonoBehaviour
             ShowLoading(true);
             ShowEmpty(false);
             SetStatus(string.Empty);
+            UpdateHeaderTexts();
             return;
         }
 
@@ -107,12 +145,16 @@ public class PS_PanelController : MonoBehaviour
             ClearItems();
             ShowLoading(false);
             ShowEmpty(true);
-            SetStatus(string.IsNullOrWhiteSpace(repository.LastError) ? "No data." : repository.LastError);
+            SetStatus(string.IsNullOrWhiteSpace(repository.LastError)
+                ? (IsEnglish() ? "No data." : "ไม่มีข้อมูล")
+                : repository.LastError);
+            UpdateHeaderTexts();
             return;
         }
 
         ShowLoading(false);
         SetStatus(string.Empty);
+        UpdateHeaderTexts();
         RebuildList();
     }
 
@@ -143,26 +185,44 @@ public class PS_PanelController : MonoBehaviour
                 continue;
 
             PS_ServiceItemView view = Instantiate(itemPrefab, contentRoot);
-            view.Bind(item, useEnglish);
+            view.Bind(item, IsEnglish());
             _spawnedItems.Add(view);
         }
     }
 
-    private void UpdateHeader()
+    private void ApplyLocalizationOnly()
     {
-        if (repository == null)
-            return;
+        UpdateHeaderTexts();
+        UpdateSearchPlaceholder();
+    }
 
-        string displayName = repository.GetCategoryDisplayName(targetCategory, useEnglish);
-        int total = repository.GetCategoryTotalCount(targetCategory);
+    private void UpdateHeaderTexts()
+    {
+        bool useEnglish = IsEnglish();
 
-        if (categoryTitleText != null)
-            categoryTitleText.text = displayName;
+        if (titleText != null)
+        {
+            titleText.text = useEnglish
+                ? Clean(titleEn, Clean(titleTh, "-"))
+                : Clean(titleTh, Clean(titleEn, "-"));
+        }
 
         if (totalCountText != null)
-            totalCountText.text = useEnglish
-                ? $"Total {total} activities"
-                : $"ทั้งหมด {total} กิจกรรม";
+        {
+            int total = repository != null ? repository.GetCategoryTotalCount(targetCategory) : 0;
+            string format = useEnglish ? totalFormatEn : totalFormatTh;
+            totalCountText.text = string.Format(format, total);
+        }
+    }
+
+    private void UpdateSearchPlaceholder()
+    {
+        if (searchPlaceholderText == null)
+            return;
+
+        searchPlaceholderText.text = IsEnglish()
+            ? Clean(searchPlaceholderEn, "Search activity or department")
+            : Clean(searchPlaceholderTh, "ค้นหาชื่อกิจกรรมหรือหน่วยงาน");
     }
 
     private void ClearItems()
@@ -192,5 +252,24 @@ public class PS_PanelController : MonoBehaviour
     {
         if (emptyStateObject != null)
             emptyStateObject.SetActive(show);
+    }
+
+    private static bool IsEnglish()
+    {
+        return GetLocaleCode().StartsWith("en", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetLocaleCode()
+    {
+        string code = LocalizationService.CurrentLocaleCode;
+        return string.IsNullOrWhiteSpace(code) ? "th" : code;
+    }
+
+    private static string Clean(string value, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return fallback;
+
+        return value.Replace("\r", " ").Replace("\n", " ").Trim();
     }
 }

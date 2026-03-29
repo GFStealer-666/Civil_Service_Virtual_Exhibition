@@ -16,7 +16,7 @@ MonoBehaviour:
   m_TableCollectionNameGuidString: 4e38784bf8c76a149848dbbda365813a
   m_Entries:
   - m_Id: 452812800
-    m_Key: HOH_Ministry_Title
+    m_Key: HOH_Tittle
     m_Metadata:
       m_Items: []
   - m_Id: 482172928
@@ -112,7 +112,11 @@ MonoBehaviour:
     m_Metadata:
       m_Items: []
   - m_Id: 79112790016
-    m_Key: New Entry
+    m_Key: PSC_Tittle
+    m_Metadata:
+      m_Items: []
+  - m_Id: 17859455311872
+    m_Key: PSC_Subtittle
     m_Metadata:
       m_Items: []
   m_Metadata:

@@ -18,9 +18,20 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
     [SerializeField] private Image ministryLogoImage;
     [SerializeField] private UniversalImageLoader ministryLogoLoader;
     [SerializeField] private Sprite fallbackMinistryLogo;
+
+    [SerializeField] private TMP_Text panelTitleText;
+    [SerializeField] private string panelTitleTh;
+    [SerializeField] private string panelTitleEn;
+
     [SerializeField] private TMP_Text welcomeTitleText;
+    [SerializeField] private string welcomeTextThai = "ยินดีต้อนรับสู่";
+    [SerializeField] private string welcomeTextEnglish = "Welcome to";
+
     [SerializeField] private TMP_Text ministryNameText;
     [SerializeField] private TMP_Text organizationCountText;
+    [SerializeField] private string organizationCountFormatTh = "จำนวน {0} หน่วยงาน";
+    [SerializeField] private string organizationCountFormatEnSingular = "{0} organization";
+    [SerializeField] private string organizationCountFormatEnPlural = "{0} organizations";
 
     [Header("List")]
     [SerializeField] private Transform contentRoot;
@@ -30,7 +41,8 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
     [Header("Empty State")]
     [SerializeField] private GameObject emptyStateRoot;
     [SerializeField] private TMP_Text emptyStateText;
-    [SerializeField] private string emptyMessage = "ไม่พบข้อมูล";
+    [SerializeField] private string emptyMessageTh = "ไม่พบข้อมูล";
+    [SerializeField] private string emptyMessageEn = "No data found";
 
     [Header("Buttons")]
     [SerializeField] private Button closeButton;
@@ -38,9 +50,6 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
 
     [Header("Display")]
     [SerializeField] private bool pushUiBlockOnOpen = true;
-    [SerializeField] private string welcomeTextThai = "ยินดีต้อนรับสู่";
-    [SerializeField] private string welcomeTextEnglish = "Welcome to";
-    [SerializeField] private bool useEnglishText = false;
 
     public PSC_ServiceMinistryDto SelectedMinistry { get; private set; }
     public PSC_ServiceOrganizationDto SelectedOrganization { get; private set; }
@@ -51,11 +60,32 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
 
     private readonly List<PSC_OrganizationItemView> _spawnedItems = new();
     private bool _uiBound;
+    private string _lastLocaleCode = string.Empty;
 
     private void Awake()
     {
         ResolveReferences();
         BindUi();
+    }
+
+    private void OnEnable()
+    {
+        _lastLocaleCode = GetLocaleCode();
+        ApplyStaticLocalization();
+    }
+
+    private void Update()
+    {
+        string localeCode = GetLocaleCode();
+        if (string.Equals(_lastLocaleCode, localeCode, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _lastLocaleCode = localeCode;
+
+        ApplyStaticLocalization();
+
+        if (IsOpen)
+            RefreshCurrent();
     }
 
     public void Open(PSC_ServiceMinistryDto ministry)
@@ -75,6 +105,7 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
         if (panelRoot != null)
             panelRoot.SetActive(true);
 
+        ApplyStaticLocalization();
         RefreshHeader();
         RefreshList();
         ResetScrollToTop();
@@ -107,10 +138,11 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
     {
         if (SelectedMinistry == null)
         {
-            SetEmptyState(true, emptyMessage);
+            SetEmptyState(true, GetEmptyMessage());
             return;
         }
 
+        ApplyStaticLocalization();
         RefreshHeader();
         RefreshList();
     }
@@ -137,17 +169,21 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
             return;
 
         if (welcomeTitleText != null)
-            welcomeTitleText.text = useEnglishText ? welcomeTextEnglish : welcomeTextThai;
+            welcomeTitleText.text = Pick(welcomeTextThai, welcomeTextEnglish, string.Empty);
 
         if (ministryNameText != null)
             ministryNameText.text = GetMinistryDisplayName(SelectedMinistry);
 
         if (organizationCountText != null)
-            organizationCountText.text = useEnglishText
-                ? BuildEnglishCountText(SelectedMinistry.runtimeOrganizationCount)
-                : BuildThaiCountText(SelectedMinistry.runtimeOrganizationCount);
+            organizationCountText.text = BuildOrganizationCountText(SelectedMinistry.runtimeOrganizationCount);
 
         BindMinistryLogo(SelectedMinistry);
+    }
+
+    private void ApplyStaticLocalization()
+    {
+        if (panelTitleText != null)
+            panelTitleText.text = Pick(panelTitleTh, panelTitleEn, string.Empty);
     }
 
     private void BindMinistryLogo(PSC_ServiceMinistryDto ministry)
@@ -176,19 +212,19 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
         if (contentRoot == null || itemPrefab == null)
         {
             Debug.LogWarning("[PSC_OrganizationSelectionPanelController] ContentRoot or ItemPrefab is missing.");
-            SetEmptyState(true, emptyMessage);
+            SetEmptyState(true, GetEmptyMessage());
             return;
         }
 
         if (repository == null)
         {
-            SetEmptyState(true, "Repository not found");
+            SetEmptyState(true, IsEnglish() ? "Repository not found" : "ไม่พบ Repository");
             return;
         }
 
         if (SelectedMinistry == null)
         {
-            SetEmptyState(true, emptyMessage);
+            SetEmptyState(true, GetEmptyMessage());
             return;
         }
 
@@ -197,7 +233,7 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
 
         if (organizations == null || organizations.Count == 0)
         {
-            SetEmptyState(true, emptyMessage);
+            SetEmptyState(true, GetEmptyMessage());
             return;
         }
 
@@ -214,7 +250,7 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
             _spawnedItems.Add(view);
         }
 
-        SetEmptyState(_spawnedItems.Count == 0, emptyMessage);
+        SetEmptyState(_spawnedItems.Count == 0, GetEmptyMessage());
     }
 
     private void ClearItems()
@@ -230,6 +266,9 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
 
     private void ClearHeader()
     {
+        if (panelTitleText != null)
+            panelTitleText.text = string.Empty;
+
         if (welcomeTitleText != null)
             welcomeTitleText.text = string.Empty;
 
@@ -269,22 +308,24 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
         if (ministry == null)
             return string.Empty;
 
-        if (useEnglishText && !string.IsNullOrWhiteSpace(ministry.ministryEn))
-            return ministry.ministryEn;
-
-        return !string.IsNullOrWhiteSpace(ministry.ministry)
-            ? ministry.ministry
-            : ministry.ministryEn;
+        return Pick(ministry.ministry, ministry.ministryEn, string.Empty);
     }
 
-    private string BuildThaiCountText(int count)
+    private string BuildOrganizationCountText(int count)
     {
-        return $"จำนวน {count} หน่วยงาน";
+        if (!IsEnglish())
+            return string.Format(Clean(organizationCountFormatTh, "จำนวน {0} หน่วยงาน"), count);
+
+        string format = count == 1
+            ? Clean(organizationCountFormatEnSingular, "{0} organization")
+            : Clean(organizationCountFormatEnPlural, "{0} organizations");
+
+        return string.Format(format, count);
     }
 
-    private string BuildEnglishCountText(int count)
+    private string GetEmptyMessage()
     {
-        return count == 1 ? "1 organization" : $"{count} organizations";
+        return Pick(emptyMessageTh, emptyMessageEn, "No data found");
     }
 
     private void ResolveReferences()
@@ -305,5 +346,39 @@ public class PSC_OrganizationSelectionPanelController : MonoBehaviour
 
         if (backButton != null)
             backButton.onClick.AddListener(Close);
+    }
+
+    private static string Pick(string thai, string english, string fallback)
+    {
+        bool useEnglish = IsEnglish();
+
+        string primary = useEnglish ? english : thai;
+        if (!string.IsNullOrWhiteSpace(primary))
+            return primary.Trim();
+
+        string secondary = useEnglish ? thai : english;
+        if (!string.IsNullOrWhiteSpace(secondary))
+            return secondary.Trim();
+
+        return fallback;
+    }
+
+    private static bool IsEnglish()
+    {
+        return GetLocaleCode().StartsWith("en", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetLocaleCode()
+    {
+        string code = LocalizationService.CurrentLocaleCode;
+        return string.IsNullOrWhiteSpace(code) ? "th" : code;
+    }
+
+    private static string Clean(string value, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return fallback;
+
+        return value.Replace("\r", " ").Replace("\n", " ").Trim();
     }
 }

@@ -24,7 +24,6 @@ public class PSC_PanelController : MonoBehaviour
     [SerializeField] private GameObject ministryPanelRoot;
     [SerializeField] private GameObject organizationPanelRoot;
     [SerializeField] private PSC_OrganizationSelectionPanelController organizationSelectionPanel;
-    [SerializeField] private PSC_ServiceDetailPanelController serviceDetailPanel;
     [SerializeField] private GameObject serviceDetailPanelRoot;
 
     [Header("Ministry List")]
@@ -35,9 +34,20 @@ public class PSC_PanelController : MonoBehaviour
     [SerializeField] private PSC_FilterGroup filterGroup;
     [SerializeField] private TMP_InputField searchInputField;
 
+    [Header("Search Placeholder")]
+    [SerializeField] private TMP_Text searchPlaceholderText;
+    [SerializeField] private string searchPlaceholderTh = "ค้นหาชื่อหน่วยงาน";
+    [SerializeField] private string searchPlaceholderEn = "Search ministry name";
+
     [Header("Empty State")]
     [SerializeField] private GameObject emptyStateRoot;
     [SerializeField] private TextMeshProUGUI emptyStateText;
+    [SerializeField] private string emptyNoDataTh = "ยังไม่มีข้อมูล";
+    [SerializeField] private string emptyNoDataEn = "No data available";
+    [SerializeField] private string emptyNotFoundTh = "ไม่พบข้อมูล";
+    [SerializeField] private string emptyNotFoundEn = "No results found";
+    [SerializeField] private string loadFailedTh = "โหลดข้อมูลไม่สำเร็จ";
+    [SerializeField] private string loadFailedEn = "Failed to load data";
 
     public PSCPanelStage CurrentStage { get; private set; } = PSCPanelStage.Ministries;
     public PSC_ServiceMinistryDto SelectedMinistry { get; private set; }
@@ -47,12 +57,12 @@ public class PSC_PanelController : MonoBehaviour
     private readonly List<PSC_MinistryItemView> _spawnedItems = new();
     private string _currentSearch = string.Empty;
     private bool _uiBound;
+    private string _lastLocaleCode = string.Empty;
 
     private void Awake()
     {
         ResolveReferences();
         BindUi();
-        //ShowStage(PSCPanelStage.Ministries);
     }
 
     private void OnEnable()
@@ -62,12 +72,26 @@ public class PSC_PanelController : MonoBehaviour
             repository.OnDataLoaded += HandleRepositoryLoaded;
             repository.OnDataLoadFailed += HandleRepositoryFailed;
         }
+
+        _lastLocaleCode = GetLocaleCode();
+        ApplyStaticLocalization();
     }
 
     private void Start()
     {
-        // if (initializeRepositoryOnStart && repository != null && !repository.HasData && !repository.IsLoading)
-        //     repository.Initialize();
+        if (initializeRepositoryOnStart && repository != null && !repository.HasData && !repository.IsLoading)
+            repository.Initialize();
+    }
+
+    private void Update()
+    {
+        string localeCode = GetLocaleCode();
+        if (string.Equals(_lastLocaleCode, localeCode, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _lastLocaleCode = localeCode;
+        ApplyStaticLocalization();
+        RefreshCurrentStage();
     }
 
     private void OnDisable()
@@ -88,6 +112,7 @@ public class PSC_PanelController : MonoBehaviour
             repository.Initialize();
 
         ShowStage(PSCPanelStage.Ministries);
+        ApplyStaticLocalization();
         RefreshCurrentStage();
 
         PlayerInput.PushUIBlock();
@@ -161,7 +186,7 @@ public class PSC_PanelController : MonoBehaviour
     private void HandleRepositoryFailed(string error)
     {
         ClearItems();
-        SetEmptyState(true, string.IsNullOrWhiteSpace(error) ? "โหลดข้อมูลไม่สำเร็จ" : error);
+        SetEmptyState(true, string.IsNullOrWhiteSpace(error) ? GetLoadFailedText() : error);
     }
 
     private void RefreshCurrentStage()
@@ -183,14 +208,14 @@ public class PSC_PanelController : MonoBehaviour
 
         if (repository == null || !repository.HasData)
         {
-            SetEmptyState(true, "ยังไม่มีข้อมูล");
+            SetEmptyState(true, GetNoDataText());
             return;
         }
 
         List<PSC_ServiceMinistryDto> source = repository.GetMinistries();
         if (source == null || source.Count == 0)
         {
-            SetEmptyState(true, "ไม่พบข้อมูล");
+            SetEmptyState(true, GetNotFoundText());
             return;
         }
 
@@ -216,7 +241,7 @@ public class PSC_PanelController : MonoBehaviour
             visibleCount++;
         }
 
-        SetEmptyState(visibleCount == 0, "ไม่พบข้อมูล");
+        SetEmptyState(visibleCount == 0, GetNotFoundText());
     }
 
     private bool MatchesFilter(PSC_ServiceMinistryDto ministry, IReadOnlyCollection<PSC_MinistryCategory> filters)
@@ -352,5 +377,55 @@ public class PSC_PanelController : MonoBehaviour
 
         if (serviceDetailPanelRoot != null)
             serviceDetailPanelRoot.SetActive(stage == PSCPanelStage.ServiceDetail);
+    }
+
+    private void ApplyStaticLocalization()
+    {
+        if (searchPlaceholderText != null)
+        {
+            searchPlaceholderText.text = IsEnglish()
+                ? Clean(searchPlaceholderEn, "Search ministry name")
+                : Clean(searchPlaceholderTh, "ค้นหาชื่อหน่วยงาน");
+        }
+    }
+
+    private string GetNoDataText()
+    {
+        return IsEnglish()
+            ? Clean(emptyNoDataEn, "No data available")
+            : Clean(emptyNoDataTh, "ยังไม่มีข้อมูล");
+    }
+
+    private string GetNotFoundText()
+    {
+        return IsEnglish()
+            ? Clean(emptyNotFoundEn, "No results found")
+            : Clean(emptyNotFoundTh, "ไม่พบข้อมูล");
+    }
+
+    private string GetLoadFailedText()
+    {
+        return IsEnglish()
+            ? Clean(loadFailedEn, "Failed to load data")
+            : Clean(loadFailedTh, "โหลดข้อมูลไม่สำเร็จ");
+    }
+
+    private static bool IsEnglish()
+    {
+        return GetLocaleCode().StartsWith("en", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetLocaleCode()
+    {
+        string code = LocalizationService.CurrentLocaleCode;
+        return string.IsNullOrWhiteSpace(code) ? "th" : code;
+    }
+
+    private static string Clean(string value, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return fallback;
+
+        return value.Replace("\r", " ").Replace("\n", " ").Trim();
     }
 }

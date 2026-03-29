@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -18,10 +19,18 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
     [SerializeField] private TMP_Text contactBodyText;
     [SerializeField] private TMP_Text durationBodyText;
 
-    [Header("Language")]
-    [SerializeField] private bool useEnglish;
+    [Header("Header Localization")]
+    [SerializeField] private string serviceHeaderTh = "งานบริการ";
+    [SerializeField] private string serviceHeaderEn = "Service";
+    [SerializeField] private string channelHeaderTh = "ช่องทางการรับบริการ";
+    [SerializeField] private string channelHeaderEn = "Service Channel";
+    [SerializeField] private string contactHeaderTh = "ช่องทางการติดต่อ";
+    [SerializeField] private string contactHeaderEn = "Contact Channel";
+    [SerializeField] private string durationHeaderTh = "ระยะเวลาการให้บริการ";
+    [SerializeField] private string durationHeaderEn = "Service Duration";
 
     private PSC_ServiceItemDto _data;
+    private string _lastLocaleCode = string.Empty;
 
     private struct NumberedBlock
     {
@@ -31,13 +40,32 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
 
     private void Awake()
     {
-        ApplyHeaders();
+        RefreshLocalization();
+    }
+
+    private void OnEnable()
+    {
+        RefreshLocalization();
+    }
+
+    private void Update()
+    {
+        string currentLocaleCode = GetLocaleCode();
+        if (string.Equals(_lastLocaleCode, currentLocaleCode, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        RefreshLocalization();
     }
 
     public void Bind(PSC_ServiceItemDto data)
     {
         _data = data;
+        RefreshLocalization();
+    }
 
+    public void RefreshLocalization()
+    {
+        _lastLocaleCode = GetLocaleCode();
         ApplyHeaders();
         BindBodies();
     }
@@ -45,16 +73,16 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
     private void ApplyHeaders()
     {
         if (serviceHeaderText != null)
-            serviceHeaderText.text = useEnglish ? "Service" : "งานบริการ";
+            serviceHeaderText.text = Pick(serviceHeaderTh, serviceHeaderEn, "Service");
 
         if (channelHeaderText != null)
-            channelHeaderText.text = useEnglish ? "Service Channel" : "ช่องทางการรับบริการ";
+            channelHeaderText.text = Pick(channelHeaderTh, channelHeaderEn, "Service Channel");
 
         if (contactHeaderText != null)
-            contactHeaderText.text = useEnglish ? "Contact Channel" : "ช่องทางการติดต่อ";
+            contactHeaderText.text = Pick(contactHeaderTh, contactHeaderEn, "Contact Channel");
 
         if (durationHeaderText != null)
-            durationHeaderText.text = useEnglish ? "Service Duration" : "ระยะเวลาการให้บริการ";
+            durationHeaderText.text = Pick(durationHeaderTh, durationHeaderEn, "Service Duration");
     }
 
     private void BindBodies()
@@ -65,21 +93,10 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
             return;
         }
 
-        string serviceRaw = useEnglish
-            ? FirstNotEmpty(_data.serviceEn, _data.service)
-            : FirstNotEmpty(_data.service, _data.serviceEn);
-
-        string channelRaw = useEnglish
-            ? FirstNotEmpty(_data.channelEn, _data.channel)
-            : FirstNotEmpty(_data.channel, _data.channelEn);
-
-        string contactRaw = useEnglish
-            ? FirstNotEmpty(_data.contactEn, _data.contact)
-            : FirstNotEmpty(_data.contact, _data.contactEn);
-
-        string durationRaw = useEnglish
-            ? FirstNotEmpty(_data.durationEn, _data.duration)
-            : FirstNotEmpty(_data.duration, _data.durationEn);
+        string serviceRaw = PickRaw(_data.service, _data.serviceEn);
+        string channelRaw = PickRaw(_data.channel, _data.channelEn);
+        string contactRaw = PickRaw(_data.contact, _data.contactEn);
+        string durationRaw = PickRaw(_data.duration, _data.durationEn);
 
         SetTexts(
             FormatServiceText(serviceRaw),
@@ -104,7 +121,6 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
             durationBodyText.text = duration;
     }
 
-    // ── Service: numbered list  1. 2. 3. ─────────────────────────────────────
     private string FormatServiceText(string raw)
     {
         List<NumberedBlock> blocks = ExtractTopLevelNumberedBlocks(raw);
@@ -115,14 +131,12 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
             {
                 sb.Append(blocks[i].Number);
                 sb.Append(". ");
-                // Collapse internal line-breaks so each entry stays on one line
-                sb.AppendLine(NormalizeBlockBody(blocks[i].Body, collapseInternalNewlines: true));
+                sb.AppendLine(NormalizeBlockBody(blocks[i].Body, true));
             }
             return sb.ToString().TrimEnd();
         }
 
-        // Fallback: no explicit numbers found — auto-number by paragraph / slash
-        List<string> parts = SplitFallbackParts(raw, allowSafeSlashSplit: true);
+        List<string> parts = SplitFallbackParts(raw, true);
         if (parts.Count == 0)
             return string.Empty;
 
@@ -133,10 +147,10 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
             fb.Append(". ");
             fb.AppendLine(parts[i]);
         }
+
         return fb.ToString().TrimEnd();
     }
 
-    // ── Channel: bullet list  •  ──────────────────────────────────────────────
     private string FormatChannelText(string raw)
     {
         List<NumberedBlock> blocks = ExtractTopLevelNumberedBlocks(raw);
@@ -146,14 +160,12 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
             for (int i = 0; i < blocks.Count; i++)
             {
                 sb.Append("• ");
-                // Collapse internal line-breaks so each bullet stays on one line
-                sb.AppendLine(NormalizeBlockBody(blocks[i].Body, collapseInternalNewlines: true));
+                sb.AppendLine(NormalizeBlockBody(blocks[i].Body, true));
             }
             return sb.ToString().TrimEnd();
         }
 
-        // Fallback: bullet every paragraph
-        List<string> parts = SplitFallbackParts(raw, allowSafeSlashSplit: false);
+        List<string> parts = SplitFallbackParts(raw, false);
         if (parts.Count == 0)
             return string.Empty;
 
@@ -163,10 +175,10 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
             fb.Append("• ");
             fb.AppendLine(parts[i]);
         }
+
         return fb.ToString().TrimEnd();
     }
 
-    // ── Contact: numbered list 1. 2. 3.  (sub-items 1.1 1.2 preserved) ───────
     private string FormatContactText(string raw)
     {
         List<NumberedBlock> blocks = ExtractTopLevelNumberedBlocks(raw);
@@ -177,30 +189,19 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
             {
                 sb.Append(blocks[i].Number);
                 sb.Append(". ");
-                // Preserve internal newlines — addresses span multiple lines
-                sb.AppendLine(NormalizeBlockBody(blocks[i].Body, collapseInternalNewlines: false));
+                sb.AppendLine(NormalizeBlockBody(blocks[i].Body, false));
             }
             return sb.ToString().TrimEnd();
         }
 
-        // Fallback: show as plain normalised text
         return NormalizeText(raw);
     }
 
-    // ── Duration: plain text, no splitting ───────────────────────────────────
     private string FormatDurationText(string raw)
     {
         return NormalizeText(raw);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Core parser
-    // ─────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Extracts top-level numbered blocks (1. / 1) at the start of any line).
-    /// Works whether items are separated by a single \n or multiple \n\n\n.
-    /// </summary>
     private List<NumberedBlock> ExtractTopLevelNumberedBlocks(string raw)
     {
         List<NumberedBlock> result = new List<NumberedBlock>();
@@ -209,10 +210,6 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
         if (string.IsNullOrWhiteSpace(text))
             return result;
 
-        // (?:^|\n)   — start of string or any newline (not just blank lines)
-        // (?<num>\d+)[.)] — integer followed by . or )
-        // (?<body>.*?)   — lazy body
-        // (?=\n\d+[.)]|\z) — stops at the next numbered item or end of string
         MatchCollection matches = Regex.Matches(
             text,
             @"(?:^|\n)(?<num>\d+)[.)]\s*(?<body>.*?)(?=\n\d+[.)]|\z)",
@@ -226,20 +223,20 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
                 continue;
 
             string number = match.Groups["num"].Value.Trim();
-            string body   = match.Groups["body"].Value.Trim();
+            string body = match.Groups["body"].Value.Trim();
 
             if (string.IsNullOrWhiteSpace(body))
                 continue;
 
-            result.Add(new NumberedBlock { Number = number, Body = body });
+            result.Add(new NumberedBlock
+            {
+                Number = number,
+                Body = body
+            });
         }
 
         return result;
     }
-
-    // ─────────────────────────────────────────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────────────────────────────────────────
 
     private List<string> SplitFallbackParts(string raw, bool allowSafeSlashSplit)
     {
@@ -264,13 +261,6 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
         return result;
     }
 
-    /// <summary>
-    /// Cleans up a block body.
-    /// collapseInternalNewlines = true  → all \n inside the body become a space
-    ///                                     (good for channel bullets / service lines)
-    /// collapseInternalNewlines = false → single \n are kept; only 3+ \n are
-    ///                                     reduced to \n\n  (good for contact addresses)
-    /// </summary>
     private string NormalizeBlockBody(string body, bool collapseInternalNewlines)
     {
         if (string.IsNullOrWhiteSpace(body))
@@ -279,15 +269,9 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
         string value = NormalizeText(body);
 
         if (collapseInternalNewlines)
-        {
-            // Collapse every newline (and surrounding whitespace) into a single space
             value = Regex.Replace(value, @"\s*\n\s*", " ");
-        }
         else
-        {
-            // Just remove excessive blank lines, keep single newlines intact
             value = Regex.Replace(value, @"\n{3,}", "\n\n");
-        }
 
         return value.Trim();
     }
@@ -310,12 +294,12 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
             }
 
             char previous = i > 0 ? value[i - 1] : '\0';
-            char next     = i < value.Length - 1 ? value[i + 1] : '\0';
+            char next = i < value.Length - 1 ? value[i + 1] : '\0';
 
             bool hasSpaceBefore = char.IsWhiteSpace(previous);
-            bool hasSpaceAfter  = char.IsWhiteSpace(next);
-            bool isUrlScheme    = previous == ':';
-            bool isDoubleSlash  = next == '/';
+            bool hasSpaceAfter = char.IsWhiteSpace(next);
+            bool isUrlScheme = previous == ':';
+            bool isDoubleSlash = next == '/';
 
             if ((hasSpaceBefore || hasSpaceAfter) && !isUrlScheme && !isDoubleSlash)
                 builder.Append('\n');
@@ -338,6 +322,29 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
             .Trim();
     }
 
+    private string PickRaw(string thai, string english)
+    {
+        bool useEnglish = IsEnglish();
+        return useEnglish
+            ? FirstNotEmpty(english, thai)
+            : FirstNotEmpty(thai, english);
+    }
+
+    private static string Pick(string thai, string english, string fallback)
+    {
+        bool useEnglish = IsEnglish();
+
+        string primary = useEnglish ? english : thai;
+        if (!string.IsNullOrWhiteSpace(primary))
+            return primary.Trim();
+
+        string secondary = useEnglish ? thai : english;
+        if (!string.IsNullOrWhiteSpace(secondary))
+            return secondary.Trim();
+
+        return fallback;
+    }
+
     private string FirstNotEmpty(params string[] values)
     {
         for (int i = 0; i < values.Length; i++)
@@ -345,6 +352,18 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
             if (!string.IsNullOrWhiteSpace(values[i]))
                 return values[i];
         }
+
         return string.Empty;
+    }
+
+    private static bool IsEnglish()
+    {
+        return GetLocaleCode().StartsWith("en", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetLocaleCode()
+    {
+        string code = LocalizationService.CurrentLocaleCode;
+        return string.IsNullOrWhiteSpace(code) ? "th" : code;
     }
 }

@@ -41,10 +41,6 @@ public class AE_ProjectDetailUI : MonoBehaviour
     [SerializeField] private Button videoButton;
     [SerializeField] private TMP_Text videoButtonLabel;
     [SerializeField] private TMP_Text moreInfoButtonLabel;
-    [Header("Narrator Button Labels")]
-    [SerializeField] private string narratorPlayLabel = "Narrator";
-    [SerializeField] private string narratorCancelLabel = "Cancel";
-    [SerializeField] private string narratorStopLabel = "Stop";
     private string NarratorPlayLabel => UseEnglish ? "Narrator" : "ผู้บรรยาย";
     private string NarratorCancelLabel => UseEnglish ? "Cancel" : "ยกเลิก";
     private string NarratorStopLabel => UseEnglish ? "Stop" : "หยุด";
@@ -145,7 +141,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
         }
 
         titleText.text = GetProjectTitle(_currentProject);
-        agencyText.text = _currentAgencyName;
+        agencyText.text = GetAgencyDisplayName(_currentProject);
         descriptionText.text = TruncateWithEllipsis(GetProjectDescription(_currentProject), shortDescriptionCharacterLimit);
     }
 
@@ -286,22 +282,22 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         if (_currentProject == null || narrationController == null)
         {
-            narratorButtonLabel.text = narratorPlayLabel;
+            narratorButtonLabel.text = NarratorPlayLabel;
             return;
         }
 
         switch (narrationController.State)
         {
             case MediaPlaybackState.Loading:
-                narratorButtonLabel.text = narratorCancelLabel;
+                narratorButtonLabel.text = NarratorCancelLabel;
                 break;
 
             case MediaPlaybackState.Playing:
-                narratorButtonLabel.text = narratorStopLabel;
+                narratorButtonLabel.text = NarratorStopLabel;
                 break;
 
             default:
-                narratorButtonLabel.text = narratorPlayLabel;
+                narratorButtonLabel.text = NarratorPlayLabel;
                 break;
         }
     }
@@ -502,5 +498,38 @@ public class AE_ProjectDetailUI : MonoBehaviour
         }
 
         return string.Empty;
+    }
+
+    private string GetAgencyDisplayName(GovernmentProjectDto project)
+    {
+        if (project == null)
+            return _currentAgencyName;
+
+        AE_CatalogRepository store = AE_CatalogRepository.Instance;
+        if (store == null || !store.HasData || store.RawData == null || store.RawData.data == null)
+            return _currentAgencyName;
+
+        for (int i = 0; i < store.RawData.data.Count; i++)
+        {
+            GovernmentMinistryDto ministry = store.RawData.data[i];
+            if (ministry == null || ministry.submissions == null)
+                continue;
+
+            for (int j = 0; j < ministry.submissions.Count; j++)
+            {
+                GovernmentAgencyDto agency = ministry.submissions[j];
+                if (agency == null)
+                    continue;
+
+                if (!string.Equals(agency.runtimeId, project.parentAgencyId, System.StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                return UseEnglish
+                    ? FirstNotEmpty(agency.organizationNameEn, agency.organizationName, _currentAgencyName)
+                    : FirstNotEmpty(agency.organizationName, agency.organizationNameEn, _currentAgencyName);
+            }
+        }
+
+        return _currentAgencyName;
     }
 }

@@ -14,11 +14,15 @@ public class PSC_MinistryItemView : MonoBehaviour
     [SerializeField] private Sprite fallbackLogo;
 
     [Header("Display")]
-    [SerializeField] private bool useEnglishText;
     [SerializeField] private bool showOrganizationCount = true;
+    [SerializeField] private string organizationCountFormatTh = "{0} หน่วยบริการ";
+    [SerializeField] private string organizationCountFormatEn = "{0} service units";
+    [SerializeField] private string serviceCountFormatTh = "{0} บริการ";
+    [SerializeField] private string serviceCountFormatEn = "{0} services";
 
     private PSC_ServiceMinistryDto _data;
     private Action<PSC_ServiceMinistryDto> _onClicked;
+    private string _lastLocaleCode = string.Empty;
 
     public PSC_ServiceMinistryDto BoundData => _data;
 
@@ -26,6 +30,20 @@ public class PSC_MinistryItemView : MonoBehaviour
     {
         if (rootButton != null)
             rootButton.onClick.AddListener(HandleClicked);
+    }
+
+    private void OnEnable()
+    {
+        RefreshLocalization();
+    }
+
+    private void Update()
+    {
+        string currentLocaleCode = GetLocaleCode();
+        if (string.Equals(_lastLocaleCode, currentLocaleCode, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        RefreshLocalization();
     }
 
     private void OnDestroy()
@@ -38,22 +56,25 @@ public class PSC_MinistryItemView : MonoBehaviour
     {
         _data = data;
         _onClicked = onClicked;
+        RefreshLocalization();
+        BindLogo(data);
+    }
+
+    public void RefreshLocalization()
+    {
+        _lastLocaleCode = GetLocaleCode();
 
         if (ministryNameText != null)
-            ministryNameText.text = GetDisplayName(data);
+            ministryNameText.text = GetDisplayName(_data);
 
         if (countText != null)
         {
             int count = showOrganizationCount
-                ? (data != null ? data.runtimeOrganizationCount : 0)
-                : (data != null ? data.runtimeServiceCount : 0);
+                ? (_data != null ? _data.runtimeOrganizationCount : 0)
+                : (_data != null ? _data.runtimeServiceCount : 0);
 
-            countText.text = showOrganizationCount
-                ? $"{count} หน่วยบริการ"
-                : $"{count} บริการ";
+            countText.text = GetCountText(count);
         }
-
-        BindLogo(data);
     }
 
     private void BindLogo(PSC_ServiceMinistryDto data)
@@ -80,10 +101,25 @@ public class PSC_MinistryItemView : MonoBehaviour
         if (data == null)
             return string.Empty;
 
-        if (useEnglishText && !string.IsNullOrWhiteSpace(data.ministryEn))
-            return data.ministryEn;
+        return Pick(data.ministry, data.ministryEn, "-");
+    }
 
-        return data.ministry;
+    private string GetCountText(int count)
+    {
+        if (showOrganizationCount)
+        {
+            string format = IsEnglish()
+                ? Clean(organizationCountFormatEn, "{0} service units")
+                : Clean(organizationCountFormatTh, "{0} หน่วยบริการ");
+
+            return string.Format(format, count);
+        }
+
+        string serviceFormat = IsEnglish()
+            ? Clean(serviceCountFormatEn, "{0} services")
+            : Clean(serviceCountFormatTh, "{0} บริการ");
+
+        return string.Format(serviceFormat, count);
     }
 
     private void HandleClicked()
@@ -92,5 +128,39 @@ public class PSC_MinistryItemView : MonoBehaviour
             return;
 
         _onClicked?.Invoke(_data);
+    }
+
+    private static string Pick(string thai, string english, string fallback)
+    {
+        bool useEnglish = IsEnglish();
+
+        string primary = useEnglish ? english : thai;
+        if (!string.IsNullOrWhiteSpace(primary))
+            return primary.Trim();
+
+        string secondary = useEnglish ? thai : english;
+        if (!string.IsNullOrWhiteSpace(secondary))
+            return secondary.Trim();
+
+        return fallback;
+    }
+
+    private static bool IsEnglish()
+    {
+        return GetLocaleCode().StartsWith("en", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetLocaleCode()
+    {
+        string code = LocalizationService.CurrentLocaleCode;
+        return string.IsNullOrWhiteSpace(code) ? "th" : code;
+    }
+
+    private static string Clean(string value, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return fallback;
+
+        return value.Replace("\r", " ").Replace("\n", " ").Trim();
     }
 }

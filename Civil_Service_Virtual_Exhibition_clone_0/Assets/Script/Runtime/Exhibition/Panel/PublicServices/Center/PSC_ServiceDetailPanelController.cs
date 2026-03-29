@@ -22,6 +22,10 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
     [SerializeField] private UniversalImageLoader organizationImageLoader;
     [SerializeField] private Sprite fallbackOrganizationSprite;
 
+    [SerializeField] private TMP_Text panelTitleText;
+    [SerializeField] private string panelTitleTh;
+    [SerializeField] private string panelTitleEn;
+
     [SerializeField] private TMP_Text organizationNameText;
 
     [Header("List")]
@@ -32,7 +36,8 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
     [Header("State")]
     [SerializeField] private GameObject emptyStateRoot;
     [SerializeField] private TMP_Text emptyStateText;
-    [SerializeField] private string emptyMessage = "ไม่พบข้อมูลงานบริการ";
+    [SerializeField] private string emptyMessageTh = "ไม่พบข้อมูลงานบริการ";
+    [SerializeField] private string emptyMessageEn = "No service information found";
 
     [Header("Buttons")]
     [SerializeField] private Button closeButton;
@@ -50,11 +55,32 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
 
     private readonly List<PSC_ServiceDetailItemView> _spawnedItems = new();
     private bool _uiBound;
+    private string _lastLocaleCode = string.Empty;
 
     private void Awake()
     {
         ResolveReferences();
         BindUi();
+    }
+
+    private void OnEnable()
+    {
+        _lastLocaleCode = GetLocaleCode();
+        ApplyStaticLocalization();
+    }
+
+    private void Update()
+    {
+        string localeCode = GetLocaleCode();
+        if (string.Equals(_lastLocaleCode, localeCode, StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _lastLocaleCode = localeCode;
+
+        ApplyStaticLocalization();
+
+        if (IsOpen)
+            RefreshCurrent();
     }
 
     public void Open(PSC_ServiceOrganizationDto organization)
@@ -74,6 +100,7 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
         if (panelRoot != null)
             panelRoot.SetActive(true);
 
+        ApplyStaticLocalization();
         RefreshHeader();
         RefreshList();
         ResetScrollToTop();
@@ -106,12 +133,14 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
     {
         if (SelectedOrganization == null)
         {
-            SetEmptyState(true, emptyMessage);
+            ApplyStaticLocalization();
+            SetEmptyState(true, GetEmptyMessage());
             return;
         }
 
         SelectedMinistry = ResolveParentMinistry(SelectedOrganization);
 
+        ApplyStaticLocalization();
         RefreshHeader();
         RefreshList();
     }
@@ -137,6 +166,12 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
             organizationLogoUrl,
             fallbackOrganizationSprite
         );
+    }
+
+    private void ApplyStaticLocalization()
+    {
+        if (panelTitleText != null)
+            panelTitleText.text = GetPanelTitle();
     }
 
     private void BindHeaderImage(
@@ -166,19 +201,19 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
 
         if (repository == null)
         {
-            SetEmptyState(true, "Repository not found");
+            SetEmptyState(true, IsEnglish() ? "Repository not found" : "ไม่พบ Repository");
             return;
         }
 
         if (contentRoot == null || itemPrefab == null)
         {
-            SetEmptyState(true, emptyMessage);
+            SetEmptyState(true, GetEmptyMessage());
             return;
         }
 
         if (SelectedOrganization == null)
         {
-            SetEmptyState(true, emptyMessage);
+            SetEmptyState(true, GetEmptyMessage());
             return;
         }
 
@@ -186,7 +221,7 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
 
         if (services == null || services.Count == 0)
         {
-            SetEmptyState(true, emptyMessage);
+            SetEmptyState(true, GetEmptyMessage());
             return;
         }
 
@@ -203,7 +238,7 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
             _spawnedItems.Add(view);
         }
 
-        SetEmptyState(_spawnedItems.Count == 0, emptyMessage);
+        SetEmptyState(_spawnedItems.Count == 0, GetEmptyMessage());
     }
 
     private PSC_ServiceMinistryDto ResolveParentMinistry(PSC_ServiceOrganizationDto organization)
@@ -222,10 +257,16 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
         if (organization == null)
             return string.Empty;
 
-        if (!string.IsNullOrWhiteSpace(organization.name))
-            return organization.name;
+        return Pick(organization.name, organization.nameEn, string.Empty);
+    }
 
-        return organization.nameEn;
+    private string GetPanelTitle()
+    {
+        string localizedManualTitle = Pick(panelTitleTh, panelTitleEn, string.Empty);
+        if (!string.IsNullOrWhiteSpace(localizedManualTitle))
+            return localizedManualTitle;
+
+        return GetOrganizationDisplayName(SelectedOrganization);
     }
 
     private void ClearItems()
@@ -241,6 +282,9 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
 
     private void ClearHeader()
     {
+        if (panelTitleText != null)
+            panelTitleText.text = string.Empty;
+
         if (organizationNameText != null)
             organizationNameText.text = string.Empty;
 
@@ -293,5 +337,46 @@ public class PSC_ServiceDetailPanelController : MonoBehaviour
 
         if (backButton != null)
             backButton.onClick.AddListener(Close);
+    }
+
+    private string GetEmptyMessage()
+    {
+        return IsEnglish()
+            ? Clean(emptyMessageEn, "No service information found")
+            : Clean(emptyMessageTh, "ไม่พบข้อมูลงานบริการ");
+    }
+
+    private static string Pick(string thai, string english, string fallback)
+    {
+        bool useEnglish = IsEnglish();
+
+        string primary = useEnglish ? english : thai;
+        if (!string.IsNullOrWhiteSpace(primary))
+            return primary.Trim();
+
+        string secondary = useEnglish ? thai : english;
+        if (!string.IsNullOrWhiteSpace(secondary))
+            return secondary.Trim();
+
+        return fallback;
+    }
+
+    private static bool IsEnglish()
+    {
+        return GetLocaleCode().StartsWith("en", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetLocaleCode()
+    {
+        string code = LocalizationService.CurrentLocaleCode;
+        return string.IsNullOrWhiteSpace(code) ? "th" : code;
+    }
+
+    private static string Clean(string value, string fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return fallback;
+
+        return value.Replace("\r", " ").Replace("\n", " ").Trim();
     }
 }
