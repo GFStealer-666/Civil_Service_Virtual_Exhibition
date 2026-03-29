@@ -2,12 +2,15 @@ using System;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization.Settings;
 
 [Serializable]
 public class HOH_PanelSection
 {
     public HOH_CategoryKind categoryKind;
     public GameObject panelRoot;
+
+    [Header("Content")]
     public Transform contentRoot;
     public HOH_ItemView itemPrefab;
     public HOH_FilterGroup filterGroup;
@@ -42,6 +45,20 @@ public class HOH_PanelController : MonoBehaviour
     public bool IsOpen => panelRoot != null ? panelRoot.activeInHierarchy : gameObject.activeInHierarchy;
 
     private bool _uiBound;
+
+    private bool UseEnglish
+    {
+        get
+        {
+            var locale = LocalizationSettings.SelectedLocale;
+            string code = locale != null ? locale.Identifier.Code : "th";
+            return code.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private string LoadFailedMessage => UseEnglish ? "Failed to load data" : "โหลดข้อมูลไม่สำเร็จ";
+    private string NoDataMessage => UseEnglish ? "No data yet" : "ยังไม่มีข้อมูล";
+    private string NoResultsMessage => UseEnglish ? "No results found" : "ไม่พบข้อมูล";
 
     private void Awake()
     {
@@ -110,7 +127,11 @@ public class HOH_PanelController : MonoBehaviour
             if (section == null || section.panelRoot == null)
                 continue;
 
-            section.panelRoot.SetActive(section.categoryKind == kind);
+            bool isTarget = section.categoryKind == kind;
+            section.panelRoot.SetActive(isTarget);
+
+            if (isTarget && section.searchBar != null)
+                section.searchBar.RefreshLocalization();
         }
     }
 
@@ -125,6 +146,9 @@ public class HOH_PanelController : MonoBehaviour
         HOH_PanelSection section = GetSection(categoryKind);
         if (section == null)
             return;
+
+        if (section.searchBar != null)
+            section.searchBar.RefreshLocalization();
 
         RefreshSection(section);
     }
@@ -146,7 +170,11 @@ public class HOH_PanelController : MonoBehaviour
                 continue;
 
             ClearSectionItems(section);
-            SetEmptyState(section, true, string.IsNullOrWhiteSpace(error) ? "โหลดข้อมูลไม่สำเร็จ" : error);
+            SetEmptyState(
+                section,
+                true,
+                string.IsNullOrWhiteSpace(error) ? LoadFailedMessage : error
+            );
         }
     }
 
@@ -162,14 +190,14 @@ public class HOH_PanelController : MonoBehaviour
 
         if (repository == null || !repository.HasData)
         {
-            SetEmptyState(section, true, "ยังไม่มีข้อมูล");
+            SetEmptyState(section, true, NoDataMessage);
             return;
         }
 
         List<HOH_UnitDto> sourceUnits = repository.GetUnitsByKind(section.categoryKind);
         if (sourceUnits == null || sourceUnits.Count == 0)
         {
-            SetEmptyState(section, true, "ไม่พบข้อมูล");
+            SetEmptyState(section, true, NoResultsMessage);
             return;
         }
 
@@ -195,7 +223,7 @@ public class HOH_PanelController : MonoBehaviour
             visibleCount++;
         }
 
-        SetEmptyState(section, visibleCount == 0, "ไม่พบข้อมูล");
+        SetEmptyState(section, visibleCount == 0, NoResultsMessage);
     }
 
     private bool MatchesFilter(HOH_CategoryKind categoryKind, HOH_UnitDto unit, IReadOnlyCollection<HOH_FilterOption> filters)

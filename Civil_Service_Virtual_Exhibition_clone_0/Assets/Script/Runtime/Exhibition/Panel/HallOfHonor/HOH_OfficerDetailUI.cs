@@ -1,5 +1,7 @@
+using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 
 public class HOH_OfficerDetailUI : MonoBehaviour
@@ -19,7 +21,9 @@ public class HOH_OfficerDetailUI : MonoBehaviour
 
     [Header("Buttons")]
     [SerializeField] private Button moreInfoButton;
+    [SerializeField] private TMP_Text moreInfoButtonLabel;
     [SerializeField] private Button narratorButton;
+    [SerializeField] private TMP_Text narratorButtonLabel;
     [SerializeField] private GameObject narratorButtonRoot;
     [SerializeField] private bool narratorAvailable = true;
 
@@ -37,6 +41,22 @@ public class HOH_OfficerDetailUI : MonoBehaviour
     private HOH_OfficerSelectionPanelController _previousSelection;
 
     public bool HasPerson => _currentPerson != null;
+
+    private bool UseEnglish
+    {
+        get
+        {
+            var locale = LocalizationSettings.SelectedLocale;
+            string code = locale != null ? locale.Identifier.Code : "th";
+            return code.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private string NoDetailText => UseEnglish ? "No detail available" : "ไม่พบข้อมูลรายละเอียด";
+    private string MoreInfoLabel => UseEnglish ? "Additional Details" : "รายละเอียดเพิ่มเติม";
+    private string NarratorIdleLabel => UseEnglish ? "Narrator" : "ผู้บรรยายอวตาร";
+    private string NarratorLoadingLabel => UseEnglish ? "Cancel" : "ยกเลิก";
+    private string NarratorPlayingLabel => UseEnglish ? "Stop" : "หยุด";
 
     private void Awake()
     {
@@ -238,6 +258,9 @@ public class HOH_OfficerDetailUI : MonoBehaviour
         if (moreInfoButton != null)
             moreInfoButton.interactable = _currentPerson != null;
 
+        if (moreInfoButtonLabel != null)
+            moreInfoButtonLabel.text = MoreInfoLabel;
+
         if (narratorButtonRoot != null)
             narratorButtonRoot.SetActive(narratorAvailable);
 
@@ -253,6 +276,35 @@ public class HOH_OfficerDetailUI : MonoBehaviour
                 _currentPerson != null &&
                 !isLoading;
         }
+
+        RefreshNarratorButtonLabel();
+    }
+
+    private void RefreshNarratorButtonLabel()
+    {
+        if (narratorButtonLabel == null)
+            return;
+
+        if (!narratorAvailable || narrationController == null || _currentPerson == null)
+        {
+            narratorButtonLabel.text = NarratorIdleLabel;
+            return;
+        }
+
+        switch (narrationController.State)
+        {
+            case MediaPlaybackState.Loading:
+                narratorButtonLabel.text = NarratorLoadingLabel;
+                break;
+
+            case MediaPlaybackState.Playing:
+                narratorButtonLabel.text = NarratorPlayingLabel;
+                break;
+
+            default:
+                narratorButtonLabel.text = NarratorIdleLabel;
+                break;
+        }
     }
 
     private string BuildFullName(HOH_PersonDto person)
@@ -260,15 +312,31 @@ public class HOH_OfficerDetailUI : MonoBehaviour
         if (person == null)
             return string.Empty;
 
-        string prefix = !string.IsNullOrWhiteSpace(person.prefixOther) ? person.prefixOther : person.prefix;
-        return $"{prefix} {person.firstName} {person.lastName}".Trim();
+        if (UseEnglish)
+        {
+            string prefix = FirstNotEmpty(person.prefixEn, person.prefixOther, person.prefix);
+            string firstName = FirstNotEmpty(person.firstNameEn, person.firstName);
+            string lastName = FirstNotEmpty(person.lastNameEn, person.lastName);
+            return JoinNonEmpty(" ", prefix, firstName, lastName);
+        }
+
+        string thaiPrefix = !string.IsNullOrWhiteSpace(person.prefixOther) ? person.prefixOther : person.prefix;
+        return JoinNonEmpty(" ", thaiPrefix, person.firstName, person.lastName);
     }
 
     private string BuildOrganizationLine(HOH_PersonDto person, HOH_UnitDto unit)
     {
-        string ministry = FirstNotEmpty(person?.ministry, unit?.ministry);
-        string department = FirstNotEmpty(person?.department, unit?.unit);
-        string division = person?.division;
+        string ministry = UseEnglish
+            ? FirstNotEmpty(person?.ministryEn, unit?.ministryEn, person?.ministry, unit?.ministry)
+            : FirstNotEmpty(person?.ministry, unit?.ministry, person?.ministryEn, unit?.ministryEn);
+
+        string department = UseEnglish
+            ? FirstNotEmpty(person?.departmentEn, unit?.unitEn, person?.department, unit?.unit)
+            : FirstNotEmpty(person?.department, unit?.unit, person?.departmentEn, unit?.unitEn);
+
+        string division = UseEnglish
+            ? FirstNotEmpty(person?.divisionEn, person?.division)
+            : FirstNotEmpty(person?.division, person?.divisionEn);
 
         return JoinNonEmpty(
             "\n",
@@ -282,6 +350,9 @@ public class HOH_OfficerDetailUI : MonoBehaviour
         if (person == null)
             return string.Empty;
 
+        if (UseEnglish)
+            return JoinNonEmpty(" ", FirstNotEmpty(person.positionEn, person.position), FirstNotEmpty(person.positionLevelEn, person.positionLevel));
+
         return JoinNonEmpty(" ", person.position, person.positionLevel);
     }
 
@@ -290,10 +361,23 @@ public class HOH_OfficerDetailUI : MonoBehaviour
         if (person == null)
             return string.Empty;
 
+        if (UseEnglish)
+        {
+            return FirstNotEmpty(
+                person.outstandingWorkEn,
+                JoinNonEmpty(" ", person.educationEn, person.institutionEn),
+                person.outstandingWork,
+                JoinNonEmpty(" ", person.education, person.institution),
+                NoDetailText
+            );
+        }
+
         return FirstNotEmpty(
             person.outstandingWork,
             JoinNonEmpty(" ", person.education, person.institution),
-            "ไม่พบข้อมูลรายละเอียด"
+            person.outstandingWorkEn,
+            JoinNonEmpty(" ", person.educationEn, person.institutionEn),
+            NoDetailText
         );
     }
 

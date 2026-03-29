@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization.Settings;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 
@@ -13,6 +14,7 @@ public class HOH_OfficerCardUI : MonoBehaviour
     [SerializeField] private Image photoImage;
     [SerializeField] private TextMeshProUGUI officerNameText;
     [SerializeField] private UniversalImageLoader photoLoader;
+
     [Header("Fallback")]
     [SerializeField] private Sprite fallbackPhoto;
 
@@ -21,6 +23,16 @@ public class HOH_OfficerCardUI : MonoBehaviour
     private Coroutine _loadRoutine;
     private HOH_PersonDto _boundData;
     private string _pendingPhotoUrl;
+
+    private bool UseEnglish
+    {
+        get
+        {
+            var locale = LocalizationSettings.SelectedLocale;
+            string code = locale != null ? locale.Identifier.Code : "th";
+            return code.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+        }
+    }
 
     public void Bind(HOH_PersonDto data, Action<HOH_PersonDto> onClick)
     {
@@ -31,11 +43,14 @@ public class HOH_OfficerCardUI : MonoBehaviour
         BindPhoto(data);
 
         if (photoLoader != null)
-        photoLoader.Load(data != null ? data.photoUrl : string.Empty);
+            photoLoader.Load(data != null ? data.photoUrl : string.Empty);
     }
 
     private void OnEnable()
     {
+        if (_boundData != null)
+            BindTexts(_boundData);
+
         TryStartPendingPhotoLoad();
     }
 
@@ -52,7 +67,6 @@ public class HOH_OfficerCardUI : MonoBehaviour
     {
         if (officerNameText != null)
             officerNameText.text = BuildOfficerName(data);
-
     }
 
     private void BindButton(Action<HOH_PersonDto> onClick)
@@ -107,7 +121,9 @@ public class HOH_OfficerCardUI : MonoBehaviour
 
         if (SpriteCache.TryGetValue(_pendingPhotoUrl, out Sprite cachedSprite) && cachedSprite != null)
         {
-            photoImage.sprite = cachedSprite;
+            if (photoImage != null)
+                photoImage.sprite = cachedSprite;
+
             _pendingPhotoUrl = null;
             return;
         }
@@ -163,7 +179,50 @@ public class HOH_OfficerCardUI : MonoBehaviour
         if (data == null)
             return string.Empty;
 
-        string prefix = !string.IsNullOrWhiteSpace(data.prefixOther) ? data.prefixOther : data.prefix;
-        return $"{prefix} {data.firstName} {data.lastName}".Trim();
+        if (UseEnglish)
+        {
+            string prefix = FirstNotEmpty(data.prefixEn, data.prefixOther, data.prefix);
+            string firstName = FirstNotEmpty(data.firstNameEn, data.firstName);
+            string lastName = FirstNotEmpty(data.lastNameEn, data.lastName);
+            return JoinNonEmpty(" ", prefix, firstName, lastName);
+        }
+
+        string thaiPrefix = !string.IsNullOrWhiteSpace(data.prefixOther) ? data.prefixOther : data.prefix;
+        return JoinNonEmpty(" ", thaiPrefix, data.firstName, data.lastName);
+    }
+
+    private string FirstNotEmpty(params string[] values)
+    {
+        if (values == null)
+            return string.Empty;
+
+        for (int i = 0; i < values.Length; i++)
+        {
+            if (!string.IsNullOrWhiteSpace(values[i]))
+                return values[i];
+        }
+
+        return string.Empty;
+    }
+
+    private string JoinNonEmpty(string separator, params string[] values)
+    {
+        System.Text.StringBuilder builder = new System.Text.StringBuilder();
+
+        if (values == null)
+            return string.Empty;
+
+        for (int i = 0; i < values.Length; i++)
+        {
+            if (string.IsNullOrWhiteSpace(values[i]))
+                continue;
+
+            if (builder.Length > 0)
+                builder.Append(separator);
+
+            builder.Append(values[i].Trim());
+        }
+
+        return builder.ToString();
     }
 }

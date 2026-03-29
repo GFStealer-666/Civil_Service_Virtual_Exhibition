@@ -1,5 +1,7 @@
+using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 
 public class HOH_OfficerAdditionalDetailUI : MonoBehaviour
@@ -13,14 +15,35 @@ public class HOH_OfficerAdditionalDetailUI : MonoBehaviour
     [SerializeField] private TMP_Text roleText;
     [SerializeField] private TMP_Text organizationText;
     [SerializeField] private TMP_Text bodyText;
+
     private HOH_OfficerDetailUI _previousDetail;
     private HOH_PersonDto _currentPerson;
     private HOH_UnitDto _currentUnit;
+
+    private bool UseEnglish
+    {
+        get
+        {
+            var locale = LocalizationSettings.SelectedLocale;
+            string code = locale != null ? locale.Identifier.Code : "th";
+            return code.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private string NoAdditionalInfoText => UseEnglish ? "No additional information available" : "ไม่พบข้อมูลเพิ่มเติม";
+    private string NoOutstandingWorkText => UseEnglish ? "No additional work information available" : "ไม่พบข้อมูลผลงานเพิ่มเติม";
+    private string ServiceDurationLabel => UseEnglish ? "Years of service" : "ระยะเวลารับราชการ";
 
     private void Awake()
     {
         if (closeButton != null)
             closeButton.onClick.AddListener(Hide);
+    }
+
+    private void OnDestroy()
+    {
+        if (closeButton != null)
+            closeButton.onClick.RemoveListener(Hide);
     }
 
     public void Show(HOH_PersonDto person, HOH_UnitDto unit, HOH_OfficerDetailUI previousDetail)
@@ -58,6 +81,28 @@ public class HOH_OfficerAdditionalDetailUI : MonoBehaviour
         if (_previousDetail != null)
             _previousDetail.ReopenFromChild();
     }
+
+    public void HideSilently()
+    {
+        _currentPerson = null;
+        _currentUnit = null;
+
+        if (titleText != null)
+            titleText.text = string.Empty;
+
+        if (roleText != null)
+            roleText.text = string.Empty;
+
+        if (organizationText != null)
+            organizationText.text = string.Empty;
+
+        if (bodyText != null)
+            bodyText.text = string.Empty;
+
+        if (root != null)
+            root.SetActive(false);
+    }
+
     private void BindText()
     {
         if (_currentPerson == null)
@@ -91,7 +136,7 @@ public class HOH_OfficerAdditionalDetailUI : MonoBehaviour
             organizationText.text = string.Empty;
 
         if (bodyText != null)
-            bodyText.text = "ไม่พบข้อมูลเพิ่มเติม";
+            bodyText.text = NoAdditionalInfoText;
     }
 
     private string BuildFullName(HOH_PersonDto person)
@@ -99,66 +144,90 @@ public class HOH_OfficerAdditionalDetailUI : MonoBehaviour
         if (person == null)
             return string.Empty;
 
-        string prefix = !string.IsNullOrWhiteSpace(person.prefixOther) ? person.prefixOther : person.prefix;
-        return $"{prefix} {person.firstName} {person.lastName}".Trim();
+        if (UseEnglish)
+        {
+            string prefix = FirstNotEmpty(person.prefixEn, person.prefixOther, person.prefix);
+            string firstName = FirstNotEmpty(person.firstNameEn, person.firstName);
+            string lastName = FirstNotEmpty(person.lastNameEn, person.lastName);
+            return JoinNonEmpty(" ", prefix, firstName, lastName);
+        }
+
+        string thaiPrefix = !string.IsNullOrWhiteSpace(person.prefixOther) ? person.prefixOther : person.prefix;
+        return JoinNonEmpty(" ", thaiPrefix, person.firstName, person.lastName);
     }
 
     private string BuildOrganizationLine(HOH_PersonDto person, HOH_UnitDto unit)
     {
-        string ministry = FirstNotEmpty(person?.ministry, unit?.ministry);
-        string department = FirstNotEmpty(person?.department, unit?.unit);
-        string division = person?.division;
+        string ministry = UseEnglish
+            ? FirstNotEmpty(person?.ministryEn, unit?.ministryEn, person?.ministry, unit?.ministry)
+            : FirstNotEmpty(person?.ministry, unit?.ministry, person?.ministryEn, unit?.ministryEn);
 
-        return JoinNonEmpty("\n",
+        string department = UseEnglish
+            ? FirstNotEmpty(person?.departmentEn, unit?.unitEn, person?.department, unit?.unit)
+            : FirstNotEmpty(person?.department, unit?.unit, person?.departmentEn, unit?.unitEn);
+
+        string division = UseEnglish
+            ? FirstNotEmpty(person?.divisionEn, person?.division)
+            : FirstNotEmpty(person?.division, person?.divisionEn);
+
+        return JoinNonEmpty(
+            "\n",
             JoinNonEmpty(" , ", ministry, department),
             division
         );
     }
+
     private string BuildRoleText(HOH_PersonDto person)
     {
         if (person == null)
             return string.Empty;
 
+        if (UseEnglish)
+        {
+            return JoinNonEmpty(
+                " ",
+                FirstNotEmpty(person.positionEn, person.position),
+                FirstNotEmpty(person.positionLevelEn, person.positionLevel)
+            );
+        }
+
         return JoinNonEmpty(" ", person.position, person.positionLevel);
     }
+
     private string BuildLongDescription(HOH_PersonDto person, HOH_UnitDto unit)
     {
-        string outstandingWork = FirstNotEmpty(person?.outstandingWork, "ไม่พบข้อมูลผลงานเพิ่มเติม");
-        string education = person?.education;
-        string institution = person?.institution;
-        string serviceDuration = person?.serviceDuration;
+        if (person == null)
+            return NoAdditionalInfoText;
+
+        string outstandingWork = UseEnglish
+            ? FirstNotEmpty(person.outstandingWorkEn, person.outstandingWork, NoOutstandingWorkText)
+            : FirstNotEmpty(person.outstandingWork, person.outstandingWorkEn, NoOutstandingWorkText);
+
+        string education = UseEnglish
+            ? FirstNotEmpty(person.educationEn, person.education)
+            : FirstNotEmpty(person.education, person.educationEn);
+
+        string institution = UseEnglish
+            ? FirstNotEmpty(person.institutionEn, person.institution)
+            : FirstNotEmpty(person.institution, person.institutionEn);
+
+        string serviceDuration = UseEnglish
+            ? FirstNotEmpty(person.serviceDurationEn, person.serviceDuration)
+            : FirstNotEmpty(person.serviceDuration, person.serviceDurationEn);
 
         string educationBlock = JoinNonEmpty(" ", education, institution);
         string serviceBlock = string.IsNullOrWhiteSpace(serviceDuration)
             ? string.Empty
-            : $"ระยะเวลารับราชการ {serviceDuration}";
+            : $"{ServiceDurationLabel} {serviceDuration}";
 
-        return JoinNonEmpty("\n\n",
+        return JoinNonEmpty(
+            "\n\n",
             outstandingWork,
             educationBlock,
             serviceBlock
         );
     }
-    public void HideSilently()
-    {
-        _currentPerson = null;
-        _currentUnit = null;
 
-        if (titleText != null)
-            titleText.text = string.Empty;
-
-        if (roleText != null)
-            roleText.text = string.Empty;
-
-        if (organizationText != null)
-            organizationText.text = string.Empty;
-
-        if (bodyText != null)
-            bodyText.text = string.Empty;
-
-        if (root != null)
-            root.SetActive(false);
-    }
     private string FirstNotEmpty(params string[] values)
     {
         if (values == null)

@@ -1,0 +1,119 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9620f8c34305754d8cc9a7e49e852d9, type: 3}
+  m_Name: UI_HOH_en
+  m_EditorClassIdentifier: 
+  m_LocaleId:
+    m_Code: en
+  m_SharedData: {fileID: 11400000, guid: 4e38784bf8c76a149848dbbda365813a, type: 2}
+  m_Metadata:
+    m_Items: []
+  m_TableData:
+  - m_Id: 452812800
+    m_Localized: Civil Servants by Ministry
+    m_Metadata:
+      m_Items: []
+  - m_Id: 482172928
+    m_Localized: Select a ministry to visit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367232
+    m_Localized: Civil Servants by Province
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367233
+    m_Localized: Select a province to visit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367234
+    m_Localized: Civil Servants by University
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367235
+    m_Localized: Select a university to visit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367236
+    m_Localized: All
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367237
+    m_Localized: Economy
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367238
+    m_Localized: Social
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367239
+    m_Localized: Security
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367240
+    m_Localized: Infrastructure
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367241
+    m_Localized: Service
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367242
+    m_Localized: North
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367243
+    m_Localized: Central
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367244
+    m_Localized: South
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367245
+    m_Localized: East
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367246
+    m_Localized: Northeast
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367247
+    m_Localized: West
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367248
+    m_Localized: Quick Search
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367249
+    m_Localized: Failed to load data
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367250
+    m_Localized: No data yet
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367251
+    m_Localized: No results found
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367252
+    m_Localized: Outstanding officers in this unit
+    m_Metadata:
+      m_Items: []
+  - m_Id: 486367253
+    m_Localized: No officer data found
+    m_Metadata:
+      m_Items: []
+  references:
+    version: 2
+    RefIds: []

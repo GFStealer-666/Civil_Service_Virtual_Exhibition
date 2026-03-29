@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization.Settings;
 using UnityEngine.Networking;
 using UnityEngine.UI;
 
@@ -17,13 +18,22 @@ public class HOH_ItemView : MonoBehaviour
 
     [Header("Fallback")]
     [SerializeField] private Sprite fallbackSprite;
-    [SerializeField] private string personCountFormat = "จำนวน {0} ราย";
 
     private static readonly Dictionary<string, Sprite> SpriteCache = new();
 
     private Coroutine _loadRoutine;
     [SerializeField] private HOH_UnitDto _boundData;
     private string _pendingIconUrl;
+
+    private bool UseEnglish
+    {
+        get
+        {
+            var locale = LocalizationSettings.SelectedLocale;
+            string code = locale != null ? locale.Identifier.Code : "th";
+            return code.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+        }
+    }
 
     public void Bind(HOH_UnitDto data, Action<HOH_UnitDto> onClick = null)
     {
@@ -36,6 +46,9 @@ public class HOH_ItemView : MonoBehaviour
 
     private void OnEnable()
     {
+        if (_boundData != null)
+            BindTexts(_boundData);
+
         TryStartPendingIconLoad();
     }
 
@@ -51,13 +64,46 @@ public class HOH_ItemView : MonoBehaviour
     private void BindTexts(HOH_UnitDto data)
     {
         if (unitNameText != null)
-            unitNameText.text = data != null ? data.unit : string.Empty;
+            unitNameText.text = GetUnitName(data);
 
         if (personCountText != null)
         {
             int count = data?.persons != null ? data.persons.Count : 0;
-            personCountText.text = string.Format(personCountFormat, count);
+            personCountText.text = GetPersonCountText(count);
         }
+    }
+
+    private string GetUnitName(HOH_UnitDto data)
+    {
+        if (data == null)
+            return string.Empty;
+
+        if (UseEnglish)
+            return FirstNotEmpty(data.unitEn, data.unit);
+
+        return FirstNotEmpty(data.unit, data.unitEn);
+    }
+
+    private string GetPersonCountText(int count)
+    {
+        if (UseEnglish)
+            return count == 1 ? "1 officer" : $"{count} officers";
+
+        return $"จำนวน {count} ราย";
+    }
+
+    private string FirstNotEmpty(params string[] values)
+    {
+        if (values == null)
+            return string.Empty;
+
+        for (int i = 0; i < values.Length; i++)
+        {
+            if (!string.IsNullOrWhiteSpace(values[i]))
+                return values[i];
+        }
+
+        return string.Empty;
     }
 
     private void BindButton(Action<HOH_UnitDto> onClick)
@@ -107,7 +153,6 @@ public class HOH_ItemView : MonoBehaviour
 
         SetFallbackSprite();
 
-        // ใช้ UniversalImageLoader เป็นตัวหลักถ้ามี
         if (iconLoader != null)
         {
             iconLoader.Load(url);
@@ -115,7 +160,6 @@ public class HOH_ItemView : MonoBehaviour
             return;
         }
 
-        // ถ้าไม่มี iconLoader ค่อยใช้ internal loader
         TryStartPendingIconLoad();
     }
 

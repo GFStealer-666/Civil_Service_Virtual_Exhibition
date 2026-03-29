@@ -3,14 +3,16 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 
 public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
     [Header("Root")]
     [SerializeField] private GameObject panelRoot;
-    [SerializeField] private Button closeButton;    
+    [SerializeField] private Button closeButton;
     [SerializeField] private HOH_OfficerDetailUI officerDetailUI;
+
     [Header("Header")]
     [SerializeField] private Image unitLogoImage;
     [SerializeField] private TextMeshProUGUI unitNameText;
@@ -31,6 +33,7 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
     [Header("Empty State")]
     [SerializeField] private GameObject emptyStateRoot;
     [SerializeField] private TextMeshProUGUI emptyStateText;
+
     [Header("Loader")]
     [SerializeField] private UniversalImageLoader photoLoader;
 
@@ -42,10 +45,29 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
     private int _currentPageIndex;
     private HOH_UnitDto _currentUnit;
     private HOH_PanelController _owner;
+
     public bool IsOpen => panelRoot != null && panelRoot.activeSelf;
     public HOH_UnitDto CurrentUnit => _currentUnit;
 
     public event Action<HOH_PersonDto> OfficerSelected;
+
+    private bool UseEnglish
+    {
+        get
+        {
+            var locale = LocalizationSettings.SelectedLocale;
+            string code = locale != null ? locale.Identifier.Code : "th";
+            return code.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private string OfficerSubtitleText => UseEnglish
+        ? "Outstanding officers in this unit"
+        : "ข้าราชการดีเด่นของหน่วยงาน";
+
+    private string NoOfficerDataText => UseEnglish
+        ? "No officer data found"
+        : "ไม่พบข้อมูลบุคลากร";
 
     private void Awake()
     {
@@ -54,6 +76,12 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
 
         if (panelRoot != null)
             panelRoot.SetActive(false);
+    }
+
+    private void OnDestroy()
+    {
+        if (closeButton != null)
+            closeButton.onClick.RemoveListener(Close);
     }
 
     public bool Open(HOH_UnitDto unit, HOH_PanelController owner)
@@ -105,11 +133,13 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
 
         Rebuild();
     }
+
     public void ReopenFromChild()
     {
         if (panelRoot != null)
             panelRoot.SetActive(true);
     }
+
     public void SetPage(int pageIndex)
     {
         if (_pages.Count == 0)
@@ -166,23 +196,26 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
 
     private void BindHeader(HOH_UnitDto unit)
     {
-
         if (unitNameText != null)
-            unitNameText.text = unit != null ? unit.unit : string.Empty;
+        {
+            unitNameText.text = UseEnglish
+                ? FirstNotEmpty(unit?.unitEn, unit?.unit)
+                : FirstNotEmpty(unit?.unit, unit?.unitEn);
+        }
 
         if (subtitleText != null)
         {
             int count = unit?.persons != null ? unit.persons.Count : 0;
             subtitleText.text = count > 0
-                ? "ข้าราชการดีเด่นของหน่วยงาน"
-                : "ไม่พบข้อมูลบุคลากร";
+                ? OfficerSubtitleText
+                : NoOfficerDataText;
         }
 
         if (unitLogoImage != null)
             unitLogoImage.gameObject.SetActive(true);
 
         if (photoLoader != null)
-        photoLoader.Load(unit != null ? unit.logoUrl : string.Empty);
+            photoLoader.Load(unit != null ? unit.logoUrl : string.Empty);
     }
 
     private void Rebuild()
@@ -201,7 +234,7 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
             emptyStateRoot.SetActive(!hasItems);
 
         if (emptyStateText != null && !hasItems)
-            emptyStateText.text = "ไม่พบข้อมูลบุคลากร";
+            emptyStateText.text = NoOfficerDataText;
 
         if (!hasItems)
         {
@@ -213,8 +246,8 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
         int pageCount = Mathf.CeilToInt(_items.Count / (float)safeItemsPerPage);
 
         if (dotRoot != null)
-        dotRoot.gameObject.SetActive(pageCount > 1);
-        
+            dotRoot.gameObject.SetActive(pageCount > 1);
+
         for (int pageIndex = 0; pageIndex < pageCount; pageIndex++)
         {
             RectTransform page = Instantiate(pagePrefab, pageRoot);
@@ -282,5 +315,19 @@ public class HOH_OfficerSelectionPanelController : MonoBehaviour, IPointerDownHa
 
         _pages.Clear();
         _dots.Clear();
+    }
+
+    private string FirstNotEmpty(params string[] values)
+    {
+        if (values == null)
+            return string.Empty;
+
+        for (int i = 0; i < values.Length; i++)
+        {
+            if (!string.IsNullOrWhiteSpace(values[i]))
+                return values[i];
+        }
+
+        return string.Empty;
     }
 }
