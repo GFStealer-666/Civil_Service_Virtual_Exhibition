@@ -56,6 +56,7 @@ public class LocalPlayerData : MonoBehaviour
             _colors[i] = Color.clear;
 
         RandomizeAppearance();
+        PlayerToken = "2316d8bc1cd981320552a5c96e4ea256917cd31dd5a59b1e35a70ae0bfd6f65e"; // Temporary token for testing
     }
 
     public void RandomizeAppearance()

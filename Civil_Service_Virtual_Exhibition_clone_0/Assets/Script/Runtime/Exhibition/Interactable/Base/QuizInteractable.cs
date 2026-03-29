@@ -15,7 +15,7 @@ public class QuizInteractable : WorldInteractable
     [SerializeField] private float floatSpeed = 1.2f;
 
     private Vector3 _canvasStartLocalPos;
-    private bool _isQuizActive = false;
+    // private bool _isQuizActive = false;
 
     void Start()
     {
@@ -28,7 +28,7 @@ public class QuizInteractable : WorldInteractable
 
     public override bool CanInteract(GameObject interactor)
     {
-        return objectToShow != null && !objectToShow.activeSelf && !_isQuizActive;
+        return objectToShow != null && !objectToShow.activeSelf;
     }
 
     public override Task InteractAsync(GameObject interactor)
@@ -36,14 +36,14 @@ public class QuizInteractable : WorldInteractable
         if (!CanInteract(interactor))
             return Task.CompletedTask;
             
-        _isQuizActive = true;
+        
         objectToShow.SetActive(true);
         return Task.CompletedTask;
     }
 
     public void OnQuizFinished()
     {
-        _isQuizActive = false;
+        
     }
 
     void Update()

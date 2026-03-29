@@ -11,8 +11,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
     [Header("Config")]
     [SerializeField] private ApiConfig apiConfig;
-    [SerializeField] private bool useEnglishContent;
-    [SerializeField] private bool useEnglishNarrator;
+
     [SerializeField] private int shortDescriptionCharacterLimit = 220;
 
     [Header("Linked Panels")]
@@ -40,12 +39,15 @@ public class AE_ProjectDetailUI : MonoBehaviour
     [SerializeField] private Button narratorButton;
     [SerializeField] private TMP_Text narratorButtonLabel;
     [SerializeField] private Button videoButton;
-
+    [SerializeField] private TMP_Text videoButtonLabel;
+    [SerializeField] private TMP_Text moreInfoButtonLabel;
     [Header("Narrator Button Labels")]
-    [SerializeField] private string narratorPlayLabel = "Play";
+    [SerializeField] private string narratorPlayLabel = "Narrator";
     [SerializeField] private string narratorCancelLabel = "Cancel";
     [SerializeField] private string narratorStopLabel = "Stop";
-
+    private string NarratorPlayLabel => UseEnglish ? "Narrator" : "ผู้บรรยาย";
+    private string NarratorCancelLabel => UseEnglish ? "Cancel" : "ยกเลิก";
+    private string NarratorStopLabel => UseEnglish ? "Stop" : "หยุด";
     private GovernmentProjectDto _currentProject;
     private string _currentAgencyName;
 
@@ -100,6 +102,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
             root.SetActive(true);
 
         BindText();
+        RefreshStaticButtonLabels();
         BindImageSlots();
         RefreshButtons();
     }
@@ -141,19 +144,9 @@ public class AE_ProjectDetailUI : MonoBehaviour
             return;
         }
 
-        if (titleText != null)
-            titleText.text = GetProjectTitle(_currentProject);
-
-        if (agencyText != null)
-            agencyText.text = _currentAgencyName ?? string.Empty;
-
-        if (descriptionText != null)
-        {
-            descriptionText.text = TruncateWithEllipsis(
-                GetProjectDescription(_currentProject),
-                shortDescriptionCharacterLimit
-            );
-        }
+        titleText.text = GetProjectTitle(_currentProject);
+        agencyText.text = _currentAgencyName;
+        descriptionText.text = TruncateWithEllipsis(GetProjectDescription(_currentProject), shortDescriptionCharacterLimit);
     }
 
     private void ApplyEmptyState()
@@ -428,7 +421,15 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (!string.IsNullOrWhiteSpace(accessToken))
             request.SetRequestHeader("Authorization", $"Bearer {accessToken}");
     }
-
+    private bool UseEnglish
+    {
+        get
+        {
+            string code = LocalizationService.CurrentLocaleCode;
+            return !string.IsNullOrWhiteSpace(code) &&
+                code.StartsWith("en", System.StringComparison.OrdinalIgnoreCase);
+        }
+    }
     private string BuildProjectTtsUrl(GovernmentProjectDto project)
     {
         if (project == null)
@@ -438,19 +439,15 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (string.IsNullOrWhiteSpace(projectId))
             return string.Empty;
 
+        SystemLanguage language = UseEnglish
+            ? SystemLanguage.English
+            : SystemLanguage.Thai;
+
         if (ApiService.Instance != null)
-        {
-            return useEnglishNarrator
-                ? ApiService.Instance.GetAgencyExhibitionTtsEngUrl(projectId)
-                : ApiService.Instance.GetAgencyExhibitionTtsThUrl(projectId);
-        }
+            return ApiService.Instance.GetAgencyExhibitionTtsUrl(projectId, language);
 
         if (apiConfig != null)
-        {
-            return useEnglishNarrator
-                ? apiConfig.GetAgencyExhibitionTtsEngUrl(projectId)
-                : apiConfig.GetAgencyExhibitionTtsThUrl(projectId);
-        }
+            return apiConfig.GetAgencyExhibitionTtsUrl(projectId, language);
 
         return string.Empty;
     }
@@ -460,7 +457,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (project == null)
             return string.Empty;
 
-        return useEnglishContent
+        return UseEnglish
             ? FirstNotEmpty(project.nameEn, project.name)
             : FirstNotEmpty(project.name, project.nameEn);
     }
@@ -470,7 +467,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (project == null)
             return string.Empty;
 
-        return useEnglishContent
+        return UseEnglish
             ? FirstNotEmpty(project.descriptionEn, project.description)
             : FirstNotEmpty(project.description, project.descriptionEn);
     }
@@ -485,7 +482,14 @@ public class AE_ProjectDetailUI : MonoBehaviour
 
         return value.Substring(0, maxCharacters).TrimEnd() + "...";
     }
+    private void RefreshStaticButtonLabels()
+    {
+        if (videoButtonLabel != null)
+            videoButtonLabel.text = UseEnglish ? "Project Video" : "วิดีโอโครงการ";
 
+        if (moreInfoButtonLabel != null)
+            moreInfoButtonLabel.text = UseEnglish ? "Additional Details" : "รายละเอียดเพิ่มเติม";
+    }
     private string FirstNotEmpty(params string[] values)
     {
         if (values == null)

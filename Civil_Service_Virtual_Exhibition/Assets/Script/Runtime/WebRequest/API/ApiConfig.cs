@@ -15,6 +15,7 @@ public class ApiConfig : ScriptableObject
 
     [Header("Quiz")]
     [SerializeField] private string getQuizEndpoint = "/api/quiz/weekly";
+    [SerializeField] private string checkQuizStatusEndpoint = "/api/game/quiz/check";
     [SerializeField] private string submitQuizEndpoint = "/api/game/quiz/submit";
     [SerializeField] private string getQuizLeaderboardEndpoint = "/api/game/quiz/leaderboard";
     [SerializeField] private string getQuizLeaderboardMe = "/api/game/quiz/me";
@@ -40,6 +41,7 @@ public class ApiConfig : ScriptableObject
     public string ResetPasswordUrl => Build(resetPasswordEndpoint);
 
     public string GetQuizUrl => Build(getQuizEndpoint);
+    public string CheckQuizStatusUrl => Build(checkQuizStatusEndpoint);
     public string QuizSubmitUrl => Build(submitQuizEndpoint);
     public string GetQuizLeaderboardUrl => Build(getQuizLeaderboardEndpoint);
     public string GetQuizMe => Build(getQuizLeaderboardMe);
@@ -127,6 +129,7 @@ public class ApiConfig : ScriptableObject
         resetPasswordEndpoint = NormalizeEndpoint(resetPasswordEndpoint);
 
         getQuizEndpoint = NormalizeEndpoint(getQuizEndpoint);
+        checkQuizStatusEndpoint = NormalizeEndpoint(checkQuizStatusEndpoint);
         submitQuizEndpoint = NormalizeEndpoint(submitQuizEndpoint);
         getQuizLeaderboardEndpoint = NormalizeEndpoint(getQuizLeaderboardEndpoint);
         getQuizLeaderboardMe = NormalizeEndpoint(getQuizLeaderboardMe);

@@ -6,7 +6,7 @@ using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
 using UnityEngine.UI;
 
-public class QuizUIOverlay : MonoBehaviour
+public class QuizUIController : MonoBehaviour
 {
     [Header("Panels")]
     [SerializeField] private GameObject startPanel;
@@ -15,6 +15,12 @@ public class QuizUIOverlay : MonoBehaviour
 
     [Header("Start")]
     [SerializeField] private Button startButton;
+
+    [Header("Main Page Optional")]
+    [SerializeField] private TMP_Text phase1ScoreText;
+    [SerializeField] private TMP_Text phase2ScoreText;
+    [SerializeField] private TMP_Text phase3ScoreText;
+    [SerializeField] private TMP_Text phase4ScoreText;
 
     [Header("Question")]
     [SerializeField] private TMP_Text timerText;
@@ -27,6 +33,7 @@ public class QuizUIOverlay : MonoBehaviour
 
     [Header("Result")]
     [SerializeField] private TMP_Text finalScoreText;
+    [SerializeField] private Button resultBackButton;
 
     [Header("Quit Confirm")]
     [SerializeField] private GameObject quitConfirmPanel;
@@ -47,11 +54,14 @@ public class QuizUIOverlay : MonoBehaviour
     private string _lastQuitMessageFallback;
     private bool _isShowingQuitPopup;
 
+    private QuizSessionQuestion _currentQuestion;
+
     public event Action StartClicked;
     public event Action<int> ConfirmClicked;
     public event Action CloseClicked;
     public event Action QuitConfirmed;
     public event Action QuitCanceled;
+    public event Action ResultBackClicked;
 
     private void Awake()
     {
@@ -65,9 +75,7 @@ public class QuizUIOverlay : MonoBehaviour
         }
 
         if (confirmButton != null)
-        {
             confirmButton.onClick.AddListener(HandleConfirmClicked);
-        }
 
         if (closeButton != null)
         {
@@ -75,6 +83,15 @@ public class QuizUIOverlay : MonoBehaviour
             {
                 Debug.Log("[QuizUIOverlay] Close clicked");
                 CloseClicked?.Invoke();
+            });
+        }
+
+        if (resultBackButton != null)
+        {
+            resultBackButton.onClick.AddListener(() =>
+            {
+                Debug.Log("[QuizUIOverlay] Result back clicked");
+                ResultBackClicked?.Invoke();
             });
         }
 
@@ -101,12 +118,21 @@ public class QuizUIOverlay : MonoBehaviour
         SetConfirmInteractable(false);
         HideQuitConfirmation();
         RefreshLocalizedStaticTexts();
+        SetPhaseScores(null, null, null, null);
     }
 
     private void OnEnable()
     {
         LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
         RefreshLocalizedStaticTexts();
+
+        if (_hasQuestionCounter)
+            RefreshQuestionCounter();
+
+        if (_isShowingQuitPopup)
+            RefreshQuitPopupTexts();
+
+        RefreshCurrentQuestionTexts();
     }
 
     private void OnDisable()
@@ -123,6 +149,8 @@ public class QuizUIOverlay : MonoBehaviour
 
         if (_isShowingQuitPopup)
             RefreshQuitPopupTexts();
+
+        RefreshCurrentQuestionTexts();
     }
 
     public void ShowStart()
@@ -197,34 +225,13 @@ public class QuizUIOverlay : MonoBehaviour
         _selectedChoiceIndex = -1;
         SetConfirmInteractable(false);
 
+        _currentQuestion = question;
         _currentQuestionIndex = currentIndex;
         _totalQuestionCount = totalCount;
         _hasQuestionCounter = true;
 
         RefreshQuestionCounter();
-
-        if (questionText != null)
-        {
-            questionText.text = question.questionText;
-        }
-
-        for (int i = 0; i < choiceViews.Count; i++)
-        {
-            if (i < question.choices.Count)
-            {
-                choiceViews[i].gameObject.SetActive(true);
-                choiceViews[i].Bind(
-                    i,
-                    question.choices[i].text,
-                    toggleGroup,
-                    HandleChoiceToggleChanged
-                );
-            }
-            else
-            {
-                choiceViews[i].gameObject.SetActive(false);
-            }
-        }
+        RefreshCurrentQuestionTexts();
     }
 
     public void UpdateTimer(float remainingSeconds)
@@ -241,33 +248,33 @@ public class QuizUIOverlay : MonoBehaviour
         foreach (QuizChoiceToggleView choiceView in choiceViews)
         {
             if (choiceView != null && choiceView.gameObject.activeSelf)
-            {
                 choiceView.SetInteractable(value);
-            }
         }
 
         SetConfirmInteractable(value && _selectedChoiceIndex >= 0);
 
         if (closeButton != null)
-        {
             closeButton.interactable = true;
-        }
     }
 
     public void SetResult(int totalScore, int maxScore)
     {
         if (finalScoreText != null)
-        {
             finalScoreText.text = $"{totalScore}/{maxScore}";
-        }
     }
 
     public void SetResult(int totalScore, int correctCount, int totalQuestions)
     {
         if (finalScoreText != null)
-        {
             finalScoreText.text = $"{totalScore}";
-        }
+    }
+
+    public void SetPhaseScores(int? set1, int? set2, int? set3, int? set4)
+    {
+        SetSinglePhaseScore(phase1ScoreText, set1);
+        SetSinglePhaseScore(phase2ScoreText, set2);
+        SetSinglePhaseScore(phase3ScoreText, set3);
+        SetSinglePhaseScore(phase4ScoreText, set4);
     }
 
     public void ResetToggle()
@@ -282,24 +289,26 @@ public class QuizUIOverlay : MonoBehaviour
     public void SetTimerVisible(bool visible)
     {
         if (timerText != null)
-        {
             timerText.gameObject.SetActive(visible);
-        }
     }
 
     public void SetStartInteractable(bool visible)
     {
         if (startButton != null)
-        {
             startButton.interactable = visible;
-        }
     }
 
     public void ShowQuitConfirmation(string title, string message)
     {
-        _lastQuitTitleFallback = string.IsNullOrWhiteSpace(title) ? "ออกจากควิซ?" : title;
+        _lastQuitTitleFallback = string.IsNullOrWhiteSpace(title)
+            ? L("ออกจากควิซ?", "Exit quiz?")
+            : title;
+
         _lastQuitMessageFallback = string.IsNullOrWhiteSpace(message)
-            ? "หากออกจากควิซตอนนี้ คุณจะไม่สามารถเล่นได้อีกเป็นเวลา 24 ชั่วโมง"
+            ? L(
+                "หากออกจากควิซตอนนี้ ความคืบหน้าจะหายไป",
+                "If you leave the quiz now, your progress will be lost."
+            )
             : message;
 
         _isShowingQuitPopup = true;
@@ -318,9 +327,7 @@ public class QuizUIOverlay : MonoBehaviour
         _isShowingQuitPopup = false;
 
         if (quitConfirmPanel != null)
-        {
             quitConfirmPanel.SetActive(false);
-        }
     }
 
     private void HandleChoiceToggleChanged(int choiceIndex, bool isOn)
@@ -340,12 +347,47 @@ public class QuizUIOverlay : MonoBehaviour
         ConfirmClicked?.Invoke(_selectedChoiceIndex);
     }
 
+    private void RefreshCurrentQuestionTexts()
+    {
+        if (_currentQuestion == null)
+            return;
+
+        bool useEnglish = IsEnglishLocale();
+
+        if (questionText != null)
+            questionText.text = _currentQuestion.GetQuestionText(useEnglish);
+
+        for (int i = 0; i < choiceViews.Count; i++)
+        {
+            if (i < _currentQuestion.choices.Count)
+            {
+                choiceViews[i].gameObject.SetActive(true);
+                choiceViews[i].Bind(
+                    i,
+                    _currentQuestion.choices[i].GetText(useEnglish),
+                    toggleGroup,
+                    HandleChoiceToggleChanged
+                );
+            }
+            else
+            {
+                choiceViews[i].gameObject.SetActive(false);
+            }
+        }
+    }
+
     private void SetConfirmInteractable(bool value)
     {
         if (confirmButton != null)
-        {
             confirmButton.interactable = value;
-        }
+    }
+
+    private void SetSinglePhaseScore(TMP_Text target, int? value)
+    {
+        if (target == null)
+            return;
+
+        target.text = value.HasValue ? value.Value.ToString() : "0";
     }
 
     private void RefreshLocalizedStaticTexts()
@@ -354,7 +396,7 @@ public class QuizUIOverlay : MonoBehaviour
         {
             quitConfirmLeaveButtonText.text = T(
                 LocalizationKeys.Quiz.QuitConfirmConfirmButton,
-                "ตกลง"
+                L("ตกลง", "Confirm")
             );
         }
 
@@ -362,7 +404,7 @@ public class QuizUIOverlay : MonoBehaviour
         {
             quitConfirmStayButtonText.text = T(
                 LocalizationKeys.Quiz.QuitConfirmCancelButton,
-                "ยกเลิก"
+                L("ยกเลิก", "Cancel")
             );
         }
     }
@@ -374,7 +416,7 @@ public class QuizUIOverlay : MonoBehaviour
 
         string format = T(
             LocalizationKeys.Quiz.PlayTotalQuestionsFormat,
-            "จำนวนข้อทั้งหมด {0}/{1} ข้อ"
+            L("จำนวนข้อทั้งหมด {0}/{1} ข้อ", "Questions {0}/{1}")
         );
 
         try
@@ -387,7 +429,11 @@ public class QuizUIOverlay : MonoBehaviour
         }
         catch (FormatException)
         {
-            questionCounterText.text = $"จำนวนข้อทั้งหมด {_currentQuestionIndex}/{_totalQuestionCount} ข้อ";
+            questionCounterText.text = string.Format(
+                L("จำนวนข้อทั้งหมด {0}/{1} ข้อ", "Questions {0}/{1}"),
+                _currentQuestionIndex,
+                _totalQuestionCount
+            );
         }
     }
 
@@ -408,6 +454,21 @@ public class QuizUIOverlay : MonoBehaviour
                 _lastQuitMessageFallback
             );
         }
+    }
+
+    private bool IsEnglishLocale()
+    {
+        string code = LocalizationSettings.SelectedLocale != null
+            ? LocalizationSettings.SelectedLocale.Identifier.Code
+            : string.Empty;
+
+        return !string.IsNullOrWhiteSpace(code) &&
+               code.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string L(string th, string en)
+    {
+        return IsEnglishLocale() ? en : th;
     }
 
     private string T(string key, string fallback)

@@ -5,58 +5,60 @@ public static class QuizSessionBuilder
 {
     public static List<QuizSessionQuestion> BuildFromFallback(QuizGameConfigSO config)
     {
-        List<QuizQuestionSO> source = new List<QuizQuestionSO>(config.fallbackQuestions);
+        // List<QuizQuestionSO> source = new List<QuizQuestionSO>(config.fallbackQuestions);
 
-        if (config.shuffleQuestionOrder)
-        {
-            Shuffle(source);
-        }
+        // if (config.shuffleQuestionOrder)
+        // {
+        //     Shuffle(source);
+        // }
 
-        int count = Mathf.Min(config.questionsPerSession, source.Count);
+        // int count = Mathf.Min(config.questionsPerSession, source.Count);
 
-        List<QuizSessionQuestion> result = new List<QuizSessionQuestion>(count);
+        // List<QuizSessionQuestion> result = new List<QuizSessionQuestion>(count);
 
-        for (int i = 0; i < count; i++)
-        {
-            QuizQuestionSO so = source[i];
+        // for (int i = 0; i < count; i++)
+        // {
+        //     QuizQuestionSO so = source[i];
 
-            List<QuizSessionChoice> runtimeChoices = new List<QuizSessionChoice>(4);
-            for (int c = 0; c < so.choices.Length; c++)
-            {
-                runtimeChoices.Add(new QuizSessionChoice
-                {
-                    text = so.choices[c].text,
-                    isCorrect = c == so.correctChoiceIndex
-                });
-            }
+        //     List<QuizSessionChoice> runtimeChoices = new List<QuizSessionChoice>(4);
+        //     for (int c = 0; c < so.choices.Length; c++)
+        //     {
+        //         runtimeChoices.Add(new QuizSessionChoice
+        //         {
+        //             text = so.choices[c].text,
+        //             isCorrect = c == so.correctChoiceIndex
+        //         });
+        //     }
 
-            if (config.shuffleChoiceOrder)
-            {
-                Shuffle(runtimeChoices);
-            }
+        //     if (config.shuffleChoiceOrder)
+        //     {
+        //         Shuffle(runtimeChoices);
+        //     }
 
-            int correctIndex = 0;
-            for (int c = 0; c < runtimeChoices.Count; c++)
-            {
-                if (runtimeChoices[c].isCorrect)
-                {
-                    correctIndex = c;
-                    break;
-                }
-            }
+        //     int correctIndex = 0;
+        //     for (int c = 0; c < runtimeChoices.Count; c++)
+        //     {
+        //         if (runtimeChoices[c].isCorrect)
+        //         {
+        //             correctIndex = c;
+        //             break;
+        //         }
+        //     }
 
-            QuizSessionQuestion question = new QuizSessionQuestion
-            {
-                questionText = so.questionText,
-                choices = runtimeChoices,
-                correctChoiceIndex = correctIndex,
-                explanation = so.explanation
-            };
+        //     QuizSessionQuestion question = new QuizSessionQuestion
+        //     {
+        //         questionText = so.questionText,
+        //         choices = runtimeChoices,
+        //         correctChoiceIndex = correctIndex,
+        //         explanation = so.explanation
+        //     };
 
-            result.Add(question);
-        }
+        //     result.Add(question);
+        // }
 
-        return result;
+        // return result;
+
+        return null;
     }
 
     public static void Shuffle<T>(IList<T> list)

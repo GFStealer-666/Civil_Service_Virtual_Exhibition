@@ -1,7 +1,7 @@
 using System;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
+using System.Collections;
 
 public enum QuizRequestErrorType
 {
@@ -14,6 +14,24 @@ public enum QuizRequestErrorType
     ParseError,
     BackendRejected,
     EmptyResponse
+}
+
+[Serializable]
+public class QuizBasicMessageResponseDto
+{
+    public bool success;
+    public string message;
+}
+
+[Serializable]
+public class QuizCheckOperationResult
+{
+    public bool success;
+    public QuizRequestErrorType errorType;
+    public long statusCode;
+    public string message;
+    public string rawBody;
+    public QuizCheckResponseDto response;
 }
 
 [Serializable]
@@ -48,6 +66,7 @@ public class QuizLeaderboardOperationResult
     public string rawBody;
     public QuizLeaderboardResponseDto response;
 }
+
 [Serializable]
 public class QuizMeOperationResult
 {
@@ -58,6 +77,7 @@ public class QuizMeOperationResult
     public string rawBody;
     public QuizMeResponseDto response;
 }
+
 public class QuizRepository : MonoBehaviour
 {
     private ApiService Api => ApiService.Instance;
@@ -102,18 +122,14 @@ public class QuizRepository : MonoBehaviour
         long statusCode = request.responseCode;
         string rawBody = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
 
-        bool hasNetworkFailure =
-            request.result == UnityWebRequest.Result.ConnectionError ||
-            request.result == UnityWebRequest.Result.DataProcessingError;
-
-        if (hasNetworkFailure)
+        if (HasNetworkFailure(request))
         {
             CompleteQuizLoad(
                 result,
                 false,
                 QuizRequestErrorType.NetworkError,
                 statusCode,
-                request.error,
+                ResolveTransportMessage(request.error, rawBody, "Failed to load quiz."),
                 rawBody,
                 null,
                 onCompleted
@@ -121,14 +137,14 @@ public class QuizRepository : MonoBehaviour
             yield break;
         }
 
-        if (statusCode < 200 || statusCode >= 300)
+        if (!IsSuccessStatusCode(statusCode))
         {
             CompleteQuizLoad(
                 result,
                 false,
                 QuizRequestErrorType.HttpError,
                 statusCode,
-                string.IsNullOrWhiteSpace(rawBody) ? request.error : rawBody,
+                ResolveTransportMessage(request.error, rawBody, "Failed to load quiz."),
                 rawBody,
                 null,
                 onCompleted
@@ -194,7 +210,7 @@ public class QuizRepository : MonoBehaviour
                 false,
                 QuizRequestErrorType.BackendRejected,
                 statusCode,
-                "Quiz response is invalid.",
+                ResolveBackendMessage(dto.message, rawBody, "Quiz response is invalid."),
                 rawBody,
                 dto,
                 onCompleted
@@ -208,6 +224,174 @@ public class QuizRepository : MonoBehaviour
             QuizRequestErrorType.None,
             statusCode,
             "Quiz loaded successfully.",
+            rawBody,
+            dto,
+            onCompleted
+        );
+    }
+
+    public IEnumerator CheckStatus(
+        Action<QuizCheckOperationResult> onCompleted,
+        string accessTokenOverride = null,
+        bool requireToken = true)
+    {
+        QuizCheckOperationResult result = new QuizCheckOperationResult();
+
+        if (Api == null)
+        {
+            CompleteCheck(
+                result,
+                false,
+                QuizRequestErrorType.MissingApiService,
+                0,
+                "ApiService.Instance is null.",
+                null,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(Api.CheckQuizStatusUrl))
+        {
+            CompleteCheck(
+                result,
+                false,
+                QuizRequestErrorType.MissingUrl,
+                0,
+                "CheckQuizStatusUrl is missing.",
+                null,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        string token = ResolveToken(accessTokenOverride);
+
+        if (requireToken && string.IsNullOrWhiteSpace(token))
+        {
+            CompleteCheck(
+                result,
+                false,
+                QuizRequestErrorType.MissingToken,
+                0,
+                "Quiz check requires token, but no token was found.",
+                null,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        using UnityWebRequest request = Api.Get(Api.CheckQuizStatusUrl, token);
+        yield return request.SendWebRequest();
+
+        long statusCode = request.responseCode;
+        string rawBody = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
+
+        if (HasNetworkFailure(request))
+        {
+            CompleteCheck(
+                result,
+                false,
+                QuizRequestErrorType.NetworkError,
+                statusCode,
+                ResolveTransportMessage(request.error, rawBody, "Failed to check quiz status."),
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (!IsSuccessStatusCode(statusCode))
+        {
+            CompleteCheck(
+                result,
+                false,
+                QuizRequestErrorType.HttpError,
+                statusCode,
+                ResolveTransportMessage(request.error, rawBody, "Failed to check quiz status."),
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(rawBody))
+        {
+            CompleteCheck(
+                result,
+                false,
+                QuizRequestErrorType.EmptyResponse,
+                statusCode,
+                "Quiz check API returned empty response.",
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        QuizCheckResponseDto dto = null;
+
+        try
+        {
+            dto = JsonUtility.FromJson<QuizCheckResponseDto>(rawBody);
+        }
+        catch (Exception ex)
+        {
+            CompleteCheck(
+                result,
+                false,
+                QuizRequestErrorType.ParseError,
+                statusCode,
+                $"Quiz check parse error: {ex.Message}",
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (dto == null)
+        {
+            CompleteCheck(
+                result,
+                false,
+                QuizRequestErrorType.ParseError,
+                statusCode,
+                "Quiz check response parsed to null.",
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (!dto.success || dto.data == null)
+        {
+            CompleteCheck(
+                result,
+                false,
+                QuizRequestErrorType.BackendRejected,
+                statusCode,
+                ResolveBackendMessage(dto.message, rawBody, "Quiz check response is invalid."),
+                rawBody,
+                dto,
+                onCompleted
+            );
+            yield break;
+        }
+
+        CompleteCheck(
+            result,
+            true,
+            QuizRequestErrorType.None,
+            statusCode,
+            "Quiz check loaded successfully.",
             rawBody,
             dto,
             onCompleted
@@ -268,38 +452,28 @@ public class QuizRepository : MonoBehaviour
             );
             yield break;
         }
-        
+
         QuizSubmitRequestDto bodyDto = new QuizSubmitRequestDto
         {
             score = score
         };
 
         string json = JsonUtility.ToJson(bodyDto);
-        Debug.Log(
-            $"[QuizRepository] SubmitResult | url={Api.QuizSubmitUrl} | " +
-            $"requireToken={requireToken} | hasToken={!string.IsNullOrWhiteSpace(token)} | " +
-            $"tokenPreview={(string.IsNullOrWhiteSpace(token) ? "<empty>" : token.Substring(0, Mathf.Min(12, token.Length)) + "...")}"
-        );
+
         using UnityWebRequest request = Api.PostJson(Api.QuizSubmitUrl, json, token);
         yield return request.SendWebRequest();
-        Debug.Log(
-            $"[QuizRepository] Authorization header = {request.GetRequestHeader("Authorization")}"
-        );
+
         long statusCode = request.responseCode;
         string rawBody = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
 
-        bool hasNetworkFailure =
-            request.result == UnityWebRequest.Result.ConnectionError ||
-            request.result == UnityWebRequest.Result.DataProcessingError;
-
-        if (hasNetworkFailure)
+        if (HasNetworkFailure(request))
         {
             CompleteSubmit(
                 result,
                 false,
                 QuizRequestErrorType.NetworkError,
                 statusCode,
-                request.error,
+                ResolveTransportMessage(request.error, rawBody, "Failed to submit quiz score."),
                 rawBody,
                 null,
                 onCompleted
@@ -307,14 +481,14 @@ public class QuizRepository : MonoBehaviour
             yield break;
         }
 
-        if (statusCode < 200 || statusCode >= 300)
+        if (!IsSuccessStatusCode(statusCode))
         {
             CompleteSubmit(
                 result,
                 false,
                 QuizRequestErrorType.HttpError,
                 statusCode,
-                string.IsNullOrWhiteSpace(rawBody) ? request.error : rawBody,
+                ResolveTransportMessage(request.error, rawBody, "Failed to submit quiz score."),
                 rawBody,
                 null,
                 onCompleted
@@ -373,14 +547,14 @@ public class QuizRepository : MonoBehaviour
             yield break;
         }
 
-       if (!dto.success)
+        if (!dto.success || dto.data == null)
         {
             CompleteSubmit(
                 result,
                 false,
                 QuizRequestErrorType.BackendRejected,
                 statusCode,
-                "Submit response is invalid.",
+                ResolveBackendMessage(dto.message, rawBody, "Submit response is invalid."),
                 rawBody,
                 dto,
                 onCompleted
@@ -400,7 +574,10 @@ public class QuizRepository : MonoBehaviour
         );
     }
 
-    public IEnumerator LoadLeaderboard(Action<QuizLeaderboardOperationResult> onCompleted)
+    public IEnumerator LoadLeaderboard(
+        Action<QuizLeaderboardOperationResult> onCompleted,
+        string accessTokenOverride = null,
+        bool requireToken = false)
     {
         QuizLeaderboardOperationResult result = new QuizLeaderboardOperationResult();
 
@@ -434,24 +611,37 @@ public class QuizRepository : MonoBehaviour
             yield break;
         }
 
-        using UnityWebRequest request = Api.Get(Api.GetQuizLeaderboardUrl);
+        string token = ResolveToken(accessTokenOverride);
+
+        if (requireToken && string.IsNullOrWhiteSpace(token))
+        {
+            CompleteLeaderboard(
+                result,
+                false,
+                QuizRequestErrorType.MissingToken,
+                0,
+                "Quiz leaderboard requires token, but no token was found.",
+                null,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        using UnityWebRequest request = Api.Get(Api.GetQuizLeaderboardUrl, token);
         yield return request.SendWebRequest();
 
         long statusCode = request.responseCode;
         string rawBody = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
 
-        bool hasNetworkFailure =
-            request.result == UnityWebRequest.Result.ConnectionError ||
-            request.result == UnityWebRequest.Result.DataProcessingError;
-
-        if (hasNetworkFailure)
+        if (HasNetworkFailure(request))
         {
             CompleteLeaderboard(
                 result,
                 false,
                 QuizRequestErrorType.NetworkError,
                 statusCode,
-                request.error,
+                ResolveTransportMessage(request.error, rawBody, "Failed to load leaderboard."),
                 rawBody,
                 null,
                 onCompleted
@@ -459,14 +649,14 @@ public class QuizRepository : MonoBehaviour
             yield break;
         }
 
-        if (statusCode < 200 || statusCode >= 300)
+        if (!IsSuccessStatusCode(statusCode))
         {
             CompleteLeaderboard(
                 result,
                 false,
                 QuizRequestErrorType.HttpError,
                 statusCode,
-                string.IsNullOrWhiteSpace(rawBody) ? request.error : rawBody,
+                ResolveTransportMessage(request.error, rawBody, "Failed to load leaderboard."),
                 rawBody,
                 null,
                 onCompleted
@@ -525,6 +715,8 @@ public class QuizRepository : MonoBehaviour
             yield break;
         }
 
+        PopulateLeaderboardOptionalFields(dto, rawBody);
+
         if (!dto.success || dto.data == null)
         {
             CompleteLeaderboard(
@@ -532,7 +724,7 @@ public class QuizRepository : MonoBehaviour
                 false,
                 QuizRequestErrorType.BackendRejected,
                 statusCode,
-                "Leaderboard response is invalid.",
+                ResolveBackendMessage(dto.message, rawBody, "Leaderboard response is invalid."),
                 rawBody,
                 dto,
                 onCompleted
@@ -552,6 +744,176 @@ public class QuizRepository : MonoBehaviour
         );
     }
 
+    public IEnumerator LoadMe(
+        Action<QuizMeOperationResult> onCompleted,
+        string accessTokenOverride = null,
+        bool requireToken = true)
+    {
+        QuizMeOperationResult result = new QuizMeOperationResult();
+
+        if (Api == null)
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.MissingApiService,
+                0,
+                "ApiService.Instance is null.",
+                null,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(Api.GetQuizMe))
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.MissingUrl,
+                0,
+                "GetQuizMe is missing.",
+                null,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        string token = ResolveToken(accessTokenOverride);
+
+        if (requireToken && string.IsNullOrWhiteSpace(token))
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.MissingToken,
+                0,
+                "Quiz me requires token, but no token was found.",
+                null,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        using UnityWebRequest request = Api.Get(Api.GetQuizMe, token);
+        yield return request.SendWebRequest();
+
+        long statusCode = request.responseCode;
+        string rawBody = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
+
+        if (HasNetworkFailure(request))
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.NetworkError,
+                statusCode,
+                ResolveTransportMessage(request.error, rawBody, "Failed to load quiz stats."),
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (!IsSuccessStatusCode(statusCode))
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.HttpError,
+                statusCode,
+                ResolveTransportMessage(request.error, rawBody, "Failed to load quiz stats."),
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(rawBody))
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.EmptyResponse,
+                statusCode,
+                "Quiz me API returned empty response.",
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        QuizMeResponseDto dto = null;
+
+        try
+        {
+            dto = JsonUtility.FromJson<QuizMeResponseDto>(rawBody);
+        }
+        catch (Exception ex)
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.ParseError,
+                statusCode,
+                $"Quiz me parse error: {ex.Message}",
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        if (dto == null)
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.ParseError,
+                statusCode,
+                "Quiz me response parsed to null.",
+                rawBody,
+                null,
+                onCompleted
+            );
+            yield break;
+        }
+
+        PopulateMeOptionalFields(dto, rawBody);
+
+        if (!dto.success || dto.data == null)
+        {
+            CompleteMe(
+                result,
+                false,
+                QuizRequestErrorType.BackendRejected,
+                statusCode,
+                ResolveBackendMessage(dto.message, rawBody, "Quiz me response is invalid."),
+                rawBody,
+                dto,
+                onCompleted
+            );
+            yield break;
+        }
+
+        CompleteMe(
+            result,
+            true,
+            QuizRequestErrorType.None,
+            statusCode,
+            "Quiz me loaded successfully.",
+            rawBody,
+            dto,
+            onCompleted
+        );
+    }
+
     private string ResolveToken(string overrideToken)
     {
         if (!string.IsNullOrWhiteSpace(overrideToken))
@@ -564,6 +926,256 @@ public class QuizRepository : MonoBehaviour
         }
 
         return null;
+    }
+
+    private static bool HasNetworkFailure(UnityWebRequest request)
+    {
+        return request.result == UnityWebRequest.Result.ConnectionError ||
+               request.result == UnityWebRequest.Result.DataProcessingError;
+    }
+
+    private static bool IsSuccessStatusCode(long statusCode)
+    {
+        return statusCode >= 200 && statusCode < 300;
+    }
+
+    private string ResolveTransportMessage(string requestError, string rawBody, string fallback)
+    {
+        string bodyMessage = ExtractMessageFromRawBody(rawBody);
+
+        if (!string.IsNullOrWhiteSpace(bodyMessage))
+            return bodyMessage;
+
+        if (!string.IsNullOrWhiteSpace(requestError))
+            return requestError;
+
+        if (!string.IsNullOrWhiteSpace(rawBody))
+            return rawBody;
+
+        return fallback;
+    }
+
+    private string ResolveBackendMessage(string dtoMessage, string rawBody, string fallback)
+    {
+        if (!string.IsNullOrWhiteSpace(dtoMessage))
+            return dtoMessage;
+
+        string bodyMessage = ExtractMessageFromRawBody(rawBody);
+        if (!string.IsNullOrWhiteSpace(bodyMessage))
+            return bodyMessage;
+
+        return fallback;
+    }
+
+    private string ExtractMessageFromRawBody(string rawBody)
+    {
+        if (string.IsNullOrWhiteSpace(rawBody))
+            return null;
+
+        try
+        {
+            QuizBasicMessageResponseDto dto = JsonUtility.FromJson<QuizBasicMessageResponseDto>(rawBody);
+            return dto != null ? dto.message : null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private void PopulateLeaderboardOptionalFields(QuizLeaderboardResponseDto dto, string rawBody)
+    {
+        if (dto == null || dto.data == null || dto.data.player == null || string.IsNullOrWhiteSpace(rawBody))
+            return;
+
+        string playerJson = ExtractObjectJson(rawBody, "\"player\"");
+        if (string.IsNullOrWhiteSpace(playerJson))
+            return;
+
+        dto.data.player.setScores = ParseSetScores(playerJson);
+    }
+
+    private void PopulateMeOptionalFields(QuizMeResponseDto dto, string rawBody)
+    {
+        if (dto == null || dto.data == null || string.IsNullOrWhiteSpace(rawBody))
+            return;
+
+        string dataJson = ExtractObjectJson(rawBody, "\"data\"");
+        if (string.IsNullOrWhiteSpace(dataJson))
+            return;
+
+        if (TryReadNullableIntProperty(dataJson, "\"totalScore\"", out int totalScore, out bool hasTotalScore))
+        {
+            dto.data.hasTotalScore = hasTotalScore;
+            if (hasTotalScore)
+                dto.data.totalScore = totalScore;
+        }
+
+        if (TryReadNullableIntProperty(dataJson, "\"rank\"", out int rank, out bool hasRank))
+        {
+            dto.data.hasRank = hasRank;
+            if (hasRank)
+                dto.data.rank = rank;
+        }
+
+        dto.data.setScores = ParseSetScores(dataJson);
+    }
+
+
+    private QuizSetScoresDto ParseSetScores(string sourceJson)
+    {
+        QuizSetScoresDto result = new QuizSetScoresDto();
+
+        if (string.IsNullOrWhiteSpace(sourceJson))
+            return result;
+
+        string setScoresJson = ExtractObjectJson(sourceJson, "\"setScores\"");
+        if (string.IsNullOrWhiteSpace(setScoresJson))
+            return result;
+
+        if (TryReadNullableIntProperty(setScoresJson, "\"1\"", out int set1, out bool hasSet1) && hasSet1)
+            result.set1 = set1;
+
+        if (TryReadNullableIntProperty(setScoresJson, "\"2\"", out int set2, out bool hasSet2) && hasSet2)
+            result.set2 = set2;
+
+        if (TryReadNullableIntProperty(setScoresJson, "\"3\"", out int set3, out bool hasSet3) && hasSet3)
+            result.set3 = set3;
+
+        if (TryReadNullableIntProperty(setScoresJson, "\"4\"", out int set4, out bool hasSet4) && hasSet4)
+            result.set4 = set4;
+
+        return result;
+    }
+
+    private bool TryReadNullableIntProperty(
+    string sourceJson,
+    string propertyName,
+    out int value,
+    out bool hasValue)
+    {
+        value = 0;
+        hasValue = false;
+
+        if (string.IsNullOrWhiteSpace(sourceJson) || string.IsNullOrWhiteSpace(propertyName))
+            return false;
+
+        int propertyIndex = sourceJson.IndexOf(propertyName, StringComparison.Ordinal);
+        if (propertyIndex < 0)
+            return false;
+
+        int colonIndex = sourceJson.IndexOf(':', propertyIndex);
+        if (colonIndex < 0)
+            return false;
+
+        int cursor = colonIndex + 1;
+        while (cursor < sourceJson.Length && char.IsWhiteSpace(sourceJson[cursor]))
+            cursor++;
+
+        if (cursor >= sourceJson.Length)
+            return false;
+
+        if (sourceJson.IndexOf("null", cursor, StringComparison.Ordinal) == cursor)
+        {
+            hasValue = false;
+            return true;
+        }
+
+        int start = cursor;
+        if (sourceJson[cursor] == '-')
+            cursor++;
+
+        while (cursor < sourceJson.Length && char.IsDigit(sourceJson[cursor]))
+            cursor++;
+
+        if (cursor <= start)
+            return false;
+
+        string numberText = sourceJson.Substring(start, cursor - start);
+        if (!int.TryParse(numberText, out value))
+            return false;
+
+        hasValue = true;
+        return true;
+    }
+
+    private string ExtractObjectJson(string sourceJson, string propertyName)
+    {
+        if (string.IsNullOrWhiteSpace(sourceJson) || string.IsNullOrWhiteSpace(propertyName))
+            return null;
+
+        int propertyIndex = sourceJson.IndexOf(propertyName, StringComparison.Ordinal);
+        if (propertyIndex < 0)
+            return null;
+
+        int colonIndex = sourceJson.IndexOf(':', propertyIndex);
+        if (colonIndex < 0)
+            return null;
+
+        int startIndex = -1;
+        for (int i = colonIndex + 1; i < sourceJson.Length; i++)
+        {
+            char ch = sourceJson[i];
+
+            if (char.IsWhiteSpace(ch))
+                continue;
+
+            if (ch == '{')
+            {
+                startIndex = i;
+                break;
+            }
+
+            return null;
+        }
+
+        if (startIndex < 0)
+            return null;
+
+        int depth = 0;
+
+        for (int i = startIndex; i < sourceJson.Length; i++)
+        {
+            if (sourceJson[i] == '{')
+                depth++;
+
+            if (sourceJson[i] == '}')
+            {
+                depth--;
+
+                if (depth == 0)
+                    return sourceJson.Substring(startIndex, i - startIndex + 1);
+            }
+        }
+
+        return null;
+    }
+
+    private void CompleteCheck(
+        QuizCheckOperationResult result,
+        bool success,
+        QuizRequestErrorType errorType,
+        long statusCode,
+        string message,
+        string rawBody,
+        QuizCheckResponseDto response,
+        Action<QuizCheckOperationResult> onCompleted)
+    {
+        result.success = success;
+        result.errorType = errorType;
+        result.statusCode = statusCode;
+        result.message = message;
+        result.rawBody = rawBody;
+        result.response = response;
+
+        Debug.Log(
+            $"[QuizRepository][Check] success={result.success}, " +
+            $"errorType={result.errorType}, " +
+            $"statusCode={result.statusCode}, " +
+            $"message={result.message}"
+        );
+
+        onCompleted?.Invoke(result);
     }
 
     private void CompleteSubmit(
@@ -647,187 +1259,15 @@ public class QuizRepository : MonoBehaviour
         onCompleted?.Invoke(result);
     }
 
-    public IEnumerator LoadMe(
-    Action<QuizMeOperationResult> onCompleted,
-    string accessTokenOverride = null,
-    bool requireToken = true)
-    {
-        QuizMeOperationResult result = new QuizMeOperationResult();
-
-        if (Api == null)
-        {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.MissingApiService,
-                0,
-                "ApiService.Instance is null.",
-                null,
-                null,
-                onCompleted
-            );
-            yield break;
-        }
-
-        if (string.IsNullOrWhiteSpace(Api.GetQuizMe))
-        {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.MissingUrl,
-                0,
-                "GetQuizMe is missing.",
-                null,
-                null,
-                onCompleted
-            );
-            yield break;
-        }
-
-        string token = ResolveToken(accessTokenOverride);
-
-        if (requireToken && string.IsNullOrWhiteSpace(token))
-        {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.MissingToken,
-                0,
-                "Quiz me requires token, but no token was found.",
-                null,
-                null,
-                onCompleted
-            );
-            yield break;
-        }
-
-        using UnityWebRequest request = Api.Get(Api.GetQuizMe, token);
-        yield return request.SendWebRequest();
-
-        long statusCode = request.responseCode;
-        string rawBody = request.downloadHandler != null ? request.downloadHandler.text : string.Empty;
-
-        bool hasNetworkFailure =
-            request.result == UnityWebRequest.Result.ConnectionError ||
-            request.result == UnityWebRequest.Result.DataProcessingError;
-
-        if (hasNetworkFailure)
-        {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.NetworkError,
-                statusCode,
-                request.error,
-                rawBody,
-                null,
-                onCompleted
-            );
-            yield break;
-        }
-
-        if (statusCode < 200 || statusCode >= 300)
-        {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.HttpError,
-                statusCode,
-                string.IsNullOrWhiteSpace(rawBody) ? request.error : rawBody,
-                rawBody,
-                null,
-                onCompleted
-            );
-            yield break;
-        }
-
-        if (string.IsNullOrWhiteSpace(rawBody))
-        {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.EmptyResponse,
-                statusCode,
-                "Quiz me API returned empty response.",
-                rawBody,
-                null,
-                onCompleted
-            );
-            yield break;
-        }
-
-        QuizMeResponseDto dto = null;
-
-        try
-        {
-            dto = JsonUtility.FromJson<QuizMeResponseDto>(rawBody);
-        }
-        catch (Exception ex)
-        {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.ParseError,
-                statusCode,
-                $"Quiz me parse error: {ex.Message}",
-                rawBody,
-                null,
-                onCompleted
-            );
-            yield break;
-        }
-
-        if (dto == null)
-        {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.ParseError,
-                statusCode,
-                "Quiz me response parsed to null.",
-                rawBody,
-                null,
-                onCompleted
-            );
-            yield break;
-        }
-
-        if (!dto.success || dto.data == null)
-        {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.BackendRejected,
-                statusCode,
-                "Quiz me response is invalid.",
-                rawBody,
-                dto,
-                onCompleted
-            );
-            yield break;
-        }
-
-        CompleteMe(
-            result,
-            true,
-            QuizRequestErrorType.None,
-            statusCode,
-            "Quiz me loaded successfully.",
-            rawBody,
-            dto,
-            onCompleted
-        );
-    }
-
     private void CompleteMe(
-    QuizMeOperationResult result,
-    bool success,
-    QuizRequestErrorType errorType,
-    long statusCode,
-    string message,
-    string rawBody,
-    QuizMeResponseDto response,
-    Action<QuizMeOperationResult> onCompleted)
+        QuizMeOperationResult result,
+        bool success,
+        QuizRequestErrorType errorType,
+        long statusCode,
+        string message,
+        string rawBody,
+        QuizMeResponseDto response,
+        Action<QuizMeOperationResult> onCompleted)
     {
         result.success = success;
         result.errorType = errorType;

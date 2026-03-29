@@ -15,12 +15,21 @@ public class AE_AdditionalProjectDetailUI : MonoBehaviour
 
     [Header("Optional")]
     [SerializeField] private ScrollRect scrollRect;
-    [SerializeField] private bool useEnglishContent;
 
     private GovernmentProjectDto _currentProject;
     private string _currentAgencyName;
 
     public bool IsOpen => panelRoot != null && panelRoot.activeSelf;
+
+    private bool UseEnglish
+    {
+        get
+        {
+            string code = LocalizationService.CurrentLocaleCode;
+            return !string.IsNullOrWhiteSpace(code) &&
+                   code.StartsWith("en", System.StringComparison.OrdinalIgnoreCase);
+        }
+    }
 
     private void Awake()
     {
@@ -111,10 +120,9 @@ public class AE_AdditionalProjectDetailUI : MonoBehaviour
         if (project == null)
             return string.Empty;
 
-        if (useEnglishContent)
-            return FirstNotEmpty(project.nameEn, project.name);
-
-        return FirstNotEmpty(project.name, project.nameEn);
+        return UseEnglish
+            ? FirstNotEmpty(project.nameEn, project.name)
+            : FirstNotEmpty(project.name, project.nameEn);
     }
 
     private string GetFullDescription(GovernmentProjectDto project)
@@ -122,10 +130,9 @@ public class AE_AdditionalProjectDetailUI : MonoBehaviour
         if (project == null)
             return string.Empty;
 
-        if (useEnglishContent)
-            return FirstNotEmpty(project.descriptionEn, project.description);
-
-        return FirstNotEmpty(project.description, project.descriptionEn);
+        return UseEnglish
+            ? FirstNotEmpty(project.descriptionEn, project.description)
+            : FirstNotEmpty(project.description, project.descriptionEn);
     }
 
     private string FirstNotEmpty(params string[] values)

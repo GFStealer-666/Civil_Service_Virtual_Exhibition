@@ -21,6 +21,7 @@ public class ApiService : MonoBehaviour
     public string ResetPasswordUrl => config != null ? config.ResetPasswordUrl : string.Empty;
 
     public string GetQuizUrl => config != null ? config.GetQuizUrl : string.Empty;
+    public string CheckQuizStatusUrl => config != null ? config.CheckQuizStatusUrl : string.Empty;
     public string QuizSubmitUrl => config != null ? config.QuizSubmitUrl : string.Empty;
     public string GetQuizLeaderboardUrl => config != null ? config.GetQuizLeaderboardUrl : string.Empty;
     public string GetQuizMe => config != null ? config.GetQuizMe : string.Empty;

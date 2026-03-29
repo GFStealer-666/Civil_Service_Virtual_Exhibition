@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -14,6 +15,7 @@ public class AE_MainPanelController : MonoBehaviour
     [Header("Header")]
     [SerializeField] private TMP_Text titleText;
     [SerializeField] private TMP_Text subtitleText;
+    [SerializeField] private TMP_Text welcomeText;
     [SerializeField] private Image ministryLogoImage;
     [SerializeField] private Sprite defaultMinistryLogo;
 
@@ -44,6 +46,21 @@ public class AE_MainPanelController : MonoBehaviour
     private ExhibitionAgencyData _selectedAgency;
 
     public bool IsOpen => panelRoot != null && panelRoot.activeSelf;
+
+    private bool UseEnglish
+    {
+        get
+        {
+            string code = LocalizationService.CurrentLocaleCode;
+            return !string.IsNullOrWhiteSpace(code) &&
+                   code.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private string MainPageSubtitle =>
+        UseEnglish
+            ? "Select an agency to visit"
+            : "เลือกหน่วยงานที่ต้องการเยี่ยมชม";
 
     private void Awake()
     {
@@ -137,10 +154,11 @@ public class AE_MainPanelController : MonoBehaviour
         }
 
         if (titleText != null)
-            titleText.text = FirstNotEmpty(ministry.ministry, ministry.ministryEn);
-
+            titleText.text = Localize(ministry.ministry, ministry.ministryEn);
+        if (welcomeText != null)
+            welcomeText.text = UseEnglish ? "Welcome to" : "ยินดีต้อนรับสู่";
         if (subtitleText != null)
-            subtitleText.text = "เลือกหน่วยงานที่ต้องการเยี่ยมชม";
+            subtitleText.text = MainPageSubtitle;
 
         _currentMinistryLogoUrl = ministry.ministryLogo;
         SetMinistryLogo(_currentMinistryLogoUrl);
@@ -157,7 +175,7 @@ public class AE_MainPanelController : MonoBehaviour
             ExhibitionAgencyData item = new ExhibitionAgencyData
             {
                 AgencyRuntimeId = agency.runtimeId,
-                Title = FirstNotEmpty(agency.organizationName, agency.organizationNameEn),
+                Title = Localize(agency.organizationName, agency.organizationNameEn),
                 BackgroundUrl = agency.coverUrl,
                 LogoUrl = agency.logoUrl,
                 FallbackBackgroundSprite = defaultAgencyBackground,
@@ -187,7 +205,7 @@ public class AE_MainPanelController : MonoBehaviour
             titleText.text = ministryKey;
 
         if (subtitleText != null)
-            subtitleText.text = "เลือกหน่วยงานที่ต้องการเยี่ยมชม";
+            subtitleText.text = MainPageSubtitle;
 
         _currentMinistryLogoUrl = string.Empty;
         SetMinistryLogo(null);
@@ -237,7 +255,7 @@ public class AE_MainPanelController : MonoBehaviour
             {
                 ProjectRuntimeId = project.runtimeId,
                 AgencyRuntimeId = _selectedAgency.AgencyRuntimeId,
-                Title = FirstNotEmpty(project.name, project.nameEn),
+                Title = Localize(project.name, project.nameEn),
                 BackgroundUrl = backgroundUrl,
                 FallbackBackgroundSprite = defaultProjectBackground
             };
@@ -288,11 +306,19 @@ public class AE_MainPanelController : MonoBehaviour
             if (project == null)
                 continue;
 
-            if (string.Equals(project.runtimeId, data.ProjectRuntimeId, System.StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(project.runtimeId, data.ProjectRuntimeId, StringComparison.OrdinalIgnoreCase))
                 return project;
         }
 
         return null;
+    }
+
+    private string Localize(string thai, string english)
+    {
+        if (UseEnglish)
+            return FirstNotEmpty(english, thai);
+
+        return FirstNotEmpty(thai, english);
     }
 
     private string FirstNotEmpty(params string[] values)
@@ -426,4 +452,5 @@ public class AE_MainPanelController : MonoBehaviour
         if (projectDetailPageRoot != null)
             projectDetailPageRoot.SetActive(true);
     }
-}
+    
+} 

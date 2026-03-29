@@ -195,7 +195,7 @@ MonoBehaviour:
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 18
+  m_fontSizeMin: 15
   m_fontSizeMax: 28
   m_fontStyle: 0
   m_HorizontalAlignment: 2
@@ -250,7 +250,7 @@ GameObject:
   - component: {fileID: 3402964835713198484}
   - component: {fileID: 7206179312615181451}
   m_Layer: 5
-  m_Name: '[API] ProjectCardUI'
+  m_Name: '[API] AgencyProjectCardUI'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

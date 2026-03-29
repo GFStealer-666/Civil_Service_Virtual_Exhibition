@@ -9,12 +9,13 @@ public class QuizGameController : MonoBehaviour
     [Header("References")]
     [SerializeField] private QuizGameConfigSO config;
     [SerializeField] private QuizQuestionRepository repository;
-    [SerializeField] private QuizUIOverlay ui;
+    [SerializeField] private QuizRepository quizApiRepository;
+    [SerializeField] private QuizUIController ui;
     [SerializeField] private QuizLeaderboardController leaderboardController;
     [SerializeField] private StatusOverlay statusOverlay;
 
     [Header("Flow")]
-    [SerializeField] private float nextQuestionDelay = 0.75f;
+    [SerializeField] private float nextQuestionDelay = 0.25f;
 
     [Header("Score")]
     [SerializeField] private int scorePerCorrectAnswer = 10;
@@ -23,12 +24,8 @@ public class QuizGameController : MonoBehaviour
     [Header("Data Source")]
     [SerializeField] private bool useLocalFallbackOnly = false;
 
-    [Header("Cooldown")]
-    [SerializeField] private int playCooldownHours = 24;
-    [SerializeField] private string playerPrefsCooldownKey = "quiz_last_played_unix_seconds";
-
-    [Header("Debug")]
-    [SerializeField] private bool bypassCooldownForTesting = false;
+    [Header("Editor")]
+    [SerializeField] private bool bypassCooldownForEditorTesting = false;
 
     private readonly List<QuizSessionQuestion> _sessionQuestions = new List<QuizSessionQuestion>();
 
@@ -36,12 +33,25 @@ public class QuizGameController : MonoBehaviour
     private int _score;
     private int _maxScore;
     private int _correctCount;
+
     private bool _isPaused;
-    private float _remainingSessionTime;
     private bool _questionActive;
     private bool _awaitingNextQuestion;
     private bool _sessionEnded;
     private bool _sessionStarted;
+    private bool _isStartFlowRunning;
+    private bool _isSubmitFlowRunning;
+
+    private float _remainingSessionTime;
+
+    private bool ShouldBypassCooldownForTesting()
+    {
+    #if UNITY_EDITOR
+        return bypassCooldownForEditorTesting;
+    #else
+        return false;
+    #endif
+    }
 
     private void OnEnable()
     {
@@ -53,6 +63,7 @@ public class QuizGameController : MonoBehaviour
         ui.CloseClicked += HandleCloseClicked;
         ui.QuitConfirmed += HandleQuitConfirmed;
         ui.QuitCanceled += HandleQuitCanceled;
+        ui.ResultBackClicked += HandleResultBackClicked;
     }
 
     private void OnDisable()
@@ -65,11 +76,7 @@ public class QuizGameController : MonoBehaviour
         ui.CloseClicked -= HandleCloseClicked;
         ui.QuitConfirmed -= HandleQuitConfirmed;
         ui.QuitCanceled -= HandleQuitCanceled;
-    }
-
-    private void Start()
-    {
-        // ShowStartState();
+        ui.ResultBackClicked -= HandleResultBackClicked;
     }
 
     private void Update()
@@ -111,39 +118,118 @@ public class QuizGameController : MonoBehaviour
 
     private void HandleStartClicked()
     {
-        Debug.Log("[QuizGameController] Start quiz clicked");
-
-        if (IsCooldownActive(out TimeSpan remaining))
-        {
-            string remainingText = FormatTimeSpanLocalized(remaining);
-            string reason = F(
-                LocalizationKeys.Quiz.CooldownBlockedReasonFormat,
-                "You already played this quiz. Please wait {0} before playing again.",
-                remainingText
-            );
-
-            Debug.Log($"[QuizGameController] Cooldown active. Remaining = {remainingText}");
-
-            if (statusOverlay != null)
-            {
-                statusOverlay.ShowFailed(
-                    T(LocalizationKeys.Quiz.CooldownBlockedTitle, "Unable to start quiz"),
-                    reason,
-                    onDismissed: null,
-                    showBlocker: true
-                );
-            }
-
-            if (ui != null)
-            {
-                ui.ShowStart();
-                ui.SetStartInteractable(true);
-            }
-
+        if (_isStartFlowRunning || _sessionStarted || _isSubmitFlowRunning)
             return;
+
+        StartCoroutine(BeginStartFlowRoutine());
+    }
+
+    private void HandleResultBackClicked()
+    {
+        _sessionEnded = true;
+        _questionActive = false;
+        _awaitingNextQuestion = false;
+        _sessionStarted = false;
+        _isPaused = false;
+
+        if (ui != null)
+        {
+            ui.HideQuitConfirmation();
+            ui.SetQuestionInteractable(false);
+            ui.ShowStart();
         }
 
-        MarkPlayerAsPlayedNow();
+        leaderboardController?.RefreshLeaderboard();
+    }
+
+    private IEnumerator BeginStartFlowRoutine()
+    {
+        _isStartFlowRunning = true;
+
+        if (ui != null)
+            ui.SetStartInteractable(false);
+
+        if (useLocalFallbackOnly)
+        {
+            _isStartFlowRunning = false;
+            StartNewSession();
+            yield break;
+        }
+
+        if (quizApiRepository == null)
+        {
+            _isStartFlowRunning = false;
+            FailToStartQuiz(L("ไม่พบ Quiz API Repository", "Quiz API repository is missing."));
+            yield break;
+        }
+
+        QuizCheckOperationResult checkResult = null;
+
+        yield return quizApiRepository.CheckStatus(result =>
+        {
+            checkResult = result;
+        });
+
+        _isStartFlowRunning = false;
+
+        if (checkResult == null)
+        {
+            FailToStartQuiz(L("ตรวจสอบสถานะควิซไม่สำเร็จ", "Failed to check quiz status."));
+            yield break;
+        }
+
+        if (!checkResult.success || checkResult.response == null || checkResult.response.data == null)
+        {
+            ShowCannotStartMessage(
+                L("ไม่สามารถเริ่มควิซได้", "Unable to start quiz"),
+                string.IsNullOrWhiteSpace(checkResult.message)
+                    ? L("ตรวจสอบสถานะควิซไม่สำเร็จ", "Failed to check quiz status.")
+                    : checkResult.message
+            );
+
+            ShowStartState();
+            yield break;
+        }
+
+        QuizCheckDataDto checkData = checkResult.response.data;
+
+        bool blockedByCooldown =
+            !checkData.canPlay &&
+            (checkData.playedToday || checkData.playedThisWeek);
+
+        if (blockedByCooldown && !ShouldBypassCooldownForTesting())
+        {
+            string message = checkData.playedToday
+                ? L(
+                    "ร่วมกิจกรรมได้วันละ 1 ครั้ง กรุณาลองใหม่พรุ่งนี้",
+                    "You can play once per day. Please try again tomorrow."
+                )
+                : (!string.IsNullOrWhiteSpace(checkResult.response.message)
+                    ? checkResult.response.message
+                    : L(
+                        "คุณยังไม่สามารถเล่นควิซได้ในขณะนี้",
+                        "You cannot play this quiz right now."
+                    ));
+
+            ShowCannotStartMessage(L("ไม่สามารถเริ่มควิซได้", "Unable to start quiz"), message);
+            ShowStartState();
+            yield break;
+        }
+
+        if (!checkData.canPlay && !blockedByCooldown)
+        {
+            string message = !string.IsNullOrWhiteSpace(checkResult.response.message)
+                ? checkResult.response.message
+                : L(
+                    "คุณยังไม่สามารถเล่นควิซได้ในขณะนี้",
+                    "You cannot play this quiz right now."
+                );
+
+            ShowCannotStartMessage(L("ไม่สามารถเริ่มควิซได้", "Unable to start quiz"), message);
+            ShowStartState();
+            yield break;
+        }
+
         StartNewSession();
     }
 
@@ -156,10 +242,13 @@ public class QuizGameController : MonoBehaviour
             if (ui != null)
             {
                 ui.ShowQuitConfirmation(
-                    T(LocalizationKeys.Quiz.QuitConfirmTitle, "Exit quiz?"),
+                    T(LocalizationKeys.Quiz.QuitConfirmTitle, L("ออกจากควิซ?", "Exit quiz?")),
                     T(
                         LocalizationKeys.Quiz.QuitConfirmMessage,
-                        "If you leave the quiz now, you will not be able to play again for 24 hours."
+                        L(
+                            "หากออกจากควิซตอนนี้ ความคืบหน้าจะหายไป",
+                            "If you leave the quiz now, your progress will be lost."
+                        )
                     )
                 );
             }
@@ -167,10 +256,11 @@ public class QuizGameController : MonoBehaviour
             return;
         }
 
+        if (_isSubmitFlowRunning)
+            return;
+
         if (ui != null)
             ui.SetQuestionInteractable(false);
-
-        StopAllCoroutines();
 
         _sessionEnded = true;
         _questionActive = false;
@@ -188,7 +278,6 @@ public class QuizGameController : MonoBehaviour
 
     private void HandleQuitCanceled()
     {
-        Debug.Log("[QuizGameController] Player canceled quit.");
         _isPaused = false;
 
         if (ui != null)
@@ -202,8 +291,6 @@ public class QuizGameController : MonoBehaviour
 
     private void StartNewSession()
     {
-        Debug.Log("[QuizGameController] StartNewSession");
-
         StopAllCoroutines();
 
         _sessionQuestions.Clear();
@@ -216,6 +303,7 @@ public class QuizGameController : MonoBehaviour
         _awaitingNextQuestion = false;
         _sessionEnded = false;
         _sessionStarted = true;
+        _isPaused = false;
 
         _remainingSessionTime = config != null ? config.sessionTimeLimitSeconds : 0f;
 
@@ -230,14 +318,11 @@ public class QuizGameController : MonoBehaviour
 
         if (useLocalFallbackOnly)
         {
-            Debug.Log("[QuizGameController] Using local fallback questions only.");
-
             List<QuizSessionQuestion> fallbackQuestions = QuizSessionBuilder.BuildFromFallback(config);
 
             if (fallbackQuestions == null || fallbackQuestions.Count == 0)
             {
-                Debug.LogWarning("[QuizGameController] No local fallback questions available.");
-                FailToStartQuiz(T(LocalizationKeys.Quiz.StartFailedNoQuestions, "No quiz questions found."));
+                FailToStartQuiz(T(LocalizationKeys.Quiz.StartFailedNoQuestions, L("ไม่พบคำถามควิซ", "No quiz questions found.")));
                 return;
             }
 
@@ -277,8 +362,7 @@ public class QuizGameController : MonoBehaviour
 
         if (!loaded || loadedQuestions == null || loadedQuestions.Count == 0)
         {
-            Debug.LogWarning("[QuizGameController] Failed to prepare quiz session.");
-            FailToStartQuiz(T(LocalizationKeys.Quiz.StartFailedLoadQuiz, "Unable to load quiz."));
+            FailToStartQuiz(T(LocalizationKeys.Quiz.StartFailedLoadQuiz, L("โหลดควิซไม่สำเร็จ", "Unable to load quiz.")));
             yield break;
         }
 
@@ -286,8 +370,7 @@ public class QuizGameController : MonoBehaviour
 
         if (preparedQuestions == null || preparedQuestions.Count == 0)
         {
-            Debug.LogWarning("[QuizGameController] No questions available after preparation.");
-            FailToStartQuiz(T(LocalizationKeys.Quiz.StartFailedNoQuestions, "No quiz questions found."));
+            FailToStartQuiz(T(LocalizationKeys.Quiz.StartFailedNoQuestions, L("ไม่พบคำถามควิซ", "No quiz questions found.")));
             yield break;
         }
 
@@ -307,18 +390,27 @@ public class QuizGameController : MonoBehaviour
         _sessionStarted = false;
         _questionActive = false;
         _awaitingNextQuestion = false;
+        _isStartFlowRunning = false;
 
-        if (statusOverlay != null)
-        {
-            statusOverlay.ShowFailed(
-                T(LocalizationKeys.Quiz.StartFailedTitle, "Failed to start quiz"),
-                message,
-                onDismissed: null,
-                showBlocker: true
-            );
-        }
+        ShowCannotStartMessage(
+            T(LocalizationKeys.Quiz.StartFailedTitle, L("เริ่มควิซไม่สำเร็จ", "Failed to start quiz")),
+            message
+        );
 
         ShowStartState();
+    }
+
+    private void ShowCannotStartMessage(string title, string message)
+    {
+        if (statusOverlay == null)
+            return;
+
+        statusOverlay.ShowFailed(
+            title,
+            message,
+            onDismissed: null,
+            showBlocker: true
+        );
     }
 
     private void ShowCurrentQuestion()
@@ -386,6 +478,19 @@ public class QuizGameController : MonoBehaviour
         if (_sessionEnded)
             return;
 
+        FinishSessionAndSubmit();
+    }
+
+    private void EndSession()
+    {
+        if (_sessionEnded)
+            return;
+
+        FinishSessionAndSubmit();
+    }
+
+    private void FinishSessionAndSubmit()
+    {
         _sessionEnded = true;
         _questionActive = false;
         _awaitingNextQuestion = false;
@@ -407,45 +512,65 @@ public class QuizGameController : MonoBehaviour
             ui.SetResult(_score, _maxScore);
             ui.ShowResult();
         }
+
+        if (!_isSubmitFlowRunning && !useLocalFallbackOnly)
+            StartCoroutine(SubmitFinishedSessionRoutine());
     }
 
-    private void EndSession()
+    private IEnumerator SubmitFinishedSessionRoutine()
     {
-        if (_sessionEnded)
-            return;
+        _isSubmitFlowRunning = true;
 
-        _sessionEnded = true;
-        _questionActive = false;
-        _awaitingNextQuestion = false;
-        _sessionStarted = false;
-
-        _score = CalculateFinalScore();
-        _maxScore = CalculateMaxScore();
-
-        leaderboardController?.HandleQuizFinished(
-            _correctCount,
-            _sessionQuestions.Count,
-            _score
-        );
-
-        if (ui != null)
+        if (quizApiRepository == null)
         {
-            ui.HideQuitConfirmation();
-            ui.SetResult(_score, _maxScore);
-            ui.ShowResult();
+            _isSubmitFlowRunning = false;
+            yield break;
         }
+
+        QuizSubmitOperationResult submitResult = null;
+
+        yield return quizApiRepository.SubmitResult(
+            _score,
+            result =>
+            {
+                submitResult = result;
+            });
+
+        _isSubmitFlowRunning = false;
+
+        if (submitResult == null)
+        {
+            ShowCannotStartMessage(
+                L("ส่งคะแนนไม่สำเร็จ", "Failed to submit score"),
+                L("การส่งคะแนนควิซไม่ส่งค่ากลับมา", "Quiz score submit returned no result.")
+            );
+            yield break;
+        }
+
+        if (!submitResult.success)
+        {
+            ShowCannotStartMessage(
+                L("ส่งคะแนนไม่สำเร็จ", "Failed to submit score"),
+                string.IsNullOrWhiteSpace(submitResult.message)
+                    ? L("ไม่สามารถส่งคะแนนควิซได้", "Unable to submit quiz score.")
+                    : submitResult.message
+            );
+            yield break;
+        }
+
+        leaderboardController?.RefreshLeaderboard();
     }
 
     private void QuitCurrentSession()
     {
-        Debug.Log("[QuizGameController] Player quit the quiz mid-session.");
-
         StopAllCoroutines();
 
         _sessionEnded = true;
         _questionActive = false;
         _awaitingNextQuestion = false;
         _sessionStarted = false;
+        _isStartFlowRunning = false;
+        _isSubmitFlowRunning = false;
 
         if (ui != null)
         {
@@ -466,9 +591,11 @@ public class QuizGameController : MonoBehaviour
 
             QuizSessionQuestion copy = new QuizSessionQuestion
             {
-                questionText = original.questionText,
+                questionTextTh = original.questionTextTh,
+                questionTextEn = original.questionTextEn,
                 correctChoiceIndex = original.correctChoiceIndex,
-                explanation = original.explanation
+                explanationTh = original.explanationTh,
+                explanationEn = original.explanationEn
             };
 
             for (int c = 0; c < original.choices.Count; c++)
@@ -476,7 +603,8 @@ public class QuizGameController : MonoBehaviour
                 QuizSessionChoice originalChoice = original.choices[c];
                 copy.choices.Add(new QuizSessionChoice
                 {
-                    text = originalChoice.text,
+                    textTh = originalChoice.textTh,
+                    textEn = originalChoice.textEn,
                     isCorrect = originalChoice.isCorrect
                 });
             }
@@ -539,77 +667,19 @@ public class QuizGameController : MonoBehaviour
         return Mathf.RoundToInt(maxScore);
     }
 
-    private bool IsCooldownActive(out TimeSpan remaining)
+    private bool IsEnglishLocale()
     {
-        remaining = TimeSpan.Zero;
+        string code = LocalizationSettings.SelectedLocale != null
+            ? LocalizationSettings.SelectedLocale.Identifier.Code
+            : string.Empty;
 
-        if (bypassCooldownForTesting)
-            return false;
-
-        if (!PlayerPrefs.HasKey(playerPrefsCooldownKey))
-            return false;
-
-        string raw = PlayerPrefs.GetString(playerPrefsCooldownKey, string.Empty);
-        if (string.IsNullOrWhiteSpace(raw))
-            return false;
-
-        if (!long.TryParse(raw, out long lastPlayedUnix))
-            return false;
-
-        DateTimeOffset lastPlayedTime = DateTimeOffset.FromUnixTimeSeconds(lastPlayedUnix);
-        DateTimeOffset nextAllowedTime = lastPlayedTime.AddHours(playCooldownHours);
-        DateTimeOffset now = DateTimeOffset.UtcNow;
-
-        if (now < nextAllowedTime)
-        {
-            remaining = nextAllowedTime - now;
-            return true;
-        }
-
-        return false;
+        return !string.IsNullOrWhiteSpace(code) &&
+               code.StartsWith("en", StringComparison.OrdinalIgnoreCase);
     }
 
-    private void MarkPlayerAsPlayedNow()
+    private string L(string th, string en)
     {
-        long nowUnix = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        PlayerPrefs.SetString(playerPrefsCooldownKey, nowUnix.ToString());
-        PlayerPrefs.Save();
-
-        Debug.Log($"[QuizGameController] Player marked as played at unix={nowUnix}");
-    }
-
-    private string FormatTimeSpanLocalized(TimeSpan time)
-    {
-        int totalHours = Mathf.Max(0, (int)time.TotalHours);
-        int minutes = Mathf.Max(0, time.Minutes);
-        int seconds = Mathf.Max(0, time.Seconds);
-
-        if (totalHours > 0)
-        {
-            return F(
-                LocalizationKeys.Quiz.CooldownTimeFormatHoursMinutesSeconds,
-                "{0} hours {1} minutes {2} seconds",
-                totalHours,
-                minutes,
-                seconds
-            );
-        }
-
-        if (minutes > 0)
-        {
-            return F(
-                LocalizationKeys.Quiz.CooldownTimeFormatMinutesSeconds,
-                "{0} minutes {1} seconds",
-                minutes,
-                seconds
-            );
-        }
-
-        return F(
-            LocalizationKeys.Quiz.CooldownTimeFormatSeconds,
-            "{0} seconds",
-            seconds
-        );
+        return IsEnglishLocale() ? en : th;
     }
 
     private string T(string key, string fallback)
@@ -620,28 +690,5 @@ public class QuizGameController : MonoBehaviour
         );
 
         return string.IsNullOrEmpty(value) ? fallback : value;
-    }
-
-    private string F(string key, string fallback, params object[] args)
-    {
-        string format = T(key, fallback);
-
-        try
-        {
-            return string.Format(format, args);
-        }
-        catch (FormatException)
-        {
-            return fallback;
-        }
-    }
-
-    [ContextMenu("Reset Cooldown")]
-    private void ResetCooldown()
-    {
-        PlayerPrefs.DeleteKey(playerPrefsCooldownKey);
-        PlayerPrefs.Save();
-
-        Debug.Log("[QuizGameController] Cooldown reset");
     }
 }

@@ -5,6 +5,7 @@ using System.Collections.Generic;
 public class QuizCurrentResponseDto
 {
     public bool success;
+    public string message;
     public QuizCurrentDataDto data;
 }
 
@@ -21,7 +22,9 @@ public class QuizQuestionDto
 {
     public int id;
     public string question;
+    public string questionEn;
     public QuizChoicesDto choices;
+    public QuizChoicesDto choicesEn;
     public string answer;
 }
 
@@ -42,6 +45,24 @@ public class QuizCacheEnvelope
 }
 
 [Serializable]
+public class QuizCheckResponseDto
+{
+    public bool success;
+    public string message;
+    public QuizCheckDataDto data;
+}
+
+[Serializable]
+public class QuizCheckDataDto
+{
+    public int setNumber;
+    public bool canPlay;
+    public bool playedToday;
+    public bool playedThisWeek;
+    public QuizPlaySessionDto[] sessions;
+}
+
+[Serializable]
 public class QuizSubmitRequestDto
 {
     public int score;
@@ -51,6 +72,7 @@ public class QuizSubmitRequestDto
 public class QuizSubmitResponseDto
 {
     public bool success;
+    public string message;
     public QuizSubmitDataDto data;
 }
 
@@ -59,13 +81,14 @@ public class QuizSubmitDataDto
 {
     public int setNumber;
     public int score;
-    public int maxScore;
+    public QuizPlaySessionDto[] sessions;
 }
 
 [Serializable]
 public class QuizLeaderboardResponseDto
 {
     public bool success;
+    public string message;
     public QuizLeaderboardDataDto data;
 }
 
@@ -73,7 +96,7 @@ public class QuizLeaderboardResponseDto
 public class QuizLeaderboardDataDto
 {
     public LeaderboardEntryDto[] top10;
-    public LeaderboardEntryDto player;
+    public QuizLeaderboardPlayerDto player;
 }
 
 [Serializable]
@@ -86,25 +109,58 @@ public class LeaderboardEntryDto
 }
 
 [Serializable]
+public class QuizLeaderboardPlayerDto
+{
+    public int rank;
+    public int totalScore;
+    public QuizSetScoresDto setScores;
+}
+
+[Serializable]
 public class QuizSessionQuestion
 {
-    public string questionText;
+    public string questionTextTh;
+    public string questionTextEn;
     public List<QuizSessionChoice> choices = new List<QuizSessionChoice>();
     public int correctChoiceIndex;
-    public string explanation;
+    public string explanationTh;
+    public string explanationEn;
+
+    public string GetQuestionText(bool useEnglish)
+    {
+        string preferred = useEnglish ? questionTextEn : questionTextTh;
+        string fallback = useEnglish ? questionTextTh : questionTextEn;
+        return string.IsNullOrWhiteSpace(preferred) ? fallback ?? string.Empty : preferred;
+    }
+
+    public string GetExplanationText(bool useEnglish)
+    {
+        string preferred = useEnglish ? explanationEn : explanationTh;
+        string fallback = useEnglish ? explanationTh : explanationEn;
+        return string.IsNullOrWhiteSpace(preferred) ? fallback ?? string.Empty : preferred;
+    }
 }
 
 [Serializable]
 public class QuizSessionChoice
 {
-    public string text;
+    public string textTh;
+    public string textEn;
     public bool isCorrect;
+
+    public string GetText(bool useEnglish)
+    {
+        string preferred = useEnglish ? textEn : textTh;
+        string fallback = useEnglish ? textTh : textEn;
+        return string.IsNullOrWhiteSpace(preferred) ? fallback ?? string.Empty : preferred;
+    }
 }
 
 [Serializable]
 public class QuizMeResponseDto
 {
     public bool success;
+    public string message;
     public QuizMeDataDto data;
 }
 
@@ -113,7 +169,37 @@ public class QuizMeDataDto
 {
     public int totalScore;
     public int setsCompleted;
-    public int maxScore;
     public int rank;
     public int totalPlayers;
+    public int currentSetNumber;
+    public QuizSetScoresDto setScores;
+    public QuizPlaySessionDto[] sessions;
+    public int? set1Score => setScores != null ? setScores.set1 : null;
+    public int? set2Score => setScores != null ? setScores.set2 : null;
+    public int? set3Score => setScores != null ? setScores.set3 : null;
+    public int? set4Score => setScores != null ? setScores.set4 : null;
+
+    public bool hasTotalScore;
+    public bool hasRank;
+}
+
+[Serializable]
+public class QuizPlaySessionDto
+{
+    public int score;
+    public string playedAt;
+}
+
+[Serializable]
+public class QuizSetScoresDto
+{
+    public int set1 = 0;
+    public int set2 = 0;
+    public int set3 = 0;
+    public int set4 = 0;
+
+    public bool HasSet1 => set1 >= 0;
+    public bool HasSet2 => set2 >= 0;
+    public bool HasSet3 => set3 >= 0;
+    public bool HasSet4 => set4 >= 0;
 }

@@ -21,22 +21,6 @@ public class QuizQuestionRepository : MonoBehaviour
         Action onFailedCompletely,
         string accessToken = null)
     {
-        QuizCacheEnvelope cache = LoadCacheEnvelope();
-
-        bool hasCache = cache != null && !string.IsNullOrWhiteSpace(cache.rawJson);
-        bool cacheIsFresh = hasCache && !IsExpired(cache.savedAtUnixSeconds);
-
-        if (cacheIsFresh)
-        {
-            List<QuizSessionQuestion> cachedQuestions = ConvertRawJsonToSessionQuestions(cache.rawJson);
-            if (cachedQuestions != null && cachedQuestions.Count > 0)
-            {
-                Debug.Log("[QuizQuestionRepository] Using fresh cached quiz.");
-                onSuccess?.Invoke(cachedQuestions);
-                yield break;
-            }
-        }
-
         bool webSuccess = false;
         List<QuizSessionQuestion> webQuestions = null;
 
@@ -61,6 +45,21 @@ public class QuizQuestionRepository : MonoBehaviour
             Debug.Log("[QuizQuestionRepository] Using web quiz and updating cache.");
             onSuccess?.Invoke(webQuestions);
             yield break;
+        }
+
+        QuizCacheEnvelope cache = LoadCacheEnvelope();
+        bool hasCache = cache != null && !string.IsNullOrWhiteSpace(cache.rawJson);
+        bool cacheIsFresh = hasCache && !IsExpired(cache.savedAtUnixSeconds);
+
+        if (cacheIsFresh)
+        {
+            List<QuizSessionQuestion> cachedQuestions = ConvertRawJsonToSessionQuestions(cache.rawJson);
+            if (cachedQuestions != null && cachedQuestions.Count > 0)
+            {
+                Debug.Log("[QuizQuestionRepository] Web failed. Using fresh cached quiz.");
+                onSuccess?.Invoke(cachedQuestions);
+                yield break;
+            }
         }
 
         if (hasCache)
@@ -184,11 +183,11 @@ public class QuizQuestionRepository : MonoBehaviour
 
             if (source.choices == null)
             {
-                Debug.LogWarning($"[QuizQuestionRepository] Question {source.id} has null choices.");
+                Debug.LogWarning($"[QuizQuestionRepository] Question {source.id} has null Thai choices.");
                 continue;
             }
 
-            List<string> orderedChoices = new List<string>
+            string[] thChoices =
             {
                 source.choices.a,
                 source.choices.b,
@@ -196,28 +195,37 @@ public class QuizQuestionRepository : MonoBehaviour
                 source.choices.d
             };
 
+            string[] enChoices =
+            {
+                source.choicesEn != null ? source.choicesEn.a : null,
+                source.choicesEn != null ? source.choicesEn.b : null,
+                source.choicesEn != null ? source.choicesEn.c : null,
+                source.choicesEn != null ? source.choicesEn.d : null
+            };
+
             int correctChoiceIndex = AnswerKeyToIndex(source.answer);
 
-            if (correctChoiceIndex < 0 || correctChoiceIndex >= orderedChoices.Count)
+            if (correctChoiceIndex < 0 || correctChoiceIndex >= thChoices.Length)
             {
-                Debug.LogWarning(
-                    $"[QuizQuestionRepository] Question {source.id} has invalid answer key: {source.answer}"
-                );
+                Debug.LogWarning($"[QuizQuestionRepository] Question {source.id} has invalid answer key: {source.answer}");
                 continue;
             }
 
             QuizSessionQuestion sessionQuestion = new QuizSessionQuestion
             {
-                questionText = source.question,
+                questionTextTh = source.question,
+                questionTextEn = source.questionEn,
                 correctChoiceIndex = correctChoiceIndex,
-                explanation = string.Empty
+                explanationTh = string.Empty,
+                explanationEn = string.Empty
             };
 
-            for (int c = 0; c < orderedChoices.Count; c++)
+            for (int c = 0; c < thChoices.Length; c++)
             {
                 sessionQuestion.choices.Add(new QuizSessionChoice
                 {
-                    text = orderedChoices[c],
+                    textTh = thChoices[c],
+                    textEn = enChoices[c],
                     isCorrect = c == correctChoiceIndex
                 });
             }

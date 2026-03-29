@@ -10,6 +10,7 @@ public class QuizLeaderboardController : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private QuizRepository repository;
+    [SerializeField] private QuizUIController uiController;
 
     [Header("Panel")]
     [SerializeField] private GameObject panelRoot;
@@ -63,7 +64,18 @@ public class QuizLeaderboardController : MonoBehaviour
         UpdateMySummary(_cachedMeData);
         RefreshStatusText();
     }
+    private void UpdatePhaseScores(QuizMeDataDto data)
+    {
+        if (uiController == null || data == null)
+            return;
 
+        uiController.SetPhaseScores(
+            data.set1Score,
+            data.set2Score,
+            data.set3Score,
+            data.set4Score
+        );
+    }
     public void HandleQuizFinished(int correctCount, int totalQuestions, int finalUiScore)
     {
         _lastSubmittedCorrectCount = correctCount;
@@ -71,7 +83,7 @@ public class QuizLeaderboardController : MonoBehaviour
         _lastFinalUiScore = finalUiScore;
         _hasSessionResult = true;
 
-        StartCoroutine(SubmitLatestResultRoutine());
+        UpdateMySummary(_cachedMeData);
     }
 
     public void OpenLeaderboard()
@@ -94,45 +106,6 @@ public class QuizLeaderboardController : MonoBehaviour
             return;
 
         StartCoroutine(RefreshLeaderboardRoutine());
-    }
-
-    private IEnumerator SubmitLatestResultRoutine()
-    {
-        if (!_hasSessionResult)
-            yield break;
-
-        if (repository == null)
-        {
-            Debug.LogWarning("[QuizLeaderboardController] QuizRepository is missing.");
-            yield break;
-        }
-
-        QuizSubmitOperationResult submitResult = null;
-
-        yield return repository.SubmitResult(
-            _lastFinalUiScore,
-            result =>
-            {
-                submitResult = result;
-            });
-
-        if (submitResult == null)
-        {
-            Debug.LogWarning("[QuizLeaderboardController] Submit result is null.");
-            yield break;
-        }
-
-        if (!submitResult.success)
-        {
-            Debug.LogWarning(
-                $"[QuizLeaderboardController] Submit failed | type={submitResult.errorType} | code={submitResult.statusCode} | message={submitResult.message}"
-            );
-            yield break;
-        }
-
-        Debug.Log("[QuizLeaderboardController] Submit success.");
-
-        RefreshLeaderboard();
     }
 
     private IEnumerator RefreshLeaderboardRoutine()
@@ -170,9 +143,11 @@ public class QuizLeaderboardController : MonoBehaviour
             meResult = result;
         });
 
-        _cachedMeData = meResult != null && meResult.success && meResult.response != null
-            ? meResult.response.data
-            : null;
+       _cachedMeData = meResult != null && meResult.success && meResult.response != null
+        ? meResult.response.data
+        : null;
+
+        UpdatePhaseScores(_cachedMeData);
 
         if (leaderboardResult == null)
         {
@@ -299,19 +274,28 @@ public class QuizLeaderboardController : MonoBehaviour
         if (mySummaryText == null)
             return;
 
-        string playerName =
-            LocalPlayerData.Instance != null &&
-            !string.IsNullOrWhiteSpace(LocalPlayerData.Instance.PlayerName)
-                ? LocalPlayerData.Instance.PlayerName
-                : "-";
+        string scoreText = "-";
+        string rankText = "-";
 
-        int score = data != null ? data.totalScore : _lastFinalUiScore;
-        string rankText = data != null ? data.rank.ToString() : "-";
+        if (data != null)
+        {
+            if (data.hasTotalScore)
+                scoreText = data.totalScore.ToString();
+            else if (_hasSessionResult)
+                scoreText = _lastFinalUiScore.ToString();
+
+            if (data.hasRank)
+                rankText = data.rank.ToString();
+        }
+        else if (_hasSessionResult)
+        {
+            scoreText = _lastFinalUiScore.ToString();
+        }
 
         mySummaryText.text = F(
             LocalizationKeys.Quiz.LeaderboardMyScoreFormat,
             "คะแนนของคุณ: {0} คะแนน | อันดับของคุณ: {1}",
-            score,
+            scoreText,
             rankText
         );
     }

@@ -43,6 +43,21 @@ public class AE_ProjectSelectionUI : MonoBehaviour, IPointerDownHandler, IPointe
 
     public event Action<ExhibitionProjectData> ItemSelected;
 
+    private bool UseEnglish
+    {
+        get
+        {
+            string code = LocalizationService.CurrentLocaleCode;
+            return !string.IsNullOrWhiteSpace(code) &&
+                   code.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private string ProjectSelectionSubtitle =>
+        UseEnglish
+            ? "Projects under this agency"
+            : "โครงการภายใต้การดูแลของหน่วยงาน";
+
     public void BindSelection(ExhibitionAgencyData agencyData, IReadOnlyList<ExhibitionProjectData> items, string ministryLogoUrl)
     {
         BindHeader(agencyData, ministryLogoUrl);
@@ -55,7 +70,7 @@ public class AE_ProjectSelectionUI : MonoBehaviour, IPointerDownHandler, IPointe
             agencyTitleText.text = agencyData != null ? agencyData.Title : string.Empty;
 
         if (subtitleText != null)
-            subtitleText.text = "โครงการภายใต้การดูแลของหน่วยงาน";
+            subtitleText.text = ProjectSelectionSubtitle;
 
         SetMinistryLogo(ministryLogoUrl);
         SetAgencyLogo(agencyData != null ? agencyData.LogoUrl : string.Empty);
@@ -270,8 +285,7 @@ public class AE_ProjectSelectionUI : MonoBehaviour, IPointerDownHandler, IPointe
         if (target == null || string.IsNullOrWhiteSpace(url))
             return false;
 
-        Sprite cached;
-        if (!SpriteCache.TryGetValue(url, out cached) || cached == null)
+        if (!SpriteCache.TryGetValue(url, out Sprite cached) || cached == null)
             return false;
 
         target.sprite = cached;
@@ -291,9 +305,7 @@ public class AE_ProjectSelectionUI : MonoBehaviour, IPointerDownHandler, IPointe
             if (request.result != UnityWebRequest.Result.Success)
             {
                 Debug.LogWarning("[AE_ProjectSelectionUI] Failed to load image: " + url + "\n" + request.error);
-                if (onFinished != null)
-                    onFinished();
-
+                onFinished?.Invoke();
                 yield break;
             }
 
@@ -302,9 +314,7 @@ public class AE_ProjectSelectionUI : MonoBehaviour, IPointerDownHandler, IPointe
             if (bytes == null || bytes.Length == 0)
             {
                 Debug.LogWarning("[AE_ProjectSelectionUI] Empty image data: " + url);
-                if (onFinished != null)
-                    onFinished();
-
+                onFinished?.Invoke();
                 yield break;
             }
 
@@ -315,10 +325,7 @@ public class AE_ProjectSelectionUI : MonoBehaviour, IPointerDownHandler, IPointe
             {
                 Destroy(texture);
                 Debug.LogWarning("[AE_ProjectSelectionUI] Texture load failed: " + url);
-
-                if (onFinished != null)
-                    onFinished();
-
+                onFinished?.Invoke();
                 yield break;
             }
 
@@ -336,8 +343,7 @@ public class AE_ProjectSelectionUI : MonoBehaviour, IPointerDownHandler, IPointe
                 targetImage.preserveAspect = true;
             }
 
-            if (onFinished != null)
-                onFinished();
+            onFinished?.Invoke();
         }
     }
 

@@ -2,31 +2,19 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
-
+using UnityEngine.Localization.Settings;
 public class AE_ProjectNarrationController : MonoBehaviour, IMediaControllable
 {
     [Header("Audio")]
     [SerializeField] private ExhibitionAudioSource narratorAudioSource;
     [SerializeField] private AudioType audioType = AudioType.MPEG;
 
-    [Header("Overlay")]
-    [SerializeField] private StatusOverlay overlay;
-    [SerializeField] private string loadingTitle = "กำลังดาวน์โหลดเสียงบรรยาย";
-    [SerializeField] private string loadingSubtitle = "กรุณารอสักครู่";
-    [SerializeField] private string failedTitle = "โหลดเสียงบรรยายไม่สำเร็จ";
-    [SerializeField] private string failedSubtitle = "กรุณาลองใหม่อีกครั้ง";
-    [SerializeField] private string emptyUrlTitle = "ไม่สามารถโหลดเสียงบรรยาย";
-    [SerializeField] private string emptyUrlSubtitle = "ไม่พบลิงก์เสียงบรรยาย";
-    [SerializeField] private string missingAudioSourceTitle = "ไม่สามารถเล่นเสียงบรรยาย";
-    [SerializeField] private string missingAudioSourceSubtitle = "ไม่พบ Audio Source";
-    [SerializeField] private string loadingCancelLabel = "ยกเลิก";
-
     [Header("Coordination")]
     [SerializeField] private MediaSessionCoordinator mediaCoordinator;
 
     [Header("Runtime Visual")]
     [SerializeField] private GameObject rawImage;
-
+    [SerializeField] private StatusOverlay overlay;
     public MediaPlaybackState State { get; private set; } = MediaPlaybackState.Idle;
     public event Action<MediaPlaybackState> StateChanged;
 
@@ -37,7 +25,54 @@ public class AE_ProjectNarrationController : MonoBehaviour, IMediaControllable
     private bool _cancelRequested;
     private string _currentUrl = string.Empty;
     private AudioClip _currentClip;
+    private bool UseEnglish
+    {
+        get
+        {
+            var locale = LocalizationSettings.SelectedLocale;
+            string code = locale != null ? locale.Identifier.Code : "th";
+            return code.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+    private string LoadingTitle => UseEnglish
+    ? "Downloading narration audio"
+    : "กำลังดาวน์โหลดเสียงบรรยาย";
 
+    private string LoadingSubtitle => UseEnglish
+        ? "Please wait a moment"
+        : "กรุณารอสักครู่";
+
+    private string FailedTitle => UseEnglish
+        ? "Failed to load narration audio"
+        : "โหลดเสียงบรรยายไม่สำเร็จ";
+
+    private string FailedSubtitle => UseEnglish
+        ? "Please try again"
+        : "กรุณาลองใหม่อีกครั้ง";
+
+    private string EmptyUrlTitle => UseEnglish
+        ? "Unable to load narration audio"
+        : "ไม่สามารถโหลดเสียงบรรยาย";
+
+    private string EmptyUrlSubtitle => UseEnglish
+        ? "Narration audio link not found"
+        : "ไม่พบลิงก์เสียงบรรยาย";
+
+    private string MissingAudioSourceTitle => UseEnglish
+        ? "Unable to play narration audio"
+        : "ไม่สามารถเล่นเสียงบรรยาย";
+
+    private string MissingAudioSourceSubtitle => UseEnglish
+        ? "Audio source not found"
+        : "ไม่พบ Audio Source";
+
+    private string LoadingCancelLabel => UseEnglish
+        ? "Cancel"
+        : "ยกเลิก";
+
+    private string MissingNarrationDataSubtitle => UseEnglish
+        ? "Narration audio data not found"
+        : "ไม่พบข้อมูลเสียงบรรยาย";
     private void Awake()
     {
         mediaCoordinator?.Register(this);
@@ -72,7 +107,7 @@ public class AE_ProjectNarrationController : MonoBehaviour, IMediaControllable
     {
         if (string.IsNullOrWhiteSpace(url))
         {
-            overlay?.ShowFailed(emptyUrlTitle, emptyUrlSubtitle);
+            overlay?.ShowFailed(EmptyUrlTitle, EmptyUrlSubtitle);
             SetState(MediaPlaybackState.Failed);
             return;
         }
@@ -111,11 +146,11 @@ public class AE_ProjectNarrationController : MonoBehaviour, IMediaControllable
         SetState(MediaPlaybackState.Loading);
 
         overlay?.ShowLoading(
-            loadingTitle,
-            loadingSubtitle,
+            LoadingTitle,
+            LoadingSubtitle,
             showBlocker: true,
             cancelable: true,
-            cancelButtonLabel: loadingCancelLabel,
+            cancelButtonLabel: LoadingCancelLabel,
             onCancel: CancelMediaLoading
         );
 
@@ -135,7 +170,7 @@ public class AE_ProjectNarrationController : MonoBehaviour, IMediaControllable
 
         if (finishedRequest == null)
         {
-            overlay?.ShowFailed(failedTitle, failedSubtitle);
+            overlay?.ShowFailed(FailedTitle, FailedSubtitle);
             SetState(MediaPlaybackState.Failed);
             yield break;
         }
@@ -148,7 +183,7 @@ public class AE_ProjectNarrationController : MonoBehaviour, IMediaControllable
 
         if (finishedRequest.result != UnityWebRequest.Result.Success)
         {
-            overlay?.ShowFailed(failedTitle, failedSubtitle);
+            overlay?.ShowFailed(FailedTitle, FailedSubtitle);
             SetState(MediaPlaybackState.Failed);
             DisposeRequest(finishedRequest);
             yield break;
@@ -159,7 +194,7 @@ public class AE_ProjectNarrationController : MonoBehaviour, IMediaControllable
 
         if (clip == null)
         {
-            overlay?.ShowFailed(failedTitle, "ไม่พบข้อมูลเสียงบรรยาย");
+            overlay?.ShowFailed(FailedTitle, MissingNarrationDataSubtitle);
             SetState(MediaPlaybackState.Failed);
             yield break;
         }
@@ -167,7 +202,7 @@ public class AE_ProjectNarrationController : MonoBehaviour, IMediaControllable
         if (narratorAudioSource == null || narratorAudioSource.AudioSource == null)
         {
             Destroy(clip);
-            overlay?.ShowFailed(missingAudioSourceTitle, missingAudioSourceSubtitle);
+            overlay?.ShowFailed(MissingAudioSourceTitle, MissingAudioSourceSubtitle);
             SetState(MediaPlaybackState.Failed);
             yield break;
         }
