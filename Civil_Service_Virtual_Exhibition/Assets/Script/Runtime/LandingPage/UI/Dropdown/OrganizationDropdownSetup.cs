@@ -146,51 +146,51 @@ public class OrganizationDropdownSetup : MonoBehaviour
             },
             new OrganizationOption
             {
-                value = "สำนักงานปลัดสำนักนายกรัฐมนตรี",
-                thaiLabel = "สำนักงานปลัดสำนักนายกรัฐมนตรี",
-                englishLabel = "Office of the Permanent Secretary"
+                value = "สำนักนายกรัฐมนตรี (เทียบเท่ากระทรวง)",
+                thaiLabel = "สำนักนายกรัฐมนตรี (เทียบเท่ากระทรวง)",
+                englishLabel = "Office of the Prime Minister"
             },
             new OrganizationOption
             {
-                value = "กระทรวงมหาดไทย",
-                thaiLabel = "กระทรวงมหาดไทย",
-                englishLabel = "Ministry of Interior"
+                value = "กระทรวงกลาโหม",
+                thaiLabel = "กระทรวงกลาโหม",
+                englishLabel = "Ministry of Defence"
             },
             new OrganizationOption
             {
-                value = "กรมพัฒนาที่ดิน",
-                thaiLabel = "กรมพัฒนาที่ดิน",
-                englishLabel = "Land Development Department"
+                value = "กระทรวงการคลัง",
+                thaiLabel = "กระทรวงการคลัง",
+                englishLabel = "Ministry of Finance"
             },
             new OrganizationOption
             {
-                value = "กระทรวงแรงงาน",
-                thaiLabel = "กระทรวงแรงงาน",
-                englishLabel = "Ministry of Labour"
+                value = "กระทรวงการต่างประเทศ",
+                thaiLabel = "กระทรวงการต่างประเทศ",
+                englishLabel = "Ministry of Foreign Affairs"
             },
             new OrganizationOption
             {
-                value = "สำนักงานปลัดกระทรวงพาณิชย์",
-                thaiLabel = "สำนักงานปลัดกระทรวงพาณิชย์",
-                englishLabel = "Ministry of Commerce"
+                value = "กระทรวงการท่องเที่ยวและกีฬา",
+                thaiLabel = "กระทรวงการท่องเที่ยวและกีฬา",
+                englishLabel = "Ministry of Tourism and Sports"
             },
             new OrganizationOption
             {
-                value = "สำนักงานปลัดกระทรวงยุติธรรม",
-                thaiLabel = "สำนักงานปลัดกระทรวงยุติธรรม",
-                englishLabel = "Ministry of Justice"
+                value = "กระทรวงการพัฒนาสังคมและความมั่นคงของมนุษย์",
+                thaiLabel = "กระทรวงการพัฒนาสังคมและความมั่นคงของมนุษย์",
+                englishLabel = "Ministry of Social Development and Human Security"
             },
             new OrganizationOption
             {
-                value = "สำนักงานคณะกรรมการนโยบายรัฐวิสาหกิจ",
-                thaiLabel = "สำนักงานคณะกรรมการนโยบายรัฐวิสาหกิจ",
-                englishLabel = "State Enterprise Policy Office"
+                value = "กระทรวงเกษตรและสหกรณ์",
+                thaiLabel = "กระทรวงเกษตรและสหกรณ์",
+                englishLabel = "Ministry of Agriculture and Cooperatives"
             },
             new OrganizationOption
             {
-                value = "กรมสรรพสามิต",
-                thaiLabel = "กรมสรรพสามิต",
-                englishLabel = "Excise Department"
+                value = "กระทรวงคมนาคม",
+                thaiLabel = "กระทรวงคมนาคม",
+                englishLabel = "Ministry of Transport"
             },
             new OrganizationOption
             {
@@ -200,69 +200,69 @@ public class OrganizationDropdownSetup : MonoBehaviour
             },
             new OrganizationOption
             {
-                value = "กองบริหารทรัพยากรบุคคลกระทรวงการคลัง",
-                thaiLabel = "กองบริหารทรัพยากรบุคคลกระทรวงการคลัง",
-                englishLabel = "Ministry of Finance"
-            },
-            new OrganizationOption
-            {
-                value = "สำนักงานปลัดกระทรวงวัฒนธรรม",
-                thaiLabel = "สำนักงานปลัดกระทรวงวัฒนธรรม",
-                englishLabel = "Ministry of Culture"
-            },
-            new OrganizationOption
-            {
-                value = "สำนักงานปลัดกระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
-                thaiLabel = "สำนักงานปลัดกระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
+                value = "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
+                thaiLabel = "กระทรวงดิจิทัลเพื่อเศรษฐกิจและสังคม",
                 englishLabel = "Ministry of Digital Economy and Society"
             },
             new OrganizationOption
             {
-                value = "สำนักงานปลัดกระทรวงการพัฒนาสังคมและความมั่นคงของมนุษย์",
-                thaiLabel = "สำนักงานปลัดกระทรวงการพัฒนาสังคมและความมั่นคงของมนุษย์",
-                englishLabel = "Ministry of Social Development and Human Security"
-            },
-            new OrganizationOption
-            {
-                value = "สำนักงานปลัดกระทรวงการท่องเที่ยวและกีฬา",
-                thaiLabel = "สำนักงานปลัดกระทรวงการท่องเที่ยวและกีฬา",
-                englishLabel = "Ministry of Tourism and Sports"
-            },
-            new OrganizationOption
-            {
-                value = "กรมการกงสุล กระทรวงการต่างประเทศ",
-                thaiLabel = "กรมการกงสุล กระทรวงการต่างประเทศ",
-                englishLabel = "Ministry of Foreign Affairs"
-            },
-            new OrganizationOption
-            {
-                value = "สำนักงานปลัดกระทรวงคมนาคม",
-                thaiLabel = "สำนักงานปลัดกระทรวงคมนาคม",
-                englishLabel = "Ministry of Transport"
-            },
-            new OrganizationOption
-            {
-                value = "สำนักงานปลัดกระทรวงพลังงาน",
-                thaiLabel = "สำนักงานปลัดกระทรวงพลังงาน",
+                value = "กระทรวงพลังงาน",
+                thaiLabel = "กระทรวงพลังงาน",
                 englishLabel = "Ministry of Energy"
             },
             new OrganizationOption
             {
-                value = "สำนักงานบริหารหนี้สาธารณะ",
-                thaiLabel = "สำนักงานบริหารหนี้สาธารณะ",
-                englishLabel = "Public Debt Management Office"
+                value = "กระทรวงพาณิชย์",
+                thaiLabel = "กระทรวงพาณิชย์",
+                englishLabel = "Ministry of Commerce"
             },
             new OrganizationOption
             {
-                value = "กรมสารนิเทศ",
-                thaiLabel = "กรมสารนิเทศ",
-                englishLabel = "Department of Information"
+                value = "กระทรวงมหาดไทย",
+                thaiLabel = "กระทรวงมหาดไทย",
+                englishLabel = "Ministry of Interior"
+            },
+            new OrganizationOption
+            {
+                value = "กระทรวงยุติธรรม",
+                thaiLabel = "กระทรวงยุติธรรม",
+                englishLabel = "Ministry of Justice"
+            },
+            new OrganizationOption
+            {
+                value = "กระทรวงแรงงาน",
+                thaiLabel = "กระทรวงแรงงาน",
+                englishLabel = "Ministry of Labour"
+            },
+            new OrganizationOption
+            {
+                value = "กระทรวงวัฒนธรรม",
+                thaiLabel = "กระทรวงวัฒนธรรม",
+                englishLabel = "Ministry of Culture"
             },
             new OrganizationOption
             {
                 value = "กระทรวงศึกษาธิการ",
                 thaiLabel = "กระทรวงศึกษาธิการ",
                 englishLabel = "Ministry of Education"
+            },
+            new OrganizationOption
+            {
+                value = "กระทรวงสาธารณสุข",
+                thaiLabel = "กระทรวงสาธารณสุข",
+                englishLabel = "Ministry of Public Health"
+            },
+            new OrganizationOption
+            {
+                value = "กระทรวงอุตสาหกรรม",
+                thaiLabel = "กระทรวงอุตสาหกรรม",
+                englishLabel = "Ministry of Industry"
+            },
+            new OrganizationOption
+            {
+                value = "กระทรวงการอุดมศึกษา วิทยาศาสตร์ วิจัยและนวัตกรรม",
+                thaiLabel = "กระทรวงการอุดมศึกษา วิทยาศาสตร์ วิจัยและนวัตกรรม",
+                englishLabel = "Ministry of Higher Education, Science, Research and Innovation"
             },
             new OrganizationOption
             {

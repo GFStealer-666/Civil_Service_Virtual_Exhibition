@@ -66,8 +66,6 @@ public class IC_PanelController : MonoBehaviour, IMediaControllable
     [SerializeField] private Sprite imageEn;
     [SerializeField] private string narrationFileEn;
 
-    [Header("Shared Image")]
-    [SerializeField] private Sprite commonImage;
 
     [Header("Localized Sections")]
     [SerializeField] private List<IC_LocalizedSection> sections = new List<IC_LocalizedSection>();
@@ -240,9 +238,7 @@ public class IC_PanelController : MonoBehaviour, IMediaControllable
 
         if (pictureImage != null)
         {
-            Sprite sprite = commonImage != null
-                ? commonImage
-                : (isEnglish ? FirstSprite(imageEn, imageTh) : FirstSprite(imageTh, imageEn));
+            Sprite sprite = isEnglish ? FirstSprite(imageEn, imageTh) : FirstSprite(imageTh, imageEn);
 
             pictureImage.sprite = sprite;
             pictureImage.enabled = sprite != null;

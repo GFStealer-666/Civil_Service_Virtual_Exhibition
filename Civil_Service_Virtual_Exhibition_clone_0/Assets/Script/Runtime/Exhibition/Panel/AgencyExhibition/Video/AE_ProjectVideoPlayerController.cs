@@ -23,10 +23,11 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
     private bool _isPrepared;
     private bool _isPreparing;
     private bool _cancelPrepareRequested;
+    private bool _isPlaying;
 
     public bool IsPrepared => _isPrepared;
     public bool IsPreparing => _isPreparing;
-    public bool IsPlaying => videoPlayer != null && videoPlayer.isPlaying;
+    public bool IsPlaying => _isPlaying;
     public double CurrentTime => videoPlayer != null ? videoPlayer.time : 0d;
     public double Duration => videoPlayer != null ? videoPlayer.length : 0d;
 
@@ -38,10 +39,12 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
         videoPlayer.playOnAwake = false;
         videoPlayer.waitForFirstFrame = true;
         videoPlayer.skipOnDrop = true;
+        videoPlayer.audioOutputMode = VideoAudioOutputMode.Direct;
 
         videoPlayer.prepareCompleted += HandlePrepareCompleted;
         videoPlayer.errorReceived += HandleErrorReceived;
         videoPlayer.loopPointReached += HandleLoopPointReached;
+        videoPlayer.started += HandleStarted;
     }
 
     private void OnDestroy()
@@ -51,6 +54,7 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
             videoPlayer.prepareCompleted -= HandlePrepareCompleted;
             videoPlayer.errorReceived -= HandleErrorReceived;
             videoPlayer.loopPointReached -= HandleLoopPointReached;
+            videoPlayer.started -= HandleStarted;
         }
 
         StopPrepareTimeoutRoutine();
@@ -66,6 +70,12 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
     {
         if (!_isPrepared || videoPlayer == null)
             return;
+
+        if (_isPlaying != videoPlayer.isPlaying)
+        {
+            _isPlaying = videoPlayer.isPlaying;
+            PlayStateChanged?.Invoke(_isPlaying);
+        }
 
         TimeChanged?.Invoke(videoPlayer.time, videoPlayer.length);
     }
@@ -84,11 +94,14 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
             return;
         }
 
+        Debug.Log($"[AE_ProjectVideoPlayerController] Preparing URL: {url}");
+
         StopPlaybackInternal(resetOutput: true, notifyState: true);
 
         _cancelPrepareRequested = false;
         _isPrepared = false;
         _isPreparing = true;
+        _isPlaying = false;
 
         if (videoOutputImage != null)
             videoOutputImage.texture = null;
@@ -107,7 +120,6 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
             return;
 
         videoPlayer.Play();
-        PlayStateChanged?.Invoke(true);
     }
 
     public void Pause()
@@ -116,7 +128,12 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
             return;
 
         videoPlayer.Pause();
-        PlayStateChanged?.Invoke(false);
+
+        if (_isPlaying)
+        {
+            _isPlaying = false;
+            PlayStateChanged?.Invoke(false);
+        }
     }
 
     public void CancelPrepare()
@@ -164,7 +181,6 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
 
         bool resumeAfterSeek = videoPlayer.isPlaying;
         double duration = videoPlayer.length;
-
         double targetTime = normalizedValue * duration;
 
         if (targetTime >= duration)
@@ -226,6 +242,7 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
 
         _isPreparing = false;
         _isPrepared = true;
+        _isPlaying = false;
 
         if (videoOutputImage != null)
             videoOutputImage.texture = source.texture;
@@ -233,13 +250,28 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
         UpdateAspectRatio(source);
 
         Prepared?.Invoke();
-        PlayStateChanged?.Invoke(false);
         TimeChanged?.Invoke(source.time, source.length);
+    }
+
+    private void HandleStarted(VideoPlayer source)
+    {
+        if (!_isPrepared)
+            return;
+
+        if (!_isPlaying)
+        {
+            _isPlaying = true;
+            PlayStateChanged?.Invoke(true);
+        }
     }
 
     private void HandleErrorReceived(VideoPlayer source, string message)
     {
         StopPrepareTimeoutRoutine();
+
+        Debug.LogError(
+            $"[AE_ProjectVideoPlayerController] URL failed: {source.url}\nError: {message}"
+        );
 
         if (_cancelPrepareRequested)
         {
@@ -250,6 +282,7 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
 
         _isPreparing = false;
         _isPrepared = false;
+        _isPlaying = false;
 
         Failed?.Invoke(string.IsNullOrWhiteSpace(message) ? "Unable to load video." : message);
     }
@@ -261,10 +294,12 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
 
         if (source.isLooping)
         {
+            _isPlaying = true;
             TimeChanged?.Invoke(0d, source.length);
             return;
         }
 
+        _isPlaying = false;
         PlayStateChanged?.Invoke(false);
         Finished?.Invoke();
     }
@@ -306,6 +341,7 @@ public class AE_ProjectVideoPlayerController : MonoBehaviour
 
         _isPrepared = false;
         _isPreparing = false;
+        _isPlaying = false;
 
         if (notifyState)
         {

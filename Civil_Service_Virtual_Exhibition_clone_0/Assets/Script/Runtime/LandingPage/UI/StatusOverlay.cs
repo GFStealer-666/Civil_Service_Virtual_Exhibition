@@ -4,6 +4,8 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Localization.Settings;
+using UnityEngine.SceneManagement;
+
 public class StatusOverlay : MonoBehaviour
 {
     public enum State
@@ -45,6 +47,12 @@ public class StatusOverlay : MonoBehaviour
 
     [Header("Optional")]
     [SerializeField] private bool useOverlay = true;
+
+    [Header("Scene Persistence")]
+    [SerializeField] private bool persistAcrossScenes = false;
+    [SerializeField] private bool keepVisibleStateOnSceneLoad = true;
+    [SerializeField] private bool hideOnAwake = true;
+
     private Action _onFailedDismissed;
     private Action _onLoadingCanceled;
 
@@ -55,19 +63,27 @@ public class StatusOverlay : MonoBehaviour
     private string _animatedSubtitleBase = string.Empty;
     private State _currentState = State.Hidden;
     private bool _showOverlayBlocker = true;
+    private bool _initialized;
 
     public State CurrentState => _currentState;
 
     private void Awake()
     {
+        if (persistAcrossScenes)
+            DontDestroyOnLoad(gameObject);
+
         if (failedOkButton != null)
             failedOkButton.onClick.AddListener(DismissFailed);
 
         if (loadingCancelButton != null)
             loadingCancelButton.onClick.AddListener(HandleLoadingCanceled);
 
-        Hide();
+        if (hideOnAwake)
+            Hide();
+
+        _initialized = true;
     }
+
     protected bool IsThaiLanguage()
     {
         var locale = LocalizationSettings.SelectedLocale;
@@ -76,8 +92,21 @@ public class StatusOverlay : MonoBehaviour
 
         string code = locale.Identifier.Code;
         return !string.IsNullOrEmpty(code) &&
-            code.StartsWith("th", StringComparison.OrdinalIgnoreCase);
+               code.StartsWith("th", StringComparison.OrdinalIgnoreCase);
     }
+
+    private void OnEnable()
+    {
+        if (persistAcrossScenes)
+            SceneManager.sceneLoaded += HandleSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        if (persistAcrossScenes)
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+    }
+
     private void OnDestroy()
     {
         if (failedOkButton != null)
@@ -85,16 +114,38 @@ public class StatusOverlay : MonoBehaviour
 
         if (loadingCancelButton != null)
             loadingCancelButton.onClick.RemoveListener(HandleLoadingCanceled);
+
+        if (persistAcrossScenes)
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
+    }
+
+    private void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (!persistAcrossScenes)
+            return;
+
+        if (!_initialized)
+            return;
+
+        if (!keepVisibleStateOnSceneLoad)
+        {
+            Hide();
+            return;
+        }
+
+        bool shouldShow = _currentState != State.Hidden;
+        SetVisible(shouldShow);
+        Apply(_currentState);
     }
 
     public void ShowLoading(
-    string title,
-    string subtitle,
-    bool showBlocker = true,
-    bool cancelable = false,
-    string cancelButtonLabel = "Cancel",
-    Action onCancel = null,
-    bool animateDots = true)
+        string title,
+        string subtitle,
+        bool showBlocker = true,
+        bool cancelable = false,
+        string cancelButtonLabel = "Cancel",
+        Action onCancel = null,
+        bool animateDots = true)
     {
         StopOverlayCoroutines();
 
@@ -122,13 +173,14 @@ public class StatusOverlay : MonoBehaviour
         if (animateDots)
             StartDotsAnimation(loadingSubtitleText, subtitle);
     }
+
     public void ShowLoadingWaiting(
-    string title,
-    string subtitle,
-    bool showBlocker = true,
-    bool cancelable = false,
-    string cancelButtonLabel = "Cancel",
-    Action onCancel = null)
+        string title,
+        string subtitle,
+        bool showBlocker = true,
+        bool cancelable = false,
+        string cancelButtonLabel = "Cancel",
+        Action onCancel = null)
     {
         ShowLoading(
             title,
@@ -140,13 +192,14 @@ public class StatusOverlay : MonoBehaviour
             animateDots: true
         );
     }
+
     public void ShowSuccess(
-    string title,
-    string subtitle,
-    bool autoDismiss = true,
-    Action onDone = null,
-    bool animateDots = false,
-    bool showBlocker = true)
+        string title,
+        string subtitle,
+        bool autoDismiss,
+        Action onDone = null,
+        bool animateDots = false,
+        bool showBlocker = true)
     {
         StopOverlayCoroutines();
 
@@ -193,7 +246,10 @@ public class StatusOverlay : MonoBehaviour
         _showOverlayBlocker = showBlocker;
         _onLoadingCanceled = null;
         _onFailedDismissed = onDismissed;
-        failedOkButtonText.text = IsThaiLanguage() ? "ตกลง" : "OK";
+
+        if (failedOkButtonText != null)
+            failedOkButtonText.text = IsThaiLanguage() ? "ตกลง" : "OK";
+
         SetVisible(true);
         Apply(State.Failed);
 

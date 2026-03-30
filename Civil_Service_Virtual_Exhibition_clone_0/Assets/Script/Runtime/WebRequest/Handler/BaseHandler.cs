@@ -52,12 +52,23 @@ public abstract class BaseHandler : MonoBehaviour
     protected void ShowSuccessOverlay(
         string title,
         string subtitle,
-        bool autoDismiss = true,
+        bool autoDismiss = false,
         Action onDone = null,
         bool animateDots = true,
         bool showBlock = true)
     {
         overlay?.ShowSuccess(title, subtitle, autoDismiss, onDone, animateDots , showBlock);
+    }
+
+    protected void ShowSuccessOverlayWaiting(
+        string title,
+        string subtitle,
+        bool autoDismiss = false,
+        Action onDone = null,
+        bool animateDots = true,
+        bool showBlock = true)
+    {
+        overlay?.ShowSuccessWaiting(title, subtitle, true);
     }
 
     protected IEnumerator PostRequest(
@@ -141,7 +152,7 @@ public abstract class BaseHandler : MonoBehaviour
             $"Gender={localData.Gender}, Org={localData.Organization}, Email={player.email}, Token={localData.PlayerToken}"
         );
 
-        ShowSuccessOverlay(
+        ShowSuccessOverlayWaiting(
             L("เข้าสู่ระบบสำเร็จ", "Login successful"),
             L("กรุณารอสักครู่", "Please wait a moment")
         );
@@ -198,7 +209,6 @@ public abstract class BaseHandler : MonoBehaviour
             yield break;
         }
 
-        overlay?.Hide();
     }
 
     private PlayerGender ParseGender(string gender)

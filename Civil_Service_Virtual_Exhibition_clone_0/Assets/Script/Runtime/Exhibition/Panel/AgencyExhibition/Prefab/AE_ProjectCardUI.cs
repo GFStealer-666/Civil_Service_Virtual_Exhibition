@@ -13,6 +13,7 @@ public class AE_ProjectCardUI : MonoBehaviour
 
     [Header("Fallback")]
     [SerializeField] private Sprite fallbackBackground;
+    [SerializeField] private Color backgroundFallbackColor = new Color(219f / 255f, 219f / 255f, 219f / 255f, 1f);
 
     private ExhibitionProjectData _data;
     private Action<ExhibitionProjectData> _onClicked;
@@ -48,6 +49,15 @@ public class AE_ProjectCardUI : MonoBehaviour
             backgroundImage.sprite = data != null && data.FallbackBackgroundSprite != null
                 ? data.FallbackBackgroundSprite
                 : fallbackBackground;
+
+            if (backgroundImage.sprite != null)
+            {
+                backgroundImage.color = Color.white;
+            }
+            else
+            {
+                backgroundImage.color = backgroundFallbackColor;
+            }
 
             backgroundImage.preserveAspect = false;
         }

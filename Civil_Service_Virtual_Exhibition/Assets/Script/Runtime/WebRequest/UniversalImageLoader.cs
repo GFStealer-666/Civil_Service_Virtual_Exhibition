@@ -191,9 +191,15 @@ public class UniversalImageLoader : MonoBehaviour
             return;
 
         if (fallbackSprite != null)
+        {
             targetImage.sprite = fallbackSprite;
+            targetImage.color = new Color(219f / 255f, 219f / 255f, 219f / 255f, 1f);
+        }
         else
+        {
             targetImage.sprite = null;
+            targetImage.color = new Color(219f / 255f, 219f / 255f, 219f / 255f, 1f);
+        }
 
         targetImage.preserveAspect = preserveAspect;
     }
@@ -204,6 +210,7 @@ public class UniversalImageLoader : MonoBehaviour
             return;
 
         targetImage.sprite = sprite;
+        targetImage.color = Color.white;
         targetImage.preserveAspect = preserveAspect;
     }
 }

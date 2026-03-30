@@ -4,6 +4,18 @@ using Fusion;
 
 public class PlayerCameraBinder : NetworkBehaviour
 {
+    [Header("Initial Camera Angle")]
+    [Tooltip("Yaw (degrees) to force on first bind")]
+    public float initialYaw = 146.061f;
+
+    [Tooltip("Pitch (degrees) to force on first bind")]
+    public float initialPitch = -8.2f;
+
+    [Tooltip("Whether to force this orientation once after spawn")]
+    public bool forceInitialAngleOnSpawn = true;
+
+    private bool _initialAngleApplied;
+
     public override void Spawned()
     {
         if (!HasInputAuthority)
@@ -29,6 +41,13 @@ public class PlayerCameraBinder : NetworkBehaviour
                     if (player != null)
                     {
                         follow.SetTarget(player);
+
+                        if (!_initialAngleApplied && forceInitialAngleOnSpawn)
+                        {
+                            follow.ForceYawPitch(initialYaw, initialPitch);
+                            _initialAngleApplied = true;
+                        }
+
                         yield break;
                     }
                 }

@@ -1,8 +1,8 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Localization;
+using UnityEngine.Localization.Settings;
 
 public class AvatarFloatingMessage : MonoBehaviour
 {
@@ -20,46 +20,34 @@ public class AvatarFloatingMessage : MonoBehaviour
     [SerializeField] private CanvasGroup canvasGroup;
     [SerializeField] private Camera targetCamera;
 
-    [Header("Language")]
-    [SerializeField] private LanguageMode languageMode = LanguageMode.Auto;
-
     [Header("Timing")]
     [SerializeField] private bool playOnStart = true;
-    [SerializeField] private float minDelayBetweenMessages = 6f;
-    [SerializeField] private float maxDelayBetweenMessages = 14f;
-    [SerializeField] private float messageLifetime = 20f;
 
     [Header("Floating")]
+    [SerializeField] private bool allowFloating = false;
     [SerializeField] private float floatHeight = 0.2f;
     [SerializeField] private float floatSpeed = 1.2f;
 
-    [Header("Fade")]
-    [SerializeField] private float fadeDuration = 0.35f;
+    [Header("Localization")]
+    [SerializeField] private LanguageMode languageMode = LanguageMode.Auto;
 
-    [Header("Thai Messages")]
-    [SerializeField] private List<string> thaiMessages = new List<string>
-    {
-        "มีอะไรให้ช่วยไหมคะ",
-        "สนใจดูข้อมูลเพิ่มเติมไหมคะ",
-        "ยินดีให้คำแนะนำค่ะ",
-        "ต้องการความช่วยเหลือไหมคะ"
-    };
+    [Header("Message")]
+    [TextArea]
+    [SerializeField] private string singleMessage = "Can I help you?";
 
-    [Header("English Messages")]
-    [SerializeField] private List<string> englishMessages = new List<string>
-    {
-        "Can I help you?",
-        "Would you like more information?",
-        "I am happy to assist you.",
-        "Need any help?"
-    };
+    [TextArea]
+    [SerializeField] private string singleMessageThai = "มีอะไรให้ช่วยไหม";
+
+    [TextArea]
+    [SerializeField] private string singleMessageEnglish = "Can I help you?";
 
     private Vector3 _baseWorldPosition;
-    private float _nextMessageTime;
-    private float _messageStartTime;
     private bool _isShowing;
-    private string _lastMessage = string.Empty;
-    private Coroutine _fadeRoutine;
+
+    private string _currentThaiMessage = string.Empty;
+    private string _currentEnglishMessage = string.Empty;
+    private bool _useLocalizedPair;
+    private bool _suppressLocaleRefresh;
 
     private void Awake()
     {
@@ -70,12 +58,23 @@ public class AvatarFloatingMessage : MonoBehaviour
             targetCamera = Camera.main;
 
         _baseWorldPosition = messageRoot.position;
-        SetVisibleImmediate(false);
+        SetVisible(false);
+    }
+
+    private void OnEnable()
+    {
+        LocalizationSettings.SelectedLocaleChanged += HandleLocaleChanged;
+    }
+
+    private void OnDisable()
+    {
+        LocalizationSettings.SelectedLocaleChanged -= HandleLocaleChanged;
     }
 
     private void Start()
     {
-        ScheduleNextMessage(playOnStart ? 0.5f : GetRandomDelay());
+        if (playOnStart)
+            ShowLocalizedSingleMessage();
     }
 
     private void LateUpdate()
@@ -85,36 +84,26 @@ public class AvatarFloatingMessage : MonoBehaviour
 
         FaceCamera();
 
-        if (_isShowing)
-        {
+        if (_isShowing && allowFloating)
             UpdateFloating();
-            UpdateLifetime();
-        }
-        else if (Time.time >= _nextMessageTime)
-        {
-            ShowRandomMessage();
-        }
     }
 
-    public void ShowRandomMessage()
+    private void HandleLocaleChanged(Locale locale)
     {
-        List<string> source = GetMessageSource();
-        if (source == null || source.Count == 0)
+        if (_suppressLocaleRefresh)
             return;
 
-        string selected = PickRandomMessage(source);
-        if (string.IsNullOrWhiteSpace(selected))
-            return;
+        RefreshVisibleMessage();
+    }
 
-        _lastMessage = selected;
-        _messageStartTime = Time.time;
-        _isShowing = true;
+    public void ShowLocalizedSingleMessage()
+    {
+        _useLocalizedPair = true;
+        _currentThaiMessage = string.IsNullOrWhiteSpace(singleMessageThai) ? singleMessage : singleMessageThai;
+        _currentEnglishMessage = string.IsNullOrWhiteSpace(singleMessageEnglish) ? singleMessage : singleMessageEnglish;
 
-        if (messageText != null)
-            messageText.text = selected;
-
-        _baseWorldPosition = messageRoot.position;
-        StartFade(1f);
+        ApplyCurrentLocalizedMessage();
+        ShowInternal();
     }
 
     public void ShowMessage(string customMessage)
@@ -122,15 +111,24 @@ public class AvatarFloatingMessage : MonoBehaviour
         if (string.IsNullOrWhiteSpace(customMessage))
             return;
 
-        _lastMessage = customMessage;
-        _messageStartTime = Time.time;
-        _isShowing = true;
+        _useLocalizedPair = false;
+        _currentThaiMessage = string.Empty;
+        _currentEnglishMessage = string.Empty;
 
         if (messageText != null)
             messageText.text = customMessage;
 
-        _baseWorldPosition = messageRoot.position;
-        StartFade(1f);
+        ShowInternal();
+    }
+
+    public void ShowMessage(string thaiMessage, string englishMessage)
+    {
+        _useLocalizedPair = true;
+        _currentThaiMessage = thaiMessage;
+        _currentEnglishMessage = englishMessage;
+
+        ApplyCurrentLocalizedMessage();
+        ShowInternal();
     }
 
     public void HideMessage()
@@ -139,20 +137,42 @@ public class AvatarFloatingMessage : MonoBehaviour
             return;
 
         _isShowing = false;
-        StartFade(0f);
-        ScheduleNextMessage(GetRandomDelay());
+        SetVisible(false);
+    }
+
+    public void RefreshVisibleMessage()
+    {
+        if (!_isShowing)
+            return;
+
+        if (!_useLocalizedPair)
+            return;
+
+        ApplyCurrentLocalizedMessage();
+    }
+
+    private void ApplyCurrentLocalizedMessage()
+    {
+        string localizedMessage = GetLocalizedMessage(_currentThaiMessage, _currentEnglishMessage);
+
+        if (string.IsNullOrWhiteSpace(localizedMessage))
+            return;
+
+        if (messageText != null)
+            messageText.text = localizedMessage;
+    }
+
+    private void ShowInternal()
+    {
+        _isShowing = true;
+        _baseWorldPosition = messageRoot.position;
+        SetVisible(true);
     }
 
     private void UpdateFloating()
     {
-        float offsetY = Mathf.Sin((Time.time - _messageStartTime) * floatSpeed) * floatHeight;
+        float offsetY = Mathf.Sin(Time.time * floatSpeed) * floatHeight;
         messageRoot.position = _baseWorldPosition + Vector3.up * offsetY;
-    }
-
-    private void UpdateLifetime()
-    {
-        if (Time.time - _messageStartTime >= messageLifetime)
-            HideMessage();
     }
 
     private void FaceCamera()
@@ -164,70 +184,61 @@ public class AvatarFloatingMessage : MonoBehaviour
         if (direction.sqrMagnitude <= 0.0001f)
             return;
 
-        //messageRoot.rotation = Quaternion.LookRotation(direction);
+        // messageRoot.rotation = Quaternion.LookRotation(direction);
     }
 
-    private List<string> GetMessageSource()
+    private string GetLocalizedMessage(string thaiMessage, string englishMessage)
     {
-        switch (languageMode)
+        bool useThai = IsThaiLanguage();
+
+        if (useThai)
         {
-            case LanguageMode.Thai:
-                return thaiMessages;
+            if (!string.IsNullOrWhiteSpace(thaiMessage))
+                return thaiMessage;
 
-            case LanguageMode.English:
-                return englishMessages;
+            if (!string.IsNullOrWhiteSpace(singleMessageThai))
+                return singleMessageThai;
 
-            default:
-                return IsThaiLanguage() ? thaiMessages : englishMessages;
+            if (!string.IsNullOrWhiteSpace(singleMessage))
+                return singleMessage;
+
+            return englishMessage ?? string.Empty;
         }
+
+        if (!string.IsNullOrWhiteSpace(englishMessage))
+            return englishMessage;
+
+        if (!string.IsNullOrWhiteSpace(singleMessageEnglish))
+            return singleMessageEnglish;
+
+        if (!string.IsNullOrWhiteSpace(singleMessage))
+            return singleMessage;
+
+        return thaiMessage ?? string.Empty;
     }
 
     private bool IsThaiLanguage()
     {
-        string localeCode = LocalizationService.CurrentLocaleCode;
-
-        if (string.IsNullOrWhiteSpace(localeCode))
-            return false;
-
-        return localeCode.StartsWith("th", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private string PickRandomMessage(List<string> source)
-    {
-        if (source.Count == 1)
-            return source[0];
-
-        string result = source[UnityEngine.Random.Range(0, source.Count)];
-
-        int safeGuard = 0;
-        while (result == _lastMessage && safeGuard < 10)
+        switch (languageMode)
         {
-            result = source[UnityEngine.Random.Range(0, source.Count)];
-            safeGuard++;
+            case LanguageMode.Thai:
+                return true;
+
+            case LanguageMode.English:
+                return false;
+
+            default:
+                var locale = LocalizationSettings.SelectedLocale;
+                if (locale == null)
+                    return true;
+
+                string code = locale.Identifier.Code;
+                return !string.IsNullOrEmpty(code) &&
+                       code.StartsWith("th", StringComparison.OrdinalIgnoreCase);
         }
-
-        return result;
     }
 
-    private float GetRandomDelay()
-    {
-        return UnityEngine.Random.Range(minDelayBetweenMessages, maxDelayBetweenMessages);
-    }
-
-    private void ScheduleNextMessage(float delay)
-    {
-        _nextMessageTime = Time.time + Mathf.Max(0f, delay);
-    }
-
-    private void StartFade(float targetAlpha)
-    {
-        if (_fadeRoutine != null)
-            StopCoroutine(_fadeRoutine);
-
-        _fadeRoutine = StartCoroutine(FadeCanvas(targetAlpha, fadeDuration));
-    }
-
-    private void SetVisibleImmediate(bool visible)
+    private void SetVisible(bool visible)
     {
         if (messageRoot != null)
             messageRoot.gameObject.SetActive(visible);
@@ -241,58 +252,5 @@ public class AvatarFloatingMessage : MonoBehaviour
             canvasGroup.blocksRaycasts = visible;
             canvasGroup.interactable = visible;
         }
-    }
-
-    private IEnumerator FadeCanvas(float targetAlpha, float duration)
-    {
-        if (messageRoot != null && !messageRoot.gameObject.activeSelf)
-            messageRoot.gameObject.SetActive(true);
-
-        if (worldCanvas != null)
-            worldCanvas.enabled = true;
-
-        if (canvasGroup == null)
-        {
-            bool visibleWithoutCanvasGroup = targetAlpha > 0.001f;
-
-            if (messageRoot != null)
-                messageRoot.gameObject.SetActive(visibleWithoutCanvasGroup);
-
-            if (worldCanvas != null)
-                worldCanvas.enabled = visibleWithoutCanvasGroup;
-
-            yield break;
-        }
-
-        float startAlpha = canvasGroup.alpha;
-        float elapsed = 0f;
-
-        if (targetAlpha > 0.001f)
-        {
-            canvasGroup.blocksRaycasts = true;
-            canvasGroup.interactable = true;
-        }
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.deltaTime;
-            float t = duration <= 0.0001f ? 1f : Mathf.Clamp01(elapsed / duration);
-            canvasGroup.alpha = Mathf.Lerp(startAlpha, targetAlpha, t);
-            yield return null;
-        }
-
-        canvasGroup.alpha = targetAlpha;
-
-        bool visible = targetAlpha > 0.001f;
-        canvasGroup.blocksRaycasts = visible;
-        canvasGroup.interactable = visible;
-
-        if (worldCanvas != null)
-            worldCanvas.enabled = visible;
-
-        if (messageRoot != null)
-            messageRoot.gameObject.SetActive(visible);
-
-        _fadeRoutine = null;
     }
 }

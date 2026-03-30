@@ -129,23 +129,33 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < blocks.Count; i++)
             {
-                sb.Append(blocks[i].Number);
-                sb.Append(". ");
-                sb.AppendLine(NormalizeBlockBody(blocks[i].Body, true));
+                List<string> parts = SplitBulletParts(blocks[i].Body, true);
+
+                if (parts.Count == 0)
+                {
+                    sb.Append("• ");
+                    sb.AppendLine(NormalizeBlockBody(blocks[i].Body, true));
+                    continue;
+                }
+
+                for (int j = 0; j < parts.Count; j++)
+                {
+                    sb.Append("• ");
+                    sb.AppendLine(parts[j]);
+                }
             }
             return sb.ToString().TrimEnd();
         }
 
-        List<string> parts = SplitFallbackParts(raw, true);
-        if (parts.Count == 0)
+        List<string> fallbackParts = SplitBulletParts(raw, true);
+        if (fallbackParts.Count == 0)
             return string.Empty;
 
         StringBuilder fb = new StringBuilder();
-        for (int i = 0; i < parts.Count; i++)
+        for (int i = 0; i < fallbackParts.Count; i++)
         {
-            fb.Append(i + 1);
-            fb.Append(". ");
-            fb.AppendLine(parts[i]);
+            fb.Append("• ");
+            fb.AppendLine(fallbackParts[i]);
         }
 
         return fb.ToString().TrimEnd();
@@ -159,21 +169,33 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < blocks.Count; i++)
             {
-                sb.Append("• ");
-                sb.AppendLine(NormalizeBlockBody(blocks[i].Body, true));
+                List<string> parts = SplitBulletParts(blocks[i].Body, true);
+
+                if (parts.Count == 0)
+                {
+                    sb.Append("• ");
+                    sb.AppendLine(NormalizeBlockBody(blocks[i].Body, true));
+                    continue;
+                }
+
+                for (int j = 0; j < parts.Count; j++)
+                {
+                    sb.Append("• ");
+                    sb.AppendLine(parts[j]);
+                }
             }
             return sb.ToString().TrimEnd();
         }
 
-        List<string> parts = SplitFallbackParts(raw, false);
-        if (parts.Count == 0)
+        List<string> fallbackParts = SplitBulletParts(raw, true);
+        if (fallbackParts.Count == 0)
             return string.Empty;
 
         StringBuilder fb = new StringBuilder();
-        for (int i = 0; i < parts.Count; i++)
+        for (int i = 0; i < fallbackParts.Count; i++)
         {
             fb.Append("• ");
-            fb.AppendLine(parts[i]);
+            fb.AppendLine(fallbackParts[i]);
         }
 
         return fb.ToString().TrimEnd();
@@ -187,14 +209,36 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < blocks.Count; i++)
             {
-                sb.Append(blocks[i].Number);
-                sb.Append(". ");
-                sb.AppendLine(NormalizeBlockBody(blocks[i].Body, false));
+                List<string> parts = SplitBulletParts(blocks[i].Body, true);
+
+                if (parts.Count == 0)
+                {
+                    sb.Append("• ");
+                    sb.AppendLine(NormalizeBlockBody(blocks[i].Body, false));
+                    continue;
+                }
+
+                for (int j = 0; j < parts.Count; j++)
+                {
+                    sb.Append("• ");
+                    sb.AppendLine(parts[j]);
+                }
             }
             return sb.ToString().TrimEnd();
         }
 
-        return NormalizeText(raw);
+        List<string> fallbackParts = SplitBulletParts(raw, true);
+        if (fallbackParts.Count == 0)
+            return NormalizeText(raw);
+
+        StringBuilder fb = new StringBuilder();
+        for (int i = 0; i < fallbackParts.Count; i++)
+        {
+            fb.Append("• ");
+            fb.AppendLine(fallbackParts[i]);
+        }
+
+        return fb.ToString().TrimEnd();
     }
 
     private string FormatDurationText(string raw)
@@ -309,7 +353,30 @@ public class PSC_ServiceDetailItemView : MonoBehaviour
 
         return builder.ToString();
     }
+    private List<string> SplitBulletParts(string raw, bool allowSafeSlashSplit)
+    {
+        List<string> result = new List<string>();
 
+        string working = NormalizeText(raw);
+        if (string.IsNullOrWhiteSpace(working))
+            return result;
+
+        if (allowSafeSlashSplit)
+            working = SplitSlashAsDelimiterOnly(working);
+
+        working = Regex.Replace(working, @"(?:^|\n)\s*\d+[.)]\s*", "\n");
+
+        string[] parts = Regex.Split(working, @"\n+");
+
+        for (int i = 0; i < parts.Length; i++)
+        {
+            string part = parts[i].Trim();
+            if (!string.IsNullOrWhiteSpace(part))
+                result.Add(part);
+        }
+
+        return result;
+    }
     private string NormalizeText(string value)
     {
         if (string.IsNullOrWhiteSpace(value))

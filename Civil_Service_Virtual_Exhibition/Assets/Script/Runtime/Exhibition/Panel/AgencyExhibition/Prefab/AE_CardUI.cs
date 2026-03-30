@@ -13,6 +13,10 @@ public class AE_CardUI : MonoBehaviour
     [SerializeField] private Image logoImage;
     [SerializeField] private TMP_Text titleText;
 
+    [Header("Fallback Colors")]
+    [SerializeField] private Color backgroundFallbackColor = new Color(219f / 255f, 219f / 255f, 219f / 255f, 1f);
+    [SerializeField] private Color logoFallbackColor = new Color(1f, 1f, 1f, 1f);
+
     private ExhibitionAgencyData _data;
     private Action<ExhibitionAgencyData> _onClicked;
 
@@ -65,12 +69,14 @@ public class AE_CardUI : MonoBehaviour
         if (backgroundImage != null)
         {
             backgroundImage.sprite = data != null ? data.FallbackBackgroundSprite : null;
+            backgroundImage.color = backgroundImage.sprite != null ? Color.white : backgroundFallbackColor;
             backgroundImage.preserveAspect = false;
         }
 
         if (logoImage != null)
         {
             logoImage.sprite = data != null ? data.FallbackLogoSprite : null;
+            logoImage.color = logoImage.sprite != null ? Color.white : logoFallbackColor;
             logoImage.preserveAspect = true;
         }
 
@@ -122,6 +128,8 @@ public class AE_CardUI : MonoBehaviour
         if (request.result != UnityWebRequest.Result.Success)
         {
             Debug.LogWarning($"[ExhibitionAgencyCardUI] Download failed: {url} | {request.error}");
+            if (bindVersion == _bindVersion && targetImage != null)
+                targetImage.color = isBackground ? backgroundFallbackColor : logoFallbackColor;
             yield break;
         }
 
@@ -131,6 +139,8 @@ public class AE_CardUI : MonoBehaviour
             contentType.IndexOf("image/webp", StringComparison.OrdinalIgnoreCase) >= 0)
         {
             Debug.LogWarning($"[ExhibitionAgencyCardUI] WebP is not supported by current loader. Url={url}");
+            if (bindVersion == _bindVersion && targetImage != null)
+                targetImage.color = isBackground ? backgroundFallbackColor : logoFallbackColor;
             yield break;
         }
 
@@ -138,6 +148,8 @@ public class AE_CardUI : MonoBehaviour
         if (bytes == null || bytes.Length == 0)
         {
             Debug.LogWarning($"[ExhibitionAgencyCardUI] Empty image bytes. Url={url}");
+            if (bindVersion == _bindVersion && targetImage != null)
+                targetImage.color = isBackground ? backgroundFallbackColor : logoFallbackColor;
             yield break;
         }
 
@@ -148,6 +160,8 @@ public class AE_CardUI : MonoBehaviour
         {
             Debug.LogWarning($"[ExhibitionAgencyCardUI] Texture decode failed. Url={url} | content-type={contentType}");
             Destroy(texture);
+            if (bindVersion == _bindVersion && targetImage != null)
+                targetImage.color = isBackground ? backgroundFallbackColor : logoFallbackColor;
             yield break;
         }
 
@@ -163,6 +177,7 @@ public class AE_CardUI : MonoBehaviour
             yield break;
 
         targetImage.sprite = sprite;
+        targetImage.color = Color.white;
         targetImage.preserveAspect = !isBackground;
     }
 }

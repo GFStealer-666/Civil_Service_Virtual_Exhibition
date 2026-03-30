@@ -8,9 +8,6 @@ public class IC_LocalNarrationController : MonoBehaviour, IMediaControllable
 {
     [Header("Audio")]
     [SerializeField] private ExhibitionAudioSource narratorAudioSource;
-    [SerializeField] private AudioClip thaiClip;
-    [SerializeField] private AudioClip englishClip;
-
     [Header("Overlay")]
     [SerializeField] private StatusOverlay overlay;
 
@@ -38,7 +35,6 @@ public class IC_LocalNarrationController : MonoBehaviour, IMediaControllable
     public MediaPlaybackState State { get; private set; } = MediaPlaybackState.Idle;
     public event Action<MediaPlaybackState> StateChanged;
 
-    public bool HasTarget => GetSelectedClip() != null;
 
     private Coroutine _monitorRoutine;
     private bool _subscribed;
@@ -68,12 +64,6 @@ public class IC_LocalNarrationController : MonoBehaviour, IMediaControllable
         ApplyNarratorPlayingObject(MediaPlaybackState.Idle);
     }
 
-    public void SetClips(AudioClip thai, AudioClip english)
-    {
-        thaiClip = thai;
-        englishClip = english;
-    }
-
     public void RefreshLocaleBinding()
     {
         if (!stopWhenLocaleChanges)
@@ -96,7 +86,7 @@ public class IC_LocalNarrationController : MonoBehaviour, IMediaControllable
 
     public void PlaySelectedNarration()
     {
-        AudioClip clip = GetSelectedClip();
+        AudioClip clip = null;
         if (clip == null)
         {
             ShowMissingClip();
@@ -210,14 +200,6 @@ public class IC_LocalNarrationController : MonoBehaviour, IMediaControllable
         State = state;
         ApplyNarratorPlayingObject(State);
         StateChanged?.Invoke(State);
-    }
-
-    private AudioClip GetSelectedClip()
-    {
-        bool isEnglish = IsEnglishActive();
-        return isEnglish
-            ? FirstClip(englishClip, thaiClip)
-            : FirstClip(thaiClip, englishClip);
     }
 
     private void ShowMissingClip()

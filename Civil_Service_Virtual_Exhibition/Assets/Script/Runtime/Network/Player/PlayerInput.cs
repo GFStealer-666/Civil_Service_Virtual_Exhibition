@@ -84,7 +84,7 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
     }
     public static void PushUIBlock()
     {
-        Debug.Log("UI BLOCK");
+        //Debug.Log("UI BLOCK");
         _uiBlockCount++;
         GameplayInputBlocked = _uiBlockCount > 0;
         RefreshCursorState();

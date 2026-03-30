@@ -66,8 +66,6 @@ public class ExhibitionAgencyData
 {
     public string AgencyRuntimeId;
     public string Title;
-    public string TitleTh;
-    public string TitleEn;
 
     public string BackgroundUrl;
     public string LogoUrl;

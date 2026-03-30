@@ -203,14 +203,51 @@ public class AE_ProjectDetailUI : MonoBehaviour
         else
             narrationController?.StopMedia();
 
-        projectVideoUI.Show(_currentProject, _currentAgencyName);
+        string agencyNameTh = GetAgencyNameByLanguage(false);
+        string agencyNameEn = GetAgencyNameByLanguage(true);
+
+        projectVideoUI.Show(_currentProject, agencyNameTh, agencyNameEn);
     }
 
     private void HandleNarrationStateChanged(MediaPlaybackState state)
     {
         RefreshButtons();
     }
+    private string GetAgencyNameByLanguage(bool english)
+    {
+        if (_currentProject == null)
+            return _currentAgencyName;
 
+        AE_CatalogRepository store = AE_CatalogRepository.Instance;
+        if (store == null || !store.HasData || store.RawData == null || store.RawData.data == null)
+            return _currentAgencyName;
+
+        for (int i = 0; i < store.RawData.data.Count; i++)
+        {
+            GovernmentMinistryDto ministry = store.RawData.data[i];
+            if (ministry == null || ministry.submissions == null)
+                continue;
+
+            for (int j = 0; j < ministry.submissions.Count; j++)
+            {
+                GovernmentAgencyDto agency = ministry.submissions[j];
+                if (agency == null)
+                    continue;
+
+                if (!string.Equals(
+                    agency.runtimeId,
+                    _currentProject.parentAgencyId,
+                    System.StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                return english
+                    ? FirstNotEmpty(agency.organizationNameEn, agency.organizationName, _currentAgencyName)
+                    : FirstNotEmpty(agency.organizationName, agency.organizationNameEn, _currentAgencyName);
+            }
+        }
+
+        return _currentAgencyName;
+    }
     private void BindImageSlots()
     {
         ClearImageSlots();
@@ -269,7 +306,7 @@ public class AE_ProjectDetailUI : MonoBehaviour
         if (videoButton != null)
         {
             bool hasVideo = hasProject && !string.IsNullOrWhiteSpace(_currentProject.videoUrl);
-            videoButton.interactable = hasVideo;
+            videoButton.gameObject.SetActive(hasVideo);
         }
 
         RefreshNarratorButtonLabel();

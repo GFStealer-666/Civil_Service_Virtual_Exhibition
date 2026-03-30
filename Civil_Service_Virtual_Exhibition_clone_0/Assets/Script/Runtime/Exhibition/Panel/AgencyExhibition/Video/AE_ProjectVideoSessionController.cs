@@ -6,23 +6,34 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
     IAE_ProjectVideoPlaybackController
 {
     [Header("References")]
-    [SerializeField] private AE_ProjectYoutubePlayerController youtubePlayerController;
+    [SerializeField] private AE_ProjectVideoPlayerController videoPlayerController;
     [SerializeField] private StatusOverlay overlay;
     [SerializeField] private MediaSessionCoordinator mediaCoordinator;
 
     [Header("Behavior")]
     [SerializeField] private bool autoPlayOnPrepared = true;
 
-    [Header("Overlay Messages")]
-    [SerializeField] private string overlayLoadingTitle = "กำลังเตรียมวิดีโอ";
-    [SerializeField] private string overlayLoadingSubtitle = "กรุณารอสักครู่";
-    [SerializeField] private string overlayLoadingCancelLabel = "ยกเลิก";
-    [SerializeField] private string overlayFailedTitle = "โหลดวิดีโอไม่สำเร็จ";
-    [SerializeField] private string overlayFailedSubtitle = "กรุณาลองใหม่อีกครั้ง";
-    [SerializeField] private string overlayMissingUrlTitle = "ไม่สามารถเล่นวิดีโอ";
-    [SerializeField] private string overlayMissingUrlSubtitle = "ไม่พบลิงก์วิดีโอ";
-    [SerializeField] private string overlayMissingApiTitle = "ไม่สามารถเล่นวิดีโอ";
-    [SerializeField] private string overlayMissingApiSubtitle = "ApiService ยังไม่พร้อมใช้งาน";
+    [Header("Thai Messages")]
+    [SerializeField] private string overlayLoadingTitleTh = "กำลังเตรียมวิดีโอ";
+    [SerializeField] private string overlayLoadingSubtitleTh = "กรุณารอสักครู่";
+    [SerializeField] private string overlayLoadingCancelLabelTh = "ยกเลิก";
+    [SerializeField] private string overlayFailedTitleTh = "โหลดวิดีโอไม่สำเร็จ";
+    [SerializeField] private string overlayFailedSubtitleTh = "กรุณาลองใหม่อีกครั้ง";
+    [SerializeField] private string overlayMissingUrlTitleTh = "ไม่สามารถเล่นวิดีโอ";
+    [SerializeField] private string overlayMissingUrlSubtitleTh = "ไม่พบลิงก์วิดีโอ";
+    [SerializeField] private string overlayMissingApiTitleTh = "ไม่สามารถเล่นวิดีโอ";
+    [SerializeField] private string overlayMissingApiSubtitleTh = "ApiService ยังไม่พร้อมใช้งาน";
+
+    [Header("English Messages")]
+    [SerializeField] private string overlayLoadingTitleEn = "Preparing video";
+    [SerializeField] private string overlayLoadingSubtitleEn = "Please wait a moment";
+    [SerializeField] private string overlayLoadingCancelLabelEn = "Cancel";
+    [SerializeField] private string overlayFailedTitleEn = "Unable to load video";
+    [SerializeField] private string overlayFailedSubtitleEn = "Please try again";
+    [SerializeField] private string overlayMissingUrlTitleEn = "Unable to play video";
+    [SerializeField] private string overlayMissingUrlSubtitleEn = "Video link was not found";
+    [SerializeField] private string overlayMissingApiTitleEn = "Unable to play video";
+    [SerializeField] private string overlayMissingApiSubtitleEn = "ApiService is not available";
 
     public MediaPlaybackState State { get; private set; } = MediaPlaybackState.Idle;
 
@@ -36,13 +47,33 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
     public event Action<double, double> TimeChanged;
     public event Action Finished;
 
-    public bool IsPrepared => youtubePlayerController != null && youtubePlayerController.IsPrepared;
-    public bool IsPreparing => youtubePlayerController != null && youtubePlayerController.IsPreparing;
-    public bool IsPlaying => youtubePlayerController != null && youtubePlayerController.IsPlaying;
-    public double CurrentTime => youtubePlayerController != null ? youtubePlayerController.CurrentTime : 0d;
-    public double Duration => youtubePlayerController != null ? youtubePlayerController.Duration : 0d;
+    public bool IsPrepared => videoPlayerController != null && videoPlayerController.IsPrepared;
+    public bool IsPreparing => videoPlayerController != null && videoPlayerController.IsPreparing;
+    public bool IsPlaying => videoPlayerController != null && videoPlayerController.IsPlaying;
+    public double CurrentTime => videoPlayerController != null ? videoPlayerController.CurrentTime : 0d;
+    public double Duration => videoPlayerController != null ? videoPlayerController.Duration : 0d;
 
     private string _currentResolvedUrl = string.Empty;
+
+    private bool UseEnglish
+    {
+        get
+        {
+            string code = LocalizationService.CurrentLocaleCode;
+            return !string.IsNullOrWhiteSpace(code) &&
+                   code.StartsWith("en", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    private string OverlayLoadingTitle => UseEnglish ? overlayLoadingTitleEn : overlayLoadingTitleTh;
+    private string OverlayLoadingSubtitle => UseEnglish ? overlayLoadingSubtitleEn : overlayLoadingSubtitleTh;
+    private string OverlayLoadingCancelLabel => UseEnglish ? overlayLoadingCancelLabelEn : overlayLoadingCancelLabelTh;
+    private string OverlayFailedTitle => UseEnglish ? overlayFailedTitleEn : overlayFailedTitleTh;
+    private string OverlayFailedSubtitle => UseEnglish ? overlayFailedSubtitleEn : overlayFailedSubtitleTh;
+    private string OverlayMissingUrlTitle => UseEnglish ? overlayMissingUrlTitleEn : overlayMissingUrlTitleTh;
+    private string OverlayMissingUrlSubtitle => UseEnglish ? overlayMissingUrlSubtitleEn : overlayMissingUrlSubtitleTh;
+    private string OverlayMissingApiTitle => UseEnglish ? overlayMissingApiTitleEn : overlayMissingApiTitleTh;
+    private string OverlayMissingApiSubtitle => UseEnglish ? overlayMissingApiSubtitleEn : overlayMissingApiSubtitleTh;
 
     private void Awake()
     {
@@ -59,7 +90,7 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
 
     public void Prepare(string url)
     {
-        Debug.Log($"[AE_ProjectVideoSessionController] : {url}");
+        Debug.Log($"[AE_ProjectVideoSessionController] Prepare: {url}");
         PrepareAndPlay(url);
     }
 
@@ -67,7 +98,7 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
     {
         if (ApiService.Instance == null)
         {
-            ShowFailureOverlay(overlayMissingApiTitle, overlayMissingApiSubtitle);
+            ShowFailureOverlay(OverlayMissingApiTitle, OverlayMissingApiSubtitle);
             return;
         }
 
@@ -75,13 +106,13 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
 
         if (string.IsNullOrWhiteSpace(resolvedUrl))
         {
-            ShowFailureOverlay(overlayMissingUrlTitle, overlayMissingUrlSubtitle);
+            ShowFailureOverlay(OverlayMissingUrlTitle, OverlayMissingUrlSubtitle);
             return;
         }
 
-        if (youtubePlayerController == null)
+        if (videoPlayerController == null)
         {
-            ShowFailureOverlay(overlayFailedTitle, "YouTube player is not assigned.");
+            ShowFailureOverlay(OverlayFailedTitle, OverlayFailedSubtitle);
             return;
         }
 
@@ -90,17 +121,17 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
         _currentResolvedUrl = resolvedUrl;
 
         overlay?.ShowLoading(
-            overlayLoadingTitle,
-            overlayLoadingSubtitle,
+            OverlayLoadingTitle,
+            OverlayLoadingSubtitle,
             showBlocker: true,
             cancelable: true,
-            cancelButtonLabel: overlayLoadingCancelLabel,
+            cancelButtonLabel: OverlayLoadingCancelLabel,
             onCancel: CancelMediaLoading,
             animateDots: true
         );
 
         SetState(MediaPlaybackState.Loading);
-        youtubePlayerController.Prepare(resolvedUrl);
+        videoPlayerController.Prepare(resolvedUrl);
     }
 
     public void Play()
@@ -108,12 +139,12 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
         if (State == MediaPlaybackState.Loading)
             return;
 
-        youtubePlayerController?.Play();
+        videoPlayerController?.Play();
     }
 
     public void Pause()
     {
-        youtubePlayerController?.Pause();
+        videoPlayerController?.Pause();
     }
 
     public void CancelPrepare()
@@ -123,10 +154,10 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
 
     public void CancelMediaLoading()
     {
-        if (youtubePlayerController == null || !youtubePlayerController.IsPreparing)
+        if (videoPlayerController == null || !videoPlayerController.IsPreparing)
             return;
 
-        youtubePlayerController.CancelPrepare();
+        videoPlayerController.CancelPrepare();
         overlay?.Hide();
         _currentResolvedUrl = string.Empty;
         SetState(MediaPlaybackState.Canceled);
@@ -143,7 +174,7 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
         ApplyVideoBgmMute(false);
 
         overlay?.Hide();
-        youtubePlayerController?.StopPlayback();
+        videoPlayerController?.StopPlayback();
         _currentResolvedUrl = string.Empty;
         SetState(MediaPlaybackState.Stopped);
     }
@@ -153,38 +184,38 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
         ApplyVideoBgmMute(false);
 
         overlay?.Hide();
-        youtubePlayerController?.StopPlayback();
+        videoPlayerController?.StopPlayback();
         _currentResolvedUrl = string.Empty;
         SetState(MediaPlaybackState.Idle);
     }
 
     public void SeekNormalized(float normalizedValue)
     {
-        youtubePlayerController?.SeekNormalized(normalizedValue);
+        videoPlayerController?.SeekNormalized(normalizedValue);
     }
 
     private void BindBackend()
     {
-        if (youtubePlayerController == null)
+        if (videoPlayerController == null)
             return;
 
-        youtubePlayerController.Prepared += HandleBackendPrepared;
-        youtubePlayerController.Failed += HandleBackendFailed;
-        youtubePlayerController.PlayStateChanged += HandleBackendPlayStateChanged;
-        youtubePlayerController.TimeChanged += HandleBackendTimeChanged;
-        youtubePlayerController.Finished += HandleBackendFinished;
+        videoPlayerController.Prepared += HandleBackendPrepared;
+        videoPlayerController.Failed += HandleBackendFailed;
+        videoPlayerController.PlayStateChanged += HandleBackendPlayStateChanged;
+        videoPlayerController.TimeChanged += HandleBackendTimeChanged;
+        videoPlayerController.Finished += HandleBackendFinished;
     }
 
     private void UnbindBackend()
     {
-        if (youtubePlayerController == null)
+        if (videoPlayerController == null)
             return;
 
-        youtubePlayerController.Prepared -= HandleBackendPrepared;
-        youtubePlayerController.Failed -= HandleBackendFailed;
-        youtubePlayerController.PlayStateChanged -= HandleBackendPlayStateChanged;
-        youtubePlayerController.TimeChanged -= HandleBackendTimeChanged;
-        youtubePlayerController.Finished -= HandleBackendFinished;
+        videoPlayerController.Prepared -= HandleBackendPrepared;
+        videoPlayerController.Failed -= HandleBackendFailed;
+        videoPlayerController.PlayStateChanged -= HandleBackendPlayStateChanged;
+        videoPlayerController.TimeChanged -= HandleBackendTimeChanged;
+        videoPlayerController.Finished -= HandleBackendFinished;
     }
 
     private void HandleBackendPrepared()
@@ -193,7 +224,7 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
         Prepared?.Invoke();
 
         if (autoPlayOnPrepared)
-            youtubePlayerController?.Play();
+            videoPlayerController?.Play();
         else
             SetState(MediaPlaybackState.Stopped);
     }
@@ -201,11 +232,12 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
     private void HandleBackendFailed(string message)
     {
         ApplyVideoBgmMute(false);
+
         Debug.LogWarning($"[AE_ProjectVideoSessionController] Video failed: {message}");
 
         ShowFailureOverlay(
-            overlayFailedTitle,
-            string.IsNullOrWhiteSpace(message) ? overlayFailedSubtitle : message
+            OverlayFailedTitle,
+            OverlayFailedSubtitle
         );
 
         Failed?.Invoke(message);
@@ -216,6 +248,7 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
         PlayStateChanged?.Invoke(isPlaying);
 
         ApplyVideoBgmMute(isPlaying);
+
         if (isPlaying)
         {
             SetState(MediaPlaybackState.Playing);
@@ -227,7 +260,7 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
             State == MediaPlaybackState.Completed)
             return;
 
-        if (youtubePlayerController != null && youtubePlayerController.IsPrepared)
+        if (videoPlayerController != null && videoPlayerController.IsPrepared)
             SetState(MediaPlaybackState.Stopped);
     }
 
@@ -258,9 +291,8 @@ public class AE_ProjectVideoSessionController : MonoBehaviour,
     private void HandleFailureDismissed()
     {
         ApplyVideoBgmMute(false);
-        
         overlay?.Hide();
-        youtubePlayerController?.StopPlayback();
+        videoPlayerController?.StopPlayback();
         _currentResolvedUrl = string.Empty;
         FailureAcknowledged?.Invoke();
     }

@@ -144,10 +144,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e32b41f81db468b43885d0eac0e2327b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  serviceNameRoot: {fileID: 0}
-  serviceNameText: {fileID: 0}
-  logoImage: {fileID: 0}
-  fallbackLogo: {fileID: 0}
   serviceHeaderText: {fileID: 2332681804550870628}
   channelHeaderText: {fileID: 4691177154277194563}
   contactHeaderText: {fileID: 1265292505621736008}
@@ -156,7 +152,14 @@ MonoBehaviour:
   channelBodyText: {fileID: 759240276425192142}
   contactBodyText: {fileID: 8199267663246065700}
   durationBodyText: {fileID: 8999527042336739001}
-  useEnglish: 0
+  serviceHeaderTh: "\u0E07\u0E32\u0E19\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23"
+  serviceHeaderEn: Service
+  channelHeaderTh: "\u0E0A\u0E48\u0E2D\u0E07\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E23\u0E31\u0E1A\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23"
+  channelHeaderEn: Service Channel
+  contactHeaderTh: "\u0E0A\u0E48\u0E2D\u0E07\u0E17\u0E32\u0E07\u0E01\u0E32\u0E23\u0E15\u0E34\u0E14\u0E15\u0E48\u0E2D"
+  contactHeaderEn: Contact Channel
+  durationHeaderTh: "\u0E23\u0E30\u0E22\u0E30\u0E40\u0E27\u0E25\u0E32\u0E01\u0E32\u0E23\u0E43\u0E2B\u0E49\u0E1A\u0E23\u0E34\u0E01\u0E32\u0E23"
+  durationHeaderEn: Service Duration
 --- !u!1 &1742082971322114206
 GameObject:
   m_ObjectHideFlags: 0
@@ -549,8 +552,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 215.78018, y: -19}
-  m_SizeDelta: {x: 389.5605, y: 536}
+  m_AnchoredPosition: {x: 192.46591, y: -19}
+  m_SizeDelta: {x: 384.9318, y: 536}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!1 &3899646524768198118
 GameObject:

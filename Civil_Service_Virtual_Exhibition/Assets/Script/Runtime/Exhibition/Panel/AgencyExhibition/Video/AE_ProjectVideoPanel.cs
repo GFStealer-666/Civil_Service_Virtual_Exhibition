@@ -17,7 +17,8 @@ public class AE_ProjectVideoPanel : MonoBehaviour
     [SerializeField] private AE_ProjectVideoControlsView controlsView;
 
     private GovernmentProjectDto _currentProject;
-    private string _currentAgencyName;
+    private string _currentAgencyNameTh;
+    private string _currentAgencyNameEn;
 
     private void Awake()
     {
@@ -53,10 +54,16 @@ public class AE_ProjectVideoPanel : MonoBehaviour
         controlsView?.Unbind();
     }
 
-    public void Show(GovernmentProjectDto project, string agencyName)
+    private void OnEnable()
+    {
+        RefreshLocalization();
+    }
+
+    public void Show(GovernmentProjectDto project, string agencyNameTh, string agencyNameEn)
     {
         _currentProject = project;
-        _currentAgencyName = agencyName;
+        _currentAgencyNameTh = agencyNameTh;
+        _currentAgencyNameEn = agencyNameEn;
 
         if (panelRoot != null)
             panelRoot.SetActive(true);
@@ -78,6 +85,11 @@ public class AE_ProjectVideoPanel : MonoBehaviour
     public void Hide()
     {
         ReturnToProjectDetail(true);
+    }
+
+    public void RefreshLocalization()
+    {
+        BindHeader();
     }
 
     private void HandleCloseClicked()
@@ -118,7 +130,8 @@ public class AE_ProjectVideoPanel : MonoBehaviour
     private void ClearVideoPanelData()
     {
         _currentProject = null;
-        _currentAgencyName = string.Empty;
+        _currentAgencyNameTh = string.Empty;
+        _currentAgencyNameEn = string.Empty;
 
         if (projectNameText != null)
             projectNameText.text = string.Empty;
@@ -129,11 +142,28 @@ public class AE_ProjectVideoPanel : MonoBehaviour
 
     private void BindHeader()
     {
+        bool useEnglish = IsEnglish();
+
         if (projectNameText != null)
-            projectNameText.text = FirstNotEmpty(_currentProject?.name, _currentProject?.nameEn);
+        {
+            projectNameText.text = useEnglish
+                ? FirstNotEmpty(_currentProject?.nameEn, _currentProject?.name)
+                : FirstNotEmpty(_currentProject?.name, _currentProject?.nameEn);
+        }
 
         if (agencyNameText != null)
-            agencyNameText.text = _currentAgencyName ?? string.Empty;
+        {
+            agencyNameText.text = useEnglish
+                ? FirstNotEmpty(_currentAgencyNameEn, _currentAgencyNameTh)
+                : FirstNotEmpty(_currentAgencyNameTh, _currentAgencyNameEn);
+        }
+    }
+
+    private bool IsEnglish()
+    {
+        string code = LocalizationService.CurrentLocaleCode;
+        return !string.IsNullOrWhiteSpace(code) &&
+               code.StartsWith("en", System.StringComparison.OrdinalIgnoreCase);
     }
 
     private string FirstNotEmpty(params string[] values)
