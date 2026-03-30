@@ -17,20 +17,29 @@ public class RoomChat : NetworkBehaviour
     public override void Spawned()
     {
         if (Instance != null && Instance != this)
-        {
             Debug.LogWarning("[RoomChat] More than one RoomChat found in this scene/session.");
-        }
 
         Instance = this;
-        Debug.Log($"[RoomChat] Spawned in session '{Runner.SessionInfo?.Name}'.");
+        Debug.Log($"[RoomChat] Spawned on {gameObject.name}, active={gameObject.activeInHierarchy}, scene={gameObject.scene.name}");
     }
 
     public override void Despawned(NetworkRunner runner, bool hasState)
     {
+        Debug.Log($"[RoomChat] Despawned on {gameObject.name}, scene={gameObject.scene.name}");
+
         if (Instance == this)
             Instance = null;
     }
 
+    private void OnDisable()
+    {
+        Debug.Log($"[RoomChat] OnDisable on {gameObject.name}");
+    }
+
+    private void OnDestroy()
+    {
+        Debug.Log($"[RoomChat] OnDestroy on {gameObject.name}");
+    }
     public bool TrySendMessage(string senderName, string message)
     {
         if (string.IsNullOrWhiteSpace(senderName))

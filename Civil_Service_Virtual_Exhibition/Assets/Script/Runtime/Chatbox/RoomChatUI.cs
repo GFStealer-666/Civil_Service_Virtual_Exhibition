@@ -9,6 +9,10 @@ public class RoomChatUI : MonoBehaviour
     [Header("Root")]
     [SerializeField] private GameObject panelRoot;
 
+    [Header("Layout")]
+    [SerializeField] private RectTransform panelRect;
+    [SerializeField] private Vector2 openAnchoredPosition = new Vector2(20f, 0f);
+
     [Header("Input")]
     [SerializeField] private TMP_InputField messageInput;
     [SerializeField] private Button sendButton;
@@ -23,7 +27,6 @@ public class RoomChatUI : MonoBehaviour
     [Header("Behavior")]
     [SerializeField] private bool openOnStart = false;
     [SerializeField] private bool focusInputWhenOpened = true;
-    [SerializeField] private KeyCode toggleKey = KeyCode.Return;
 
     private readonly Queue<ChatLineView> _spawnedLines = new Queue<ChatLineView>();
 
@@ -40,7 +43,7 @@ public class RoomChatUI : MonoBehaviour
 
         if (closeButton != null)
             closeButton.onClick.AddListener(CloseChat);
-
+        
         SetOpenState(openOnStart);
         ClearAllLines();
     }
@@ -65,44 +68,6 @@ public class RoomChatUI : MonoBehaviour
             NetworkLauncher.Instance.OnRoomJoined -= HandleRoomJoined;
 
         PlayerInput.GameplayInputBlocked = false;
-    }
-
-    private void Update()
-    {
-        Keyboard keyboard = Keyboard.current;
-        if (keyboard == null)
-            return;
-
-        bool enterPressed =
-            keyboard[Key.Enter].wasPressedThisFrame ||
-            keyboard[Key.NumpadEnter].wasPressedThisFrame;
-
-        if (enterPressed)
-        {
-            if (_isOpen && messageInput != null && messageInput.isFocused)
-            {
-                HandleSendClicked();
-                return;
-            }
-
-            OpenChat();
-            return;
-        }
-
-        if (!_isOpen)
-        {
-            PlayerInput.GameplayInputBlocked = false;
-            return;
-        }
-
-        if (keyboard.escapeKey.wasPressedThisFrame)
-        {
-            CloseChat();
-            return;
-        }
-
-        bool typing = messageInput != null && messageInput.isFocused;
-        PlayerInput.GameplayInputBlocked = typing;
     }
 
     private void HandleRoomJoined(string sceneName, string sessionName)
@@ -131,10 +96,7 @@ public class RoomChatUI : MonoBehaviour
         {
             TryBindRoomChat();
             if (_roomChat == null)
-            {
-                Debug.LogWarning("[RoomChatUI] No RoomChat found in current scene.");
                 return;
-            }
         }
 
         if (messageInput == null)
@@ -181,6 +143,9 @@ public class RoomChatUI : MonoBehaviour
     {
         SetOpenState(true);
 
+        if (panelRect != null)
+            panelRect.anchoredPosition = openAnchoredPosition;
+
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
@@ -197,7 +162,6 @@ public class RoomChatUI : MonoBehaviour
             messageInput.DeactivateInputField();
 
         SetOpenState(false);
-
         PlayerInput.GameplayInputBlocked = false;
 
         if (!Application.isMobilePlatform)
