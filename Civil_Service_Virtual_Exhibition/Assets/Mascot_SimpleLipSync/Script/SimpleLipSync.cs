@@ -1,7 +1,5 @@
 ﻿using UnityEngine;
 using System.Collections;
-using System.Diagnostics;
-using System;
 
 [RequireComponent(typeof(AudioSource))]
 public class CharacterMaterialFaceController : MonoBehaviour
@@ -24,11 +22,23 @@ public class CharacterMaterialFaceController : MonoBehaviour
     [Tooltip("Material index ของตาบน eyeRenderer")]
     public int eyeMaterialIndex = 0;
 
-    [Header("Lip Sync Settings")]
-    public int sampleWindowSize = 128;
-    public float openThreshold = 0.012f;
-    public float closeThreshold = 0.009f;
-    public float sensitivityBoost = 1.2f;
+    [Header("Lip Sync Mode")]
+    [Tooltip("ถ้าเปิด จะใช้โหมดขยับปากแบบ fake flap สำหรับเสียงจาก API / WebGL")]
+    public bool useFakeLipSync = true;
+
+    [Header("Fake Lip Sync Settings")]
+    [Tooltip("จำนวนครั้งต่อวินาทีที่ปากจะเปิด/ปิด")]
+    float flapSpeed = 5f;
+
+    [Tooltip("สุ่มจังหวะเพิ่มขึ้นเล็กน้อยให้ดูไม่แข็ง")]
+    public float flapRandomness = 0.15f;
+
+    [Tooltip("ถ้าเสียงเบากว่านี้ จะไม่ขยับปาก")]
+    [Range(0f, 1f)]
+    public float volumeThreshold = 0.01f;
+
+    [Tooltip("หน่วงก่อนปิดปากหลังเสียงหยุดเล็กน้อย")]
+    public float mouthCloseDelay = 0.05f;
 
     [Header("Blink Settings")]
     public float blinkIntervalMin = 2.0f;
@@ -36,10 +46,6 @@ public class CharacterMaterialFaceController : MonoBehaviour
     public float blinkDuration = 0.08f;
     [Range(0f, 1f)]
     public float doubleBlinkChance = 0.2f;
-
-    private AudioClip currentClip;
-    private float[] clipSamples;
-    private int channels;
 
     private bool isMouthOpen;
     private bool isTalking;
@@ -49,6 +55,8 @@ public class CharacterMaterialFaceController : MonoBehaviour
     private Material[] eyeMats;
 
     private Coroutine blinkRoutine;
+    private Coroutine mouthRoutine;
+    private float flapSeed;
 
     void Reset()
     {
@@ -62,6 +70,8 @@ public class CharacterMaterialFaceController : MonoBehaviour
 
         if (mouthRenderer != null) mouthMats = mouthRenderer.materials;
         if (eyeRenderer != null) eyeMats = eyeRenderer.materials;
+
+        flapSeed = Random.Range(0f, 1000f);
 
         SetMouthMaterial(mouthClosed, true);
         SetEyeMaterial(eyeOpen, true);
@@ -83,47 +93,76 @@ public class CharacterMaterialFaceController : MonoBehaviour
             StopCoroutine(blinkRoutine);
             blinkRoutine = null;
         }
+
+        if (mouthRoutine != null)
+        {
+            StopCoroutine(mouthRoutine);
+            mouthRoutine = null;
+        }
+
+        SetMouth(false);
+        SetTalking(false, true);
     }
 
     void Update()
     {
         if (audioSource == null) return;
 
-        SetTalking(audioSource.isPlaying);
+        bool playing = audioSource.isPlaying && audioSource.clip != null;
+        SetTalking(playing);
 
-        if (!audioSource.isPlaying || audioSource.clip == null)
+        if (!playing)
+        {
+            if (mouthRoutine == null)
+            {
+                SetMouth(false);
+            }
+            return;
+        }
+
+        if (useFakeLipSync)
+        {
+            UpdateFakeLipSync();
+        }
+    }
+
+    void UpdateFakeLipSync()
+    {
+        float volume = Mathf.Abs(audioSource.volume);
+
+        if (audioSource.mute || volume <= volumeThreshold)
         {
             SetMouth(false);
             return;
         }
 
-        if (currentClip != audioSource.clip || clipSamples == null)
-        {
-            CacheClip(audioSource.clip);
-        }
+        // ใช้เวลาเป็นฐานในการ flap ปาก
+        // audioSource.time อาจไม่สมูททุก platform เลยผสมกับ Time.time ให้เสถียรขึ้น
+        float t = (audioSource.time > 0f ? audioSource.time : Time.time) * flapSpeed;
 
-        float level = GetLevel(audioSource.timeSamples) * sensitivityBoost;
+        // เพิ่ม randomness เบา ๆ
+        float noise = Mathf.PerlinNoise(flapSeed, Time.time * (flapSpeed * 0.5f)) - 0.5f;
+        t += noise * flapRandomness * flapSpeed;
 
-        if (level >= openThreshold)
-        {
-            SetMouth(true);
-        }
-        else if (level <= closeThreshold)
-        {
-            SetMouth(false);
-        }
+        // สลับ open / close
+        float wave = Mathf.PingPong(t, 1f);
+
+        // ถ้า volume สูง จะเปิดปากได้นานขึ้นนิดหน่อย
+        float dynamicThreshold = Mathf.Lerp(0.6f, 0.35f, Mathf.Clamp01(volume));
+
+        SetMouth(wave > dynamicThreshold);
     }
 
     IEnumerator BlinkLoop()
     {
         while (true)
         {
-            float wait = UnityEngine.Random.Range(blinkIntervalMin, blinkIntervalMax);
+            float wait = Random.Range(blinkIntervalMin, blinkIntervalMax);
             yield return new WaitForSeconds(wait);
 
             yield return StartCoroutine(BlinkOnce());
 
-            if (UnityEngine.Random.value < doubleBlinkChance)
+            if (Random.value < doubleBlinkChance)
             {
                 yield return new WaitForSeconds(0.06f);
                 yield return StartCoroutine(BlinkOnce());
@@ -143,41 +182,16 @@ public class CharacterMaterialFaceController : MonoBehaviour
         isBlinking = false;
     }
 
-    void CacheClip(AudioClip clip)
+    IEnumerator CloseMouthDelayed(float delay)
     {
-        currentClip = clip;
-        channels = clip.channels;
-        clipSamples = new float[clip.samples * channels];
-        clip.GetData(clipSamples, 0);
-    }
+        yield return new WaitForSeconds(delay);
+        mouthRoutine = null;
 
-    float GetLevel(int timeSamples)
-    {
-        if (clipSamples == null || channels == 0) return 0f;
-
-        int start = timeSamples * channels;
-        if (start >= clipSamples.Length) return 0f;
-
-        int end = Mathf.Min(start + sampleWindowSize * channels, clipSamples.Length);
-
-        float sum = 0f;
-        int count = 0;
-
-        for (int i = start; i < end; i += channels)
+        if (audioSource == null || !audioSource.isPlaying)
         {
-            float v = 0f;
-
-            for (int ch = 0; ch < channels; ch++)
-            {
-                v += Mathf.Abs(clipSamples[i + ch]);
-            }
-
-            v /= channels;
-            sum += v;
-            count++;
+            SetMouth(false);
+            SetTalking(false, true);
         }
-
-        return count > 0 ? sum / count : 0f;
     }
 
     void SetMouth(bool open)
@@ -216,7 +230,6 @@ public class CharacterMaterialFaceController : MonoBehaviour
 
         if (mouthMaterialIndex < 0 || mouthMaterialIndex >= mouthMats.Length)
         {
-            //Debug.LogError($"Mouth material index {mouthMaterialIndex} ผิดบน {mouthRenderer.name}");
             return;
         }
 
@@ -237,7 +250,6 @@ public class CharacterMaterialFaceController : MonoBehaviour
 
         if (eyeMaterialIndex < 0 || eyeMaterialIndex >= eyeMats.Length)
         {
-            //Debug.LogError($"Eye material index {eyeMaterialIndex} ผิดบน {eyeRenderer.name}");
             return;
         }
 
@@ -249,13 +261,20 @@ public class CharacterMaterialFaceController : MonoBehaviour
 
     public void PlayVoice(AudioClip clip)
     {
-        if (clip == null) return;
+        if (clip == null || audioSource == null) return;
 
-        CacheClip(clip);
-        SetMouth(false);
+        if (mouthRoutine != null)
+        {
+            StopCoroutine(mouthRoutine);
+            mouthRoutine = null;
+        }
 
+        audioSource.Stop();
         audioSource.clip = clip;
         audioSource.Play();
+
+        SetTalking(true, true);
+        SetMouth(true);
     }
 
     public void StopVoice()
@@ -265,8 +284,24 @@ public class CharacterMaterialFaceController : MonoBehaviour
             audioSource.Stop();
         }
 
+        if (mouthRoutine != null)
+        {
+            StopCoroutine(mouthRoutine);
+            mouthRoutine = null;
+        }
+
         SetMouth(false);
         SetTalking(false, true);
+    }
+
+    public void OnVoicePlaybackEnded()
+    {
+        if (mouthRoutine != null)
+        {
+            StopCoroutine(mouthRoutine);
+        }
+
+        mouthRoutine = StartCoroutine(CloseMouthDelayed(mouthCloseDelay));
     }
 
     public void BlinkNow()

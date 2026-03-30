@@ -68,8 +68,10 @@ public class AE_CardUI : MonoBehaviour
 
         if (backgroundImage != null)
         {
-            backgroundImage.sprite = data != null ? data.FallbackBackgroundSprite : null;
+           backgroundImage.sprite = data != null ? data.FallbackBackgroundSprite : null;
+            
             backgroundImage.color = backgroundImage.sprite != null ? Color.white : backgroundFallbackColor;
+        
             backgroundImage.preserveAspect = false;
         }
 
@@ -112,7 +114,7 @@ public class AE_CardUI : MonoBehaviour
                 targetImage.sprite = cachedSprite;
                 targetImage.preserveAspect = !isBackground;
             }
-
+            //_CheckImage();
             yield break;
         }
 
@@ -130,6 +132,7 @@ public class AE_CardUI : MonoBehaviour
             Debug.LogWarning($"[ExhibitionAgencyCardUI] Download failed: {url} | {request.error}");
             if (bindVersion == _bindVersion && targetImage != null)
                 targetImage.color = isBackground ? backgroundFallbackColor : logoFallbackColor;
+                //_CheckImage();
             yield break;
         }
 
@@ -141,6 +144,7 @@ public class AE_CardUI : MonoBehaviour
             Debug.LogWarning($"[ExhibitionAgencyCardUI] WebP is not supported by current loader. Url={url}");
             if (bindVersion == _bindVersion && targetImage != null)
                 targetImage.color = isBackground ? backgroundFallbackColor : logoFallbackColor;
+                //_CheckImage();
             yield break;
         }
 
@@ -150,6 +154,7 @@ public class AE_CardUI : MonoBehaviour
             Debug.LogWarning($"[ExhibitionAgencyCardUI] Empty image bytes. Url={url}");
             if (bindVersion == _bindVersion && targetImage != null)
                 targetImage.color = isBackground ? backgroundFallbackColor : logoFallbackColor;
+                //_CheckImage();
             yield break;
         }
 
@@ -162,6 +167,7 @@ public class AE_CardUI : MonoBehaviour
             Destroy(texture);
             if (bindVersion == _bindVersion && targetImage != null)
                 targetImage.color = isBackground ? backgroundFallbackColor : logoFallbackColor;
+                //_CheckImage();
             yield break;
         }
 
@@ -183,5 +189,18 @@ public class AE_CardUI : MonoBehaviour
         DynamicCardImageFit fitter = targetImage.GetComponent<DynamicCardImageFit>();
         if (fitter != null)
             fitter.Refresh();
+    }
+
+    public void _CheckImage()
+    {
+        if (backgroundImage.color != Color.white)
+        {
+            backgroundImage.gameObject.SetActive(false);
+        }
+        else
+        {
+            backgroundImage.gameObject.SetActive(true);
+        }
+
     }
 }
