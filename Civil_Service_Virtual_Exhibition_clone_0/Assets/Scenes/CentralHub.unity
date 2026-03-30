@@ -825,17 +825,17 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1949830688}
-        m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
-        m_MethodName: SetActive
-        m_Mode: 6
+      - m_Target: {fileID: 20627919}
+        m_TargetAssemblyTypeName: ExternalLinkButton, Assembly-CSharp
+        m_MethodName: OpenLink
+        m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
           m_StringArgument: 
-          m_BoolArgument: 1
+          m_BoolArgument: 0
         m_CallState: 2
 --- !u!114 &20627917
 MonoBehaviour:
@@ -5880,15 +5880,24 @@ MonoBehaviour:
   overlay: {fileID: 538380874}
   mediaCoordinator: {fileID: 134734402}
   autoPlayOnPrepared: 1
-  overlayLoadingTitle: "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E40\u0E15\u0E23\u0E35\u0E22\u0E21\u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D"
-  overlayLoadingSubtitle: "\u0E01\u0E23\u0E38\u0E13\u0E32\u0E23\u0E2D\u0E2A\u0E31\u0E01\u0E04\u0E23\u0E39\u0E48"
-  overlayLoadingCancelLabel: "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01"
-  overlayFailedTitle: "\u0E42\u0E2B\u0E25\u0E14\u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08"
-  overlayFailedSubtitle: "\u0E01\u0E23\u0E38\u0E13\u0E32\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07"
-  overlayMissingUrlTitle: "\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E25\u0E48\u0E19\u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D"
-  overlayMissingUrlSubtitle: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E25\u0E34\u0E07\u0E01\u0E4C\u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D"
-  overlayMissingApiTitle: "\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E25\u0E48\u0E19\u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D"
-  overlayMissingApiSubtitle: "ApiService \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19"
+  overlayLoadingTitleTh: "\u0E01\u0E33\u0E25\u0E31\u0E07\u0E40\u0E15\u0E23\u0E35\u0E22\u0E21\u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D"
+  overlayLoadingSubtitleTh: "\u0E01\u0E23\u0E38\u0E13\u0E32\u0E23\u0E2D\u0E2A\u0E31\u0E01\u0E04\u0E23\u0E39\u0E48"
+  overlayLoadingCancelLabelTh: "\u0E22\u0E01\u0E40\u0E25\u0E34\u0E01"
+  overlayFailedTitleTh: "\u0E42\u0E2B\u0E25\u0E14\u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D\u0E44\u0E21\u0E48\u0E2A\u0E33\u0E40\u0E23\u0E47\u0E08"
+  overlayFailedSubtitleTh: "\u0E01\u0E23\u0E38\u0E13\u0E32\u0E25\u0E2D\u0E07\u0E43\u0E2B\u0E21\u0E48\u0E2D\u0E35\u0E01\u0E04\u0E23\u0E31\u0E49\u0E07"
+  overlayMissingUrlTitleTh: "\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E25\u0E48\u0E19\u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D"
+  overlayMissingUrlSubtitleTh: "\u0E44\u0E21\u0E48\u0E1E\u0E1A\u0E25\u0E34\u0E07\u0E01\u0E4C\u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D"
+  overlayMissingApiTitleTh: "\u0E44\u0E21\u0E48\u0E2A\u0E32\u0E21\u0E32\u0E23\u0E16\u0E40\u0E25\u0E48\u0E19\u0E27\u0E34\u0E14\u0E35\u0E42\u0E2D"
+  overlayMissingApiSubtitleTh: "ApiService \u0E22\u0E31\u0E07\u0E44\u0E21\u0E48\u0E1E\u0E23\u0E49\u0E2D\u0E21\u0E43\u0E0A\u0E49\u0E07\u0E32\u0E19"
+  overlayLoadingTitleEn: Preparing video
+  overlayLoadingSubtitleEn: Please wait a moment
+  overlayLoadingCancelLabelEn: Cancel
+  overlayFailedTitleEn: Unable to load video
+  overlayFailedSubtitleEn: Please try again
+  overlayMissingUrlTitleEn: Unable to play video
+  overlayMissingUrlSubtitleEn: Video link was not found
+  overlayMissingApiTitleEn: Unable to play video
+  overlayMissingApiSubtitleEn: ApiService is not available
 --- !u!1 &138750620
 GameObject:
   m_ObjectHideFlags: 0
@@ -29928,7 +29937,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &589656208
 Transform:
   m_ObjectHideFlags: 0
@@ -35476,7 +35485,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &683821937
 Transform:
   m_ObjectHideFlags: 0
@@ -46946,7 +46955,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &889454940
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -65450,7 +65459,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1196575302
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -74367,7 +74376,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1351778211
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -232719,7 +232728,7 @@ MonoBehaviour:
   floatSpeed: 1.2
   languageMode: 0
   singleMessage: Can I help you?
-  singleMessageThai: "\u0E21\u0E35\u0E2D\u0E30\u0E44\u0E23\u0E43\u0E2B\u0E49\u0E0A\u0E48\u0E27\u0E22\u0E44\u0E2B\u0E21"
+  singleMessageThai: "\u0E21\u0E35\u0E2D\u0E30\u0E44\u0E23\u0E43\u0E2B\u0E49\u0E0A\u0E48\u0E27\u0E22\u0E44\u0E2B\u0E21\u0E04\u0E30"
   singleMessageEnglish: Can I help you?
 --- !u!23 &6707712329551143384
 MeshRenderer:

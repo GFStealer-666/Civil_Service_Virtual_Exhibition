@@ -179,5 +179,9 @@ public class AE_CardUI : MonoBehaviour
         targetImage.sprite = sprite;
         targetImage.color = Color.white;
         targetImage.preserveAspect = !isBackground;
+
+        DynamicCardImageFit fitter = targetImage.GetComponent<DynamicCardImageFit>();
+        if (fitter != null)
+            fitter.Refresh();
     }
 }

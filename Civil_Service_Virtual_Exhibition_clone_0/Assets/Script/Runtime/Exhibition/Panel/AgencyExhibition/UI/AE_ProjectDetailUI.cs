@@ -42,8 +42,8 @@ public class AE_ProjectDetailUI : MonoBehaviour
     [SerializeField] private TMP_Text videoButtonLabel;
     [SerializeField] private TMP_Text moreInfoButtonLabel;
     private string NarratorPlayLabel => UseEnglish ? "Narrator" : "ผู้บรรยาย";
-    private string NarratorCancelLabel => UseEnglish ? "Cancel" : "ยกเลิก";
-    private string NarratorStopLabel => UseEnglish ? "Stop" : "หยุด";
+    private string NarratorCancelLabel => UseEnglish ? "Narrator" : "ผู้บรรยาย";
+    private string NarratorStopLabel => UseEnglish ? "Narrator" : "ผู้บรรยาย";
     private GovernmentProjectDto _currentProject;
     private string _currentAgencyName;
 
