@@ -18,6 +18,18 @@ public class ZoomableImageTrigger : MonoBehaviour, IPointerClickHandler
         targetButton = GetComponent<Button>();
     }
 
+    public void OnEnable()
+    {
+        if (sourceImage == null || sourceImage.sprite == null)
+        {
+            if (GetComponent<Button>())
+            {
+                Debug.LogWarning("[ZoomableImageTrigger] No ImageZoomViewer found in scene.");
+                GetComponent<Button>().enabled = false;
+            }
+        }
+    }
+
     private void Awake()
     {
         if (targetButton != null)

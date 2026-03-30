@@ -1,7 +1,7 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
-using System.Collections;
 
 public enum QuizRequestErrorType
 {
@@ -80,10 +80,107 @@ public class QuizMeOperationResult
 
 public class QuizRepository : MonoBehaviour
 {
+    public static QuizRepository Instance { get; private set; }
+
+    [Header("Load")]
+    [SerializeField] private bool preloadOnStart = true;
+    [SerializeField] private bool dontDestroyOnLoad = true;
+
+    public bool IsLoading { get; private set; }
+    public bool HasData => _cachedCurrentQuiz != null && _cachedCurrentQuiz.data != null;
+    public string LastError { get; private set; }
+
+    public event Action OnCurrentQuizLoaded;
+    public event Action<string> OnCurrentQuizLoadFailed;
+
     private ApiService Api => ApiService.Instance;
+
+    private QuizCurrentResponseDto _cachedCurrentQuiz;
+    private Coroutine _loadRoutine;
+
+    public QuizCurrentResponseDto GetCachedCurrentQuiz()
+    {
+        return _cachedCurrentQuiz;
+    }
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
+        if (dontDestroyOnLoad)
+            DontDestroyOnLoad(gameObject);
+    }
+
+    private void Start()
+    {
+        if (preloadOnStart)
+            Initialize();
+    }
+
+    public void Initialize(bool forceRefresh = false)
+    {
+        if (IsLoading)
+            return;
+
+        if (!forceRefresh && HasData)
+        {
+            Debug.Log("[QuizRepository] Using cached current quiz.");
+            OnCurrentQuizLoaded?.Invoke();
+            return;
+        }
+
+        if (_loadRoutine != null)
+            StopCoroutine(_loadRoutine);
+
+        _loadRoutine = StartCoroutine(LoadCurrentQuizRoutine());
+    }
+
+    public void Refresh()
+    {
+        Initialize(true);
+    }
+
+    private IEnumerator LoadCurrentQuizRoutine()
+    {
+        IsLoading = true;
+        LastError = string.Empty;
+
+        yield return StartCoroutine(LoadCurrentQuiz(result =>
+        {
+            if (result.success && result.response != null && result.response.data != null)
+            {
+                _cachedCurrentQuiz = result.response;
+                LastError = string.Empty;
+
+                Debug.Log("[QuizRepository] Current quiz loaded successfully.");
+                OnCurrentQuizLoaded?.Invoke();
+            }
+            else
+            {
+                _cachedCurrentQuiz = null;
+                LastError = string.IsNullOrWhiteSpace(result.message)
+                    ? "Failed to load current quiz."
+                    : result.message;
+
+                Debug.LogError($"[QuizRepository] Current quiz load failed: {LastError}");
+                OnCurrentQuizLoadFailed?.Invoke(LastError);
+            }
+        }));
+
+        IsLoading = false;
+        _loadRoutine = null;
+    }
 
     public IEnumerator LoadCurrentQuiz(Action<QuizLoadOperationResult> onCompleted)
     {
+        Debug.Log("[QuizRepository] LoadCurrentQuiz called.");
+
         QuizLoadOperationResult result = new QuizLoadOperationResult();
 
         if (Api == null)
@@ -115,6 +212,8 @@ public class QuizRepository : MonoBehaviour
             );
             yield break;
         }
+
+        Debug.Log($"[QuizRepository] Downloading current quiz from: {Api.GetQuizUrl}");
 
         using UnityWebRequest request = Api.Get(Api.GetQuizUrl);
         yield return request.SendWebRequest();
@@ -239,31 +338,13 @@ public class QuizRepository : MonoBehaviour
 
         if (Api == null)
         {
-            CompleteCheck(
-                result,
-                false,
-                QuizRequestErrorType.MissingApiService,
-                0,
-                "ApiService.Instance is null.",
-                null,
-                null,
-                onCompleted
-            );
+            CompleteCheck(result, false, QuizRequestErrorType.MissingApiService, 0, "ApiService.Instance is null.", null, null, onCompleted);
             yield break;
         }
 
         if (string.IsNullOrWhiteSpace(Api.CheckQuizStatusUrl))
         {
-            CompleteCheck(
-                result,
-                false,
-                QuizRequestErrorType.MissingUrl,
-                0,
-                "CheckQuizStatusUrl is missing.",
-                null,
-                null,
-                onCompleted
-            );
+            CompleteCheck(result, false, QuizRequestErrorType.MissingUrl, 0, "CheckQuizStatusUrl is missing.", null, null, onCompleted);
             yield break;
         }
 
@@ -271,16 +352,7 @@ public class QuizRepository : MonoBehaviour
 
         if (requireToken && string.IsNullOrWhiteSpace(token))
         {
-            CompleteCheck(
-                result,
-                false,
-                QuizRequestErrorType.MissingToken,
-                0,
-                "Quiz check requires token, but no token was found.",
-                null,
-                null,
-                onCompleted
-            );
+            CompleteCheck(result, false, QuizRequestErrorType.MissingToken, 0, "Quiz check requires token, but no token was found.", null, null, onCompleted);
             yield break;
         }
 
@@ -292,46 +364,19 @@ public class QuizRepository : MonoBehaviour
 
         if (HasNetworkFailure(request))
         {
-            CompleteCheck(
-                result,
-                false,
-                QuizRequestErrorType.NetworkError,
-                statusCode,
-                ResolveTransportMessage(request.error, rawBody, "Failed to check quiz status."),
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteCheck(result, false, QuizRequestErrorType.NetworkError, statusCode, ResolveTransportMessage(request.error, rawBody, "Failed to check quiz status."), rawBody, null, onCompleted);
             yield break;
         }
 
         if (!IsSuccessStatusCode(statusCode))
         {
-            CompleteCheck(
-                result,
-                false,
-                QuizRequestErrorType.HttpError,
-                statusCode,
-                ResolveTransportMessage(request.error, rawBody, "Failed to check quiz status."),
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteCheck(result, false, QuizRequestErrorType.HttpError, statusCode, ResolveTransportMessage(request.error, rawBody, "Failed to check quiz status."), rawBody, null, onCompleted);
             yield break;
         }
 
         if (string.IsNullOrWhiteSpace(rawBody))
         {
-            CompleteCheck(
-                result,
-                false,
-                QuizRequestErrorType.EmptyResponse,
-                statusCode,
-                "Quiz check API returned empty response.",
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteCheck(result, false, QuizRequestErrorType.EmptyResponse, statusCode, "Quiz check API returned empty response.", rawBody, null, onCompleted);
             yield break;
         }
 
@@ -343,59 +388,23 @@ public class QuizRepository : MonoBehaviour
         }
         catch (Exception ex)
         {
-            CompleteCheck(
-                result,
-                false,
-                QuizRequestErrorType.ParseError,
-                statusCode,
-                $"Quiz check parse error: {ex.Message}",
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteCheck(result, false, QuizRequestErrorType.ParseError, statusCode, $"Quiz check parse error: {ex.Message}", rawBody, null, onCompleted);
             yield break;
         }
 
         if (dto == null)
         {
-            CompleteCheck(
-                result,
-                false,
-                QuizRequestErrorType.ParseError,
-                statusCode,
-                "Quiz check response parsed to null.",
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteCheck(result, false, QuizRequestErrorType.ParseError, statusCode, "Quiz check response parsed to null.", rawBody, null, onCompleted);
             yield break;
         }
 
         if (!dto.success || dto.data == null)
         {
-            CompleteCheck(
-                result,
-                false,
-                QuizRequestErrorType.BackendRejected,
-                statusCode,
-                ResolveBackendMessage(dto.message, rawBody, "Quiz check response is invalid."),
-                rawBody,
-                dto,
-                onCompleted
-            );
+            CompleteCheck(result, false, QuizRequestErrorType.BackendRejected, statusCode, ResolveBackendMessage(dto.message, rawBody, "Quiz check response is invalid."), rawBody, dto, onCompleted);
             yield break;
         }
 
-        CompleteCheck(
-            result,
-            true,
-            QuizRequestErrorType.None,
-            statusCode,
-            "Quiz check loaded successfully.",
-            rawBody,
-            dto,
-            onCompleted
-        );
+        CompleteCheck(result, true, QuizRequestErrorType.None, statusCode, "Quiz check loaded successfully.", rawBody, dto, onCompleted);
     }
 
     public IEnumerator SubmitResult(
@@ -408,31 +417,13 @@ public class QuizRepository : MonoBehaviour
 
         if (Api == null)
         {
-            CompleteSubmit(
-                result,
-                false,
-                QuizRequestErrorType.MissingApiService,
-                0,
-                "ApiService.Instance is null.",
-                null,
-                null,
-                onCompleted
-            );
+            CompleteSubmit(result, false, QuizRequestErrorType.MissingApiService, 0, "ApiService.Instance is null.", null, null, onCompleted);
             yield break;
         }
 
         if (string.IsNullOrWhiteSpace(Api.QuizSubmitUrl))
         {
-            CompleteSubmit(
-                result,
-                false,
-                QuizRequestErrorType.MissingUrl,
-                0,
-                "QuizSubmitUrl is missing.",
-                null,
-                null,
-                onCompleted
-            );
+            CompleteSubmit(result, false, QuizRequestErrorType.MissingUrl, 0, "QuizSubmitUrl is missing.", null, null, onCompleted);
             yield break;
         }
 
@@ -440,16 +431,7 @@ public class QuizRepository : MonoBehaviour
 
         if (requireToken && string.IsNullOrWhiteSpace(token))
         {
-            CompleteSubmit(
-                result,
-                false,
-                QuizRequestErrorType.MissingToken,
-                0,
-                "Quiz submit requires token, but no token was found.",
-                null,
-                null,
-                onCompleted
-            );
+            CompleteSubmit(result, false, QuizRequestErrorType.MissingToken, 0, "Quiz submit requires token, but no token was found.", null, null, onCompleted);
             yield break;
         }
 
@@ -468,46 +450,19 @@ public class QuizRepository : MonoBehaviour
 
         if (HasNetworkFailure(request))
         {
-            CompleteSubmit(
-                result,
-                false,
-                QuizRequestErrorType.NetworkError,
-                statusCode,
-                ResolveTransportMessage(request.error, rawBody, "Failed to submit quiz score."),
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteSubmit(result, false, QuizRequestErrorType.NetworkError, statusCode, ResolveTransportMessage(request.error, rawBody, "Failed to submit quiz score."), rawBody, null, onCompleted);
             yield break;
         }
 
         if (!IsSuccessStatusCode(statusCode))
         {
-            CompleteSubmit(
-                result,
-                false,
-                QuizRequestErrorType.HttpError,
-                statusCode,
-                ResolveTransportMessage(request.error, rawBody, "Failed to submit quiz score."),
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteSubmit(result, false, QuizRequestErrorType.HttpError, statusCode, ResolveTransportMessage(request.error, rawBody, "Failed to submit quiz score."), rawBody, null, onCompleted);
             yield break;
         }
 
         if (string.IsNullOrWhiteSpace(rawBody))
         {
-            CompleteSubmit(
-                result,
-                false,
-                QuizRequestErrorType.EmptyResponse,
-                statusCode,
-                "Submit API returned empty response.",
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteSubmit(result, false, QuizRequestErrorType.EmptyResponse, statusCode, "Submit API returned empty response.", rawBody, null, onCompleted);
             yield break;
         }
 
@@ -519,59 +474,23 @@ public class QuizRepository : MonoBehaviour
         }
         catch (Exception ex)
         {
-            CompleteSubmit(
-                result,
-                false,
-                QuizRequestErrorType.ParseError,
-                statusCode,
-                $"Submit parse error: {ex.Message}",
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteSubmit(result, false, QuizRequestErrorType.ParseError, statusCode, $"Submit parse error: {ex.Message}", rawBody, null, onCompleted);
             yield break;
         }
 
         if (dto == null)
         {
-            CompleteSubmit(
-                result,
-                false,
-                QuizRequestErrorType.ParseError,
-                statusCode,
-                "Submit response parsed to null.",
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteSubmit(result, false, QuizRequestErrorType.ParseError, statusCode, "Submit response parsed to null.", rawBody, null, onCompleted);
             yield break;
         }
 
         if (!dto.success || dto.data == null)
         {
-            CompleteSubmit(
-                result,
-                false,
-                QuizRequestErrorType.BackendRejected,
-                statusCode,
-                ResolveBackendMessage(dto.message, rawBody, "Submit response is invalid."),
-                rawBody,
-                dto,
-                onCompleted
-            );
+            CompleteSubmit(result, false, QuizRequestErrorType.BackendRejected, statusCode, ResolveBackendMessage(dto.message, rawBody, "Submit response is invalid."), rawBody, dto, onCompleted);
             yield break;
         }
 
-        CompleteSubmit(
-            result,
-            true,
-            QuizRequestErrorType.None,
-            statusCode,
-            "Submit success.",
-            rawBody,
-            dto,
-            onCompleted
-        );
+        CompleteSubmit(result, true, QuizRequestErrorType.None, statusCode, "Submit success.", rawBody, dto, onCompleted);
     }
 
     public IEnumerator LoadLeaderboard(
@@ -583,31 +502,13 @@ public class QuizRepository : MonoBehaviour
 
         if (Api == null)
         {
-            CompleteLeaderboard(
-                result,
-                false,
-                QuizRequestErrorType.MissingApiService,
-                0,
-                "ApiService.Instance is null.",
-                null,
-                null,
-                onCompleted
-            );
+            CompleteLeaderboard(result, false, QuizRequestErrorType.MissingApiService, 0, "ApiService.Instance is null.", null, null, onCompleted);
             yield break;
         }
 
         if (string.IsNullOrWhiteSpace(Api.GetQuizLeaderboardUrl))
         {
-            CompleteLeaderboard(
-                result,
-                false,
-                QuizRequestErrorType.MissingUrl,
-                0,
-                "GetQuizLeaderboardUrl is missing.",
-                null,
-                null,
-                onCompleted
-            );
+            CompleteLeaderboard(result, false, QuizRequestErrorType.MissingUrl, 0, "GetQuizLeaderboardUrl is missing.", null, null, onCompleted);
             yield break;
         }
 
@@ -615,16 +516,7 @@ public class QuizRepository : MonoBehaviour
 
         if (requireToken && string.IsNullOrWhiteSpace(token))
         {
-            CompleteLeaderboard(
-                result,
-                false,
-                QuizRequestErrorType.MissingToken,
-                0,
-                "Quiz leaderboard requires token, but no token was found.",
-                null,
-                null,
-                onCompleted
-            );
+            CompleteLeaderboard(result, false, QuizRequestErrorType.MissingToken, 0, "Quiz leaderboard requires token, but no token was found.", null, null, onCompleted);
             yield break;
         }
 
@@ -636,46 +528,19 @@ public class QuizRepository : MonoBehaviour
 
         if (HasNetworkFailure(request))
         {
-            CompleteLeaderboard(
-                result,
-                false,
-                QuizRequestErrorType.NetworkError,
-                statusCode,
-                ResolveTransportMessage(request.error, rawBody, "Failed to load leaderboard."),
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteLeaderboard(result, false, QuizRequestErrorType.NetworkError, statusCode, ResolveTransportMessage(request.error, rawBody, "Failed to load leaderboard."), rawBody, null, onCompleted);
             yield break;
         }
 
         if (!IsSuccessStatusCode(statusCode))
         {
-            CompleteLeaderboard(
-                result,
-                false,
-                QuizRequestErrorType.HttpError,
-                statusCode,
-                ResolveTransportMessage(request.error, rawBody, "Failed to load leaderboard."),
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteLeaderboard(result, false, QuizRequestErrorType.HttpError, statusCode, ResolveTransportMessage(request.error, rawBody, "Failed to load leaderboard."), rawBody, null, onCompleted);
             yield break;
         }
 
         if (string.IsNullOrWhiteSpace(rawBody))
         {
-            CompleteLeaderboard(
-                result,
-                false,
-                QuizRequestErrorType.EmptyResponse,
-                statusCode,
-                "Leaderboard API returned empty response.",
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteLeaderboard(result, false, QuizRequestErrorType.EmptyResponse, statusCode, "Leaderboard API returned empty response.", rawBody, null, onCompleted);
             yield break;
         }
 
@@ -687,31 +552,13 @@ public class QuizRepository : MonoBehaviour
         }
         catch (Exception ex)
         {
-            CompleteLeaderboard(
-                result,
-                false,
-                QuizRequestErrorType.ParseError,
-                statusCode,
-                $"Leaderboard parse error: {ex.Message}",
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteLeaderboard(result, false, QuizRequestErrorType.ParseError, statusCode, $"Leaderboard parse error: {ex.Message}", rawBody, null, onCompleted);
             yield break;
         }
 
         if (dto == null)
         {
-            CompleteLeaderboard(
-                result,
-                false,
-                QuizRequestErrorType.ParseError,
-                statusCode,
-                "Leaderboard response parsed to null.",
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteLeaderboard(result, false, QuizRequestErrorType.ParseError, statusCode, "Leaderboard response parsed to null.", rawBody, null, onCompleted);
             yield break;
         }
 
@@ -719,29 +566,11 @@ public class QuizRepository : MonoBehaviour
 
         if (!dto.success || dto.data == null)
         {
-            CompleteLeaderboard(
-                result,
-                false,
-                QuizRequestErrorType.BackendRejected,
-                statusCode,
-                ResolveBackendMessage(dto.message, rawBody, "Leaderboard response is invalid."),
-                rawBody,
-                dto,
-                onCompleted
-            );
+            CompleteLeaderboard(result, false, QuizRequestErrorType.BackendRejected, statusCode, ResolveBackendMessage(dto.message, rawBody, "Leaderboard response is invalid."), rawBody, dto, onCompleted);
             yield break;
         }
 
-        CompleteLeaderboard(
-            result,
-            true,
-            QuizRequestErrorType.None,
-            statusCode,
-            "Leaderboard loaded successfully.",
-            rawBody,
-            dto,
-            onCompleted
-        );
+        CompleteLeaderboard(result, true, QuizRequestErrorType.None, statusCode, "Leaderboard loaded successfully.", rawBody, dto, onCompleted);
     }
 
     public IEnumerator LoadMe(
@@ -753,31 +582,13 @@ public class QuizRepository : MonoBehaviour
 
         if (Api == null)
         {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.MissingApiService,
-                0,
-                "ApiService.Instance is null.",
-                null,
-                null,
-                onCompleted
-            );
+            CompleteMe(result, false, QuizRequestErrorType.MissingApiService, 0, "ApiService.Instance is null.", null, null, onCompleted);
             yield break;
         }
 
         if (string.IsNullOrWhiteSpace(Api.GetQuizMe))
         {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.MissingUrl,
-                0,
-                "GetQuizMe is missing.",
-                null,
-                null,
-                onCompleted
-            );
+            CompleteMe(result, false, QuizRequestErrorType.MissingUrl, 0, "GetQuizMe is missing.", null, null, onCompleted);
             yield break;
         }
 
@@ -785,16 +596,7 @@ public class QuizRepository : MonoBehaviour
 
         if (requireToken && string.IsNullOrWhiteSpace(token))
         {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.MissingToken,
-                0,
-                "Quiz me requires token, but no token was found.",
-                null,
-                null,
-                onCompleted
-            );
+            CompleteMe(result, false, QuizRequestErrorType.MissingToken, 0, "Quiz me requires token, but no token was found.", null, null, onCompleted);
             yield break;
         }
 
@@ -806,46 +608,19 @@ public class QuizRepository : MonoBehaviour
 
         if (HasNetworkFailure(request))
         {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.NetworkError,
-                statusCode,
-                ResolveTransportMessage(request.error, rawBody, "Failed to load quiz stats."),
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteMe(result, false, QuizRequestErrorType.NetworkError, statusCode, ResolveTransportMessage(request.error, rawBody, "Failed to load quiz stats."), rawBody, null, onCompleted);
             yield break;
         }
 
         if (!IsSuccessStatusCode(statusCode))
         {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.HttpError,
-                statusCode,
-                ResolveTransportMessage(request.error, rawBody, "Failed to load quiz stats."),
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteMe(result, false, QuizRequestErrorType.HttpError, statusCode, ResolveTransportMessage(request.error, rawBody, "Failed to load quiz stats."), rawBody, null, onCompleted);
             yield break;
         }
 
         if (string.IsNullOrWhiteSpace(rawBody))
         {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.EmptyResponse,
-                statusCode,
-                "Quiz me API returned empty response.",
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteMe(result, false, QuizRequestErrorType.EmptyResponse, statusCode, "Quiz me API returned empty response.", rawBody, null, onCompleted);
             yield break;
         }
 
@@ -857,31 +632,13 @@ public class QuizRepository : MonoBehaviour
         }
         catch (Exception ex)
         {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.ParseError,
-                statusCode,
-                $"Quiz me parse error: {ex.Message}",
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteMe(result, false, QuizRequestErrorType.ParseError, statusCode, $"Quiz me parse error: {ex.Message}", rawBody, null, onCompleted);
             yield break;
         }
 
         if (dto == null)
         {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.ParseError,
-                statusCode,
-                "Quiz me response parsed to null.",
-                rawBody,
-                null,
-                onCompleted
-            );
+            CompleteMe(result, false, QuizRequestErrorType.ParseError, statusCode, "Quiz me response parsed to null.", rawBody, null, onCompleted);
             yield break;
         }
 
@@ -889,29 +646,11 @@ public class QuizRepository : MonoBehaviour
 
         if (!dto.success || dto.data == null)
         {
-            CompleteMe(
-                result,
-                false,
-                QuizRequestErrorType.BackendRejected,
-                statusCode,
-                ResolveBackendMessage(dto.message, rawBody, "Quiz me response is invalid."),
-                rawBody,
-                dto,
-                onCompleted
-            );
+            CompleteMe(result, false, QuizRequestErrorType.BackendRejected, statusCode, ResolveBackendMessage(dto.message, rawBody, "Quiz me response is invalid."), rawBody, dto, onCompleted);
             yield break;
         }
 
-        CompleteMe(
-            result,
-            true,
-            QuizRequestErrorType.None,
-            statusCode,
-            "Quiz me loaded successfully.",
-            rawBody,
-            dto,
-            onCompleted
-        );
+        CompleteMe(result, true, QuizRequestErrorType.None, statusCode, "Quiz me loaded successfully.", rawBody, dto, onCompleted);
     }
 
     private string ResolveToken(string overrideToken)
@@ -1021,7 +760,6 @@ public class QuizRepository : MonoBehaviour
         dto.data.setScores = ParseSetScores(dataJson);
     }
 
-
     private QuizSetScoresDto ParseSetScores(string sourceJson)
     {
         QuizSetScoresDto result = new QuizSetScoresDto();
@@ -1049,10 +787,10 @@ public class QuizRepository : MonoBehaviour
     }
 
     private bool TryReadNullableIntProperty(
-    string sourceJson,
-    string propertyName,
-    out int value,
-    out bool hasValue)
+        string sourceJson,
+        string propertyName,
+        out int value,
+        out bool hasValue)
     {
         value = 0;
         hasValue = false;

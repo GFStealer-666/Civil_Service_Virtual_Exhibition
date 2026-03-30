@@ -199,7 +199,7 @@ public class QuizGameController : MonoBehaviour
 
         if (blockedByCooldown && !ShouldBypassCooldownForTesting())
         {
-            string message = checkData.playedToday
+            string rawMessage = checkData.playedToday
                 ? L(
                     "ร่วมกิจกรรมได้วันละ 1 ครั้ง กรุณาลองใหม่พรุ่งนี้",
                     "You can play once per day. Please try again tomorrow."
@@ -210,7 +210,8 @@ public class QuizGameController : MonoBehaviour
                         "คุณยังไม่สามารถเล่นควิซได้ในขณะนี้",
                         "You cannot play this quiz right now."
                     ));
-
+            Debug.Log(rawMessage);
+            string message = LocalizeQuizApiMessage(rawMessage);
             ShowCannotStartMessage(L("ไม่สามารถเริ่มควิซได้", "Unable to start quiz"), message);
             ShowStartState();
             yield break;
@@ -219,13 +220,16 @@ public class QuizGameController : MonoBehaviour
         if (!checkData.canPlay && !blockedByCooldown)
         {
             string message = !string.IsNullOrWhiteSpace(checkResult.response.message)
-                ? checkResult.response.message
+                ? LocalizeQuizApiMessage(checkResult.response.message)
                 : L(
                     "คุณยังไม่สามารถเล่นควิซได้ในขณะนี้",
                     "You cannot play this quiz right now."
                 );
 
-            ShowCannotStartMessage(L("ไม่สามารถเริ่มควิซได้", "Unable to start quiz"), message);
+            ShowCannotStartMessage(
+                L("ไม่สามารถเริ่มควิซได้", "Unable to start quiz"),
+                message
+            );
             ShowStartState();
             yield break;
         }
@@ -690,5 +694,28 @@ public class QuizGameController : MonoBehaviour
         );
 
         return string.IsNullOrEmpty(value) ? fallback : value;
+    }
+    private string LocalizeQuizApiMessage(string rawMessage)
+    {
+        if (string.IsNullOrWhiteSpace(rawMessage))
+            return rawMessage;
+
+        switch (rawMessage.Trim())
+        {
+            case "Anonymous users cannot participate":
+                return L(
+                    "ผู้ใช้แบบไม่ระบุตัวตนไม่สามารถเข้าร่วมกิจกรรมได้",
+                    "Anonymous users cannot participate"
+                );
+
+            case "Unauthorized":
+                return L(
+                    "กรุณาเข้าสู่ระบบก่อนเข้าร่วมกิจกรรม",
+                    "Please sign in before joining the activity."
+                );
+
+            default:
+                return rawMessage;
+        }
     }
 }

@@ -59,7 +59,7 @@ public class AE_ProjectCardUI : MonoBehaviour
                 backgroundImage.color = backgroundFallbackColor;
             }
 
-            backgroundImage.preserveAspect = false;
+                backgroundImage.preserveAspect = false;
         }
 
         if (backgroundLoader != null)

@@ -406,16 +406,16 @@ public class PSC_Repository : MonoBehaviour
                 organizationCount = organizations.Count;
             }
 
-            Debug.Log(
-                $"[PSC_Repository] Ministry Index={i} | " +
-                $"runtimeId='{ministry.runtimeId}' | " +
-                $"filter='{ministry.runtimeFilter}' | " +
-                $"organizations={organizationCount} | " +
-                $"services={ministry.runtimeServiceCount}"
-            );
+            // Debug.Log(
+            //     $"[PSC_Repository] Ministry Index={i} | " +
+            //     $"runtimeId='{ministry.runtimeId}' | " +
+            //     $"filter='{ministry.runtimeFilter}' | " +
+            //     $"organizations={organizationCount} | " +
+            //     $"services={ministry.runtimeServiceCount}"
+            // );
         }
 
-        Debug.Log("[PSC_Repository] ======================");
+        //Debug.Log("[PSC_Repository] ======================");
     }
 
     private string BuildMinistryId(PSC_ServiceMinistryDto ministry, int index)

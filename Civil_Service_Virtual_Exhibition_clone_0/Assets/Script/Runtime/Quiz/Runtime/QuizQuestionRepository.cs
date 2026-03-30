@@ -6,8 +6,14 @@ using UnityEngine.Networking;
 
 public class QuizQuestionRepository : MonoBehaviour
 {
+    public static QuizQuestionRepository Instance { get; private set; }
+
     [Header("References")]
     [SerializeField] private QuizGameConfigSO fallbackConfig;
+
+    [Header("Load")]
+    [SerializeField] private bool preloadOnStart = true;
+    [SerializeField] private bool dontDestroyOnLoad = true;
 
     [Header("Cache")]
     [SerializeField] private int refreshAfterHours = 24;
@@ -15,6 +21,112 @@ public class QuizQuestionRepository : MonoBehaviour
     private const string CachePlayerPrefsKey = "quiz_cache_envelope_v1";
 
     private ApiService Api => ApiService.Instance;
+
+    public bool IsLoading { get; private set; }
+    public bool HasData => _cachedQuestions != null && _cachedQuestions.Count > 0;
+    public string LastError { get; private set; }
+
+    public event Action OnQuestionsLoaded;
+    public event Action<string> OnQuestionsLoadFailed;
+
+    private readonly List<QuizSessionQuestion> _cachedQuestions = new List<QuizSessionQuestion>();
+    private Coroutine _loadRoutine;
+
+    public IReadOnlyList<QuizSessionQuestion> CachedQuestions => _cachedQuestions;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+
+        if (dontDestroyOnLoad)
+            DontDestroyOnLoad(gameObject);
+    }
+
+    private void Start()
+    {
+        if (preloadOnStart)
+            Initialize();
+    }
+
+    public void Initialize(bool forceRefresh = false, string accessToken = null)
+    {
+        if (IsLoading)
+            return;
+
+        if (!forceRefresh && HasData)
+        {
+            Debug.Log("[QuizQuestionRepository] Using in-memory cached questions.");
+            OnQuestionsLoaded?.Invoke();
+            return;
+        }
+
+        if (_loadRoutine != null)
+            StopCoroutine(_loadRoutine);
+
+        _loadRoutine = StartCoroutine(LoadQuestionsRoutine(accessToken));
+    }
+
+    public void Refresh(string accessToken = null)
+    {
+        Initialize(true, accessToken);
+    }
+
+    public List<QuizSessionQuestion> GetQuestions()
+    {
+        return new List<QuizSessionQuestion>(_cachedQuestions);
+    }
+
+    private IEnumerator LoadQuestionsRoutine(string accessToken)
+    {
+        IsLoading = true;
+        LastError = string.Empty;
+
+        bool loaded = false;
+        string failReason = "Failed to load any quiz source.";
+
+        yield return StartCoroutine(LoadQuestions(
+            questions =>
+            {
+                _cachedQuestions.Clear();
+                if (questions != null)
+                    _cachedQuestions.AddRange(questions);
+
+                LastError = string.Empty;
+                loaded = _cachedQuestions.Count > 0;
+
+                if (!loaded)
+                    failReason = "Quiz returned no valid questions.";
+            },
+            () =>
+            {
+                loaded = false;
+                failReason = "Failed to load any quiz source.";
+            },
+            accessToken
+        ));
+
+        if (loaded)
+        {
+            Debug.Log($"[QuizQuestionRepository] Loaded {_cachedQuestions.Count} questions.");
+            OnQuestionsLoaded?.Invoke();
+        }
+        else
+        {
+            _cachedQuestions.Clear();
+            LastError = failReason;
+            Debug.LogWarning($"[QuizQuestionRepository] Load failed: {LastError}");
+            OnQuestionsLoadFailed?.Invoke(LastError);
+        }
+
+        IsLoading = false;
+        _loadRoutine = null;
+    }
 
     public IEnumerator LoadQuestions(
         Action<List<QuizSessionQuestion>> onSuccess,
@@ -26,6 +138,8 @@ public class QuizQuestionRepository : MonoBehaviour
 
         if (Api != null && !string.IsNullOrWhiteSpace(Api.GetQuizUrl))
         {
+            Debug.Log($"[QuizQuestionRepository] Downloading from: {Api.GetQuizUrl}");
+
             yield return FetchFromWeb(
                 Api.GetQuizUrl,
                 accessToken,

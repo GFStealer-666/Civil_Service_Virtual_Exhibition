@@ -117,6 +117,14 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
         Cursor.lockState = unlockCursor ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = unlockCursor;
     }
+
+    public static void _ForceHide()
+    {
+        
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+        GameplayInputBlocked = false;
+    }
     void IBeforeUpdate.BeforeUpdate()
     {
         if (!HasInputAuthority)

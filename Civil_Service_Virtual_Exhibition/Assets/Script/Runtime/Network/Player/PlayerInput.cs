@@ -120,8 +120,10 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
 
     public static void _ForceHide()
     {
+        
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+        GameplayInputBlocked = false;
     }
     void IBeforeUpdate.BeforeUpdate()
     {

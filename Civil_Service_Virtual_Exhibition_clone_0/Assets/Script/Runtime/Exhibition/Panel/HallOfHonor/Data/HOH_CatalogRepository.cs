@@ -413,15 +413,15 @@ public class HOH_CatalogRepository : MonoBehaviour
                 unitCount = units.Count;
             }
 
-            Debug.Log(
-                $"[HOH_CatalogRepository] Category Index={i} | " +
-                $"runtimeId='{category.runtimeId}' | " +
-                $"type='{category.type}' | " +
-                $"units={unitCount}"
-            );
+            // Debug.Log(
+            //     $"[HOH_CatalogRepository] Category Index={i} | " +
+            //     $"runtimeId='{category.runtimeId}' | " +
+            //     $"type='{category.type}' | " +
+            //     $"units={unitCount}"
+            // );
         }
 
-        Debug.Log("[HOH_CatalogRepository] =========================");
+        //Debug.Log("[HOH_CatalogRepository] =========================");
     }
 
     private string BuildCategoryId(HOH_CategoryDto category, int index)
