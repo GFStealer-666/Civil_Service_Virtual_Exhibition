@@ -8,7 +8,7 @@
   - Layers:
     - Default, TransparentFX, Ignore Raycast, Target, Water, UI, AvatarOnly, Agent, Projectile, FPV, AgentKCC, Interaction, Pickup, MapOnly
 - Active game object:
-  - Name: [Error] StatusSubtittleText
+  - Name: --------------- NETWORK ---------------
   - Tag: Untagged
   - Layer: Default
 <!-- UNITY CODE ASSIST INSTRUCTIONS END -->

@@ -180,11 +180,13 @@ public class QuizGameController : MonoBehaviour
 
         if (!checkResult.success || checkResult.response == null || checkResult.response.data == null)
         {
+            string message = string.IsNullOrWhiteSpace(checkResult.message)
+                ? L("ตรวจสอบสถานะควิซไม่สำเร็จ", "Failed to check quiz status.")
+                : LocalizeQuizApiMessage(checkResult.message);
+
             ShowCannotStartMessage(
                 L("ไม่สามารถเริ่มควิซได้", "Unable to start quiz"),
-                string.IsNullOrWhiteSpace(checkResult.message)
-                    ? L("ตรวจสอบสถานะควิซไม่สำเร็จ", "Failed to check quiz status.")
-                    : checkResult.message
+                message
             );
 
             ShowStartState();
@@ -225,7 +227,7 @@ public class QuizGameController : MonoBehaviour
                     "คุณยังไม่สามารถเล่นควิซได้ในขณะนี้",
                     "You cannot play this quiz right now."
                 );
-
+            Debug.Log(message);
             ShowCannotStartMessage(
                 L("ไม่สามารถเริ่มควิซได้", "Unable to start quiz"),
                 message
