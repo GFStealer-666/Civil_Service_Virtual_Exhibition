@@ -22,48 +22,56 @@ MonoBehaviour:
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-en
+    - Preload
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 8642b0abfdb310c4bb6c62b718d373a8
     m_Address: UI_Login_en
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-en
+    - Preload
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 986ee8d1b7f7c5b4ab1d4880e73f65fd
     m_Address: UI_Common_en
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-en
+    - Preload
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 9e1c6b484177173468e576fecb241d98
     m_Address: UI_Landing_en
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-en
+    - Preload
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: b19e0b314e65add41854a37378a826c1
     m_Address: UI_Register_en
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-en
+    - Preload
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: be3afb4fe742a0049b4447cd0fcff741
     m_Address: UI_CentralHub_en
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-en
+    - Preload
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: cc607ecb34d52f8499557a3827a10c27
     m_Address: UI_Quiz_en
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-en
+    - Preload
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: eec4c9808461d6c4bba647fa929e768c
     m_Address: UI_HOH_en
     m_ReadOnly: 1
     m_SerializedLabels:
     - Locale-en
+    - Preload
     FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 1
   m_Settings: {fileID: 11400000, guid: 3c38cb8b1b085ca499c899cc6b33b729, type: 2}

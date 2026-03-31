@@ -359,16 +359,16 @@ public class AE_CatalogRepository : MonoBehaviour
                 agencyCount = agencies.Count;
             }
 
-            Debug.Log(
-                $"[GovernmentCatalogRepository] Ministry Index={i} | " +
-                $"runtimeId='{ministry.runtimeId}' | " +
-                $"ministry='{ministry.ministry}' | " +
-                $"ministryEn='{ministry.ministryEn}' | " +
-                $"agencies={agencyCount}"
-            );
+            // Debug.Log(
+            //     $"[GovernmentCatalogRepository] Ministry Index={i} | " +
+            //     $"runtimeId='{ministry.runtimeId}' | " +
+            //     $"ministry='{ministry.ministry}' | " +
+            //     $"ministryEn='{ministry.ministryEn}' | " +
+            //     $"agencies={agencyCount}"
+            // );
         }
 
-        Debug.Log("[GovernmentCatalogRepository] =========================");
+        //Debug.Log("[GovernmentCatalogRepository] =========================");
     }
 
     private string BuildMinistryId(GovernmentMinistryDto ministry, int index)

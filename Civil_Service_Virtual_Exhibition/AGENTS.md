@@ -8,7 +8,7 @@
   - Layers:
     - Default, TransparentFX, Ignore Raycast, Target, Water, UI, AvatarOnly, Agent, Projectile, FPV, AgentKCC, Interaction, Pickup, MapOnly
 - Active game object:
-  - Name: [Singleton] LocalPlayerData
+  - Name: Text (TMP)
   - Tag: Untagged
-  - Layer: Default
+  - Layer: UI
 <!-- UNITY CODE ASSIST INSTRUCTIONS END -->

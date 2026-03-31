@@ -396,7 +396,7 @@ public class HOH_CatalogRepository : MonoBehaviour
             return;
         }
 
-        Debug.Log("[HOH_CatalogRepository] ===== Category Keys =====");
+        //Debug.Log("[HOH_CatalogRepository] ===== Category Keys =====");
 
         for (int i = 0; i < RawData.data.Count; i++)
         {
