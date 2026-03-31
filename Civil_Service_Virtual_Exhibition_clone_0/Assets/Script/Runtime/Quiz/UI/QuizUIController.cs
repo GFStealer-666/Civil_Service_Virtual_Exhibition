@@ -259,7 +259,7 @@ public class QuizUIController : MonoBehaviour
    public void SetResult(float totalScore, float maxScore)
     {
         if (finalScoreText != null)
-            finalScoreText.text = $"{totalScore:F2}/{maxScore:F2}";
+            finalScoreText.text = $"{totalScore:F2}/{maxScore}";
     }
     public void SetResult(int totalScore, int correctCount, int totalQuestions)
     {

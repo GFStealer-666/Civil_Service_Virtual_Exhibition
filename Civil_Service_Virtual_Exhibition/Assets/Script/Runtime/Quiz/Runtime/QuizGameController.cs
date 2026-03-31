@@ -656,7 +656,10 @@ public class QuizGameController : MonoBehaviour
         float remainingTimeBonus = 0f;
 
         if (config != null && config.isTimeLimited)
-            remainingTimeBonus = Mathf.Max(0f, _remainingSessionTime) * remainingTimeMultiplier;
+        {
+            int remainingWholeSeconds = Mathf.Max(0, Mathf.RoundToInt(_remainingSessionTime));
+            remainingTimeBonus = remainingWholeSeconds * remainingTimeMultiplier;
+        }
 
         float finalScore = (_correctCount * scorePerCorrectAnswer) + remainingTimeBonus;
         return finalScore;
