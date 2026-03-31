@@ -408,10 +408,10 @@ public class QuizRepository : MonoBehaviour
     }
 
     public IEnumerator SubmitResult(
-        int score,
-        Action<QuizSubmitOperationResult> onCompleted,
-        string accessTokenOverride = null,
-        bool requireToken = true)
+    float score,
+    Action<QuizSubmitOperationResult> onCompleted,
+    string accessTokenOverride = null,
+    bool requireToken = true)
     {
         QuizSubmitOperationResult result = new QuizSubmitOperationResult();
 

@@ -30,8 +30,8 @@ public class QuizGameController : MonoBehaviour
     private readonly List<QuizSessionQuestion> _sessionQuestions = new List<QuizSessionQuestion>();
 
     private int _currentQuestionIndex;
-    private int _score;
-    private int _maxScore;
+    private float _score;
+    private float _maxScore;
     private int _correctCount;
 
     private bool _isPaused;
@@ -651,7 +651,7 @@ public class QuizGameController : MonoBehaviour
         return finalList;
     }
 
-    private int CalculateFinalScore()
+    private float CalculateFinalScore()
     {
         float remainingTimeBonus = 0f;
 
@@ -659,10 +659,10 @@ public class QuizGameController : MonoBehaviour
             remainingTimeBonus = Mathf.Max(0f, _remainingSessionTime) * remainingTimeMultiplier;
 
         float finalScore = (_correctCount * scorePerCorrectAnswer) + remainingTimeBonus;
-        return Mathf.RoundToInt(finalScore);
+        return finalScore;
     }
 
-    private int CalculateMaxScore()
+    private float CalculateMaxScore()
     {
         float maxTimeBonus =
             config != null && config.isTimeLimited
@@ -670,7 +670,7 @@ public class QuizGameController : MonoBehaviour
                 : 0f;
 
         float maxScore = (_sessionQuestions.Count * scorePerCorrectAnswer) + maxTimeBonus;
-        return Mathf.RoundToInt(maxScore);
+        return maxScore;
     }
 
     private bool IsEnglishLocale()

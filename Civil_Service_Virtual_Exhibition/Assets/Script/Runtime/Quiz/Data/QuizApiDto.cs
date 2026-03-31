@@ -65,7 +65,7 @@ public class QuizCheckDataDto
 [Serializable]
 public class QuizSubmitRequestDto
 {
-    public int score;
+    public float score;
 }
 
 [Serializable]
@@ -80,7 +80,7 @@ public class QuizSubmitResponseDto
 public class QuizSubmitDataDto
 {
     public int setNumber;
-    public int score;
+    public float score;
     public QuizPlaySessionDto[] sessions;
 }
 
@@ -104,7 +104,7 @@ public class LeaderboardEntryDto
 {
     public int rank;
     public string characterName;
-    public int totalScore;
+    public float totalScore;
     public string lastPlayed;
 }
 
@@ -112,7 +112,7 @@ public class LeaderboardEntryDto
 public class QuizLeaderboardPlayerDto
 {
     public int rank;
-    public int totalScore;
+    public float totalScore;
     public QuizSetScoresDto setScores;
 }
 
@@ -167,17 +167,17 @@ public class QuizMeResponseDto
 [Serializable]
 public class QuizMeDataDto
 {
-    public int totalScore;
+    public float totalScore;
     public int setsCompleted;
     public int rank;
     public int totalPlayers;
     public int currentSetNumber;
     public QuizSetScoresDto setScores;
     public QuizPlaySessionDto[] sessions;
-    public int? set1Score => setScores != null ? setScores.set1 : null;
-    public int? set2Score => setScores != null ? setScores.set2 : null;
-    public int? set3Score => setScores != null ? setScores.set3 : null;
-    public int? set4Score => setScores != null ? setScores.set4 : null;
+    public float? set1Score => setScores != null ? setScores.set1 : null;
+    public float? set2Score => setScores != null ? setScores.set2 : null;
+    public float? set3Score => setScores != null ? setScores.set3 : null;
+    public float? set4Score => setScores != null ? setScores.set4 : null;
 
     public bool hasTotalScore;
     public bool hasRank;
@@ -186,17 +186,17 @@ public class QuizMeDataDto
 [Serializable]
 public class QuizPlaySessionDto
 {
-    public int score;
+    public float score;
     public string playedAt;
 }
 
 [Serializable]
 public class QuizSetScoresDto
 {
-    public int set1 = 0;
-    public int set2 = 0;
-    public int set3 = 0;
-    public int set4 = 0;
+    public float set1 = 0;
+    public float set2 = 0;
+    public float set3 = 0;
+    public float set4 = 0;
 
     public bool HasSet1 => set1 >= 0;
     public bool HasSet2 => set2 >= 0;

@@ -34,7 +34,7 @@ public class QuizLeaderboardController : MonoBehaviour
 
     private int _lastSubmittedCorrectCount;
     private int _lastSubmittedTotalQuestions;
-    private int _lastFinalUiScore;
+    private float _lastFinalUiScore;
 
     private bool _hasSessionResult;
     private bool _isRefreshing;
@@ -103,7 +103,7 @@ public class QuizLeaderboardController : MonoBehaviour
             data.set4Score
         );
     }
-    public void HandleQuizFinished(int correctCount, int totalQuestions, int finalUiScore)
+    public void HandleQuizFinished(int correctCount, int totalQuestions, float  finalUiScore)
     {
         _lastSubmittedCorrectCount = correctCount;
         _lastSubmittedTotalQuestions = totalQuestions;
@@ -344,12 +344,16 @@ public class QuizLeaderboardController : MonoBehaviour
         if (data != null)
         {
             if (data.hasTotalScore)
-                scoreText = data.totalScore.ToString();
+                scoreText = data.totalScore.ToString("F2");
             else if (_hasSessionResult)
-                scoreText = _lastFinalUiScore.ToString();
+                scoreText = _lastFinalUiScore.ToString("F2");
 
             if (data.hasRank)
                 rankText = data.rank.ToString();
+        }
+        else if (_hasSessionResult)
+        {
+            scoreText = _lastFinalUiScore.ToString("F2");
         }
         else if (_hasSessionResult)
         {

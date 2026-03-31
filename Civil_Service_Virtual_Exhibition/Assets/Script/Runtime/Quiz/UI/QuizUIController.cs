@@ -256,19 +256,18 @@ public class QuizUIController : MonoBehaviour
             closeButton.interactable = true;
     }
 
-    public void SetResult(int totalScore, int maxScore)
+   public void SetResult(float totalScore, float maxScore)
     {
         if (finalScoreText != null)
-            finalScoreText.text = $"{totalScore}/{maxScore}";
+            finalScoreText.text = $"{totalScore:F2}/{maxScore:F2}";
     }
-
     public void SetResult(int totalScore, int correctCount, int totalQuestions)
     {
         if (finalScoreText != null)
             finalScoreText.text = $"{totalScore}";
     }
 
-    public void SetPhaseScores(int? set1, int? set2, int? set3, int? set4)
+    public void SetPhaseScores(float? set1, float? set2, float? set3, float? set4)
     {
         SetSinglePhaseScore(phase1ScoreText, set1);
         SetSinglePhaseScore(phase2ScoreText, set2);
@@ -381,7 +380,7 @@ public class QuizUIController : MonoBehaviour
             confirmButton.interactable = value;
     }
 
-    private void SetSinglePhaseScore(TMP_Text target, int? value)
+    private void SetSinglePhaseScore(TMP_Text target, float? value)
     {
         if (target == null)
             return;
