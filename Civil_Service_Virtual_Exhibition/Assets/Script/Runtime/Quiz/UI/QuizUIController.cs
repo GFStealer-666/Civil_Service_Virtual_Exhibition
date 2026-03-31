@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -117,13 +118,19 @@ public class QuizUIController : MonoBehaviour
 
         SetConfirmInteractable(false);
         HideQuitConfirmation();
-        RefreshLocalizedStaticTexts();
         SetPhaseScores(null, null, null, null);
     }
 
     private void OnEnable()
     {
         LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+        StartCoroutine(RefreshWhenLocalizationReady());
+    }
+
+    private IEnumerator RefreshWhenLocalizationReady()
+    {
+        yield return LocalizationSettings.InitializationOperation;
+
         RefreshLocalizedStaticTexts();
 
         if (_hasQuestionCounter)
@@ -142,15 +149,7 @@ public class QuizUIController : MonoBehaviour
 
     private void OnLocaleChanged(Locale _)
     {
-        RefreshLocalizedStaticTexts();
-
-        if (_hasQuestionCounter)
-            RefreshQuestionCounter();
-
-        if (_isShowingQuitPopup)
-            RefreshQuitPopupTexts();
-
-        RefreshCurrentQuestionTexts();
+        StartCoroutine(RefreshWhenLocalizationReady());
     }
 
     public void ShowStart()
@@ -473,6 +472,9 @@ public class QuizUIController : MonoBehaviour
 
     private string T(string key, string fallback)
     {
+        if (!LocalizationSettings.InitializationOperation.IsDone)
+            return fallback;
+
         string value = LocalizationSettings.StringDatabase.GetLocalizedString(
             LocalizationKeys.Tables.Quiz,
             key

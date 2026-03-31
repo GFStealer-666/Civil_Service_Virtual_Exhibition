@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.Localization.Settings;
 using UnityEngine.Networking;
 using UnityEngine.UI;
-
+using UnityEngine.SceneManagement;
 public class DeleteAccountPanelController : MonoBehaviour
 {
     [Header("Root")]
@@ -255,10 +255,11 @@ public class DeleteAccountPanelController : MonoBehaviour
         HideImmediate();
         _busy = false;
         SetInteractable(true);
-
+        
+        SceneManager.LoadScene("LandingPage");
         // redirect scene here if needed
     }
-
+    
     private void HandleDeleteFailed(string apiMessage)
     {
         if (statusOverlay != null)

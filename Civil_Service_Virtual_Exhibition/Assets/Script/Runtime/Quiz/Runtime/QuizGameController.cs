@@ -690,6 +690,9 @@ public class QuizGameController : MonoBehaviour
 
     private string T(string key, string fallback)
     {
+        if (!LocalizationSettings.InitializationOperation.IsDone)
+            return fallback;
+
         string value = LocalizationSettings.StringDatabase.GetLocalizedString(
             LocalizationKeys.Tables.Quiz,
             key

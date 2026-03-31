@@ -3,7 +3,7 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
-
+using System.Collections;
 public class QuizLocalizationPresenter : MonoBehaviour
 {
     [Header("Intro Panel")]
@@ -58,12 +58,17 @@ public class QuizLocalizationPresenter : MonoBehaviour
     private void OnEnable()
     {
         LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+        StartCoroutine(RefreshWhenLocalizationReady());
+    }
+
+    private IEnumerator RefreshWhenLocalizationReady()
+    {
+        yield return LocalizationSettings.InitializationOperation;
         RefreshTexts();
     }
 
     private void Start()
     {
-        RefreshTexts();
     }
 
     private void OnDisable()

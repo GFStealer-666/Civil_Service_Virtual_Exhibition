@@ -1,6 +1,6 @@
+using System;
 using System.Collections;
 using UnityEngine;
-using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
 
 public static class LocalizationService
@@ -39,23 +39,35 @@ public static class LocalizationService
             LocalizationSettings.SelectedLocale = locale;
     }
 
-    public static string Get(string table, string key)
+    public static IEnumerator GetRoutine(string table, string key, Action<string> onCompleted)
     {
-        var tableRef = table;
-        var entryRef = key;
-        return LocalizationSettings.StringDatabase.GetLocalizedString(tableRef, entryRef);
+        yield return LocalizationSettings.InitializationOperation;
+
+        var handle = LocalizationSettings.StringDatabase.GetLocalizedStringAsync(table, key);
+        yield return handle;
+
+        onCompleted?.Invoke(handle.Result);
     }
 
-    public static string Get(string key)
+    public static IEnumerator GetRoutine(string key, Action<string> onCompleted)
     {
+        yield return LocalizationSettings.InitializationOperation;
+
         string table = ResolveDefaultTable(key);
-        return LocalizationSettings.StringDatabase.GetLocalizedString(table, key);
+        var handle = LocalizationSettings.StringDatabase.GetLocalizedStringAsync(table, key);
+        yield return handle;
+
+        onCompleted?.Invoke(handle.Result);
     }
 
     private static string ResolveDefaultTable(string key)
     {
-        if (key.StartsWith("landing.")) return "UI_Landing";
-        if (key.StartsWith("error.")) return "UI_Error";
+        if (key.StartsWith("landing."))
+            return "UI_Landing";
+
+        if (key.StartsWith("error."))
+            return "UI_Error";
+
         return "UI_Common";
     }
 }

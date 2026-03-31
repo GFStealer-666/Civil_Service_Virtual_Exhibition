@@ -64,12 +64,21 @@ public class QuizLeaderboardController : MonoBehaviour
     private void OnEnable()
     {
         LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
+        StartCoroutine(RefreshUiWhenReady());
+    }
+
+    private IEnumerator RefreshUiWhenReady()
+    {
+        yield return LocalizationSettings.InitializationOperation;
         UpdateMySummary(_cachedMeData);
         RefreshStatusText();
     }
 
-    private void Start()
+    private IEnumerator Start()
     {
+        yield return LocalizationSettings.InitializationOperation;
+        
+        // continue after localization is ready
         RefreshLeaderboard();
     }
 
@@ -80,8 +89,7 @@ public class QuizLeaderboardController : MonoBehaviour
 
     private void OnLocaleChanged(Locale _)
     {
-        UpdateMySummary(_cachedMeData);
-        RefreshStatusText();
+        StartCoroutine(RefreshUiWhenReady());
     }
     private void UpdatePhaseScores(QuizMeDataDto data)
     {
@@ -407,6 +415,9 @@ public class QuizLeaderboardController : MonoBehaviour
 
     private string T(string key, string fallback)
     {
+        if (!LocalizationSettings.InitializationOperation.IsDone)
+            return fallback;
+
         string value = LocalizationSettings.StringDatabase.GetLocalizedString(
             LocalizationKeys.Tables.Quiz,
             key
@@ -414,7 +425,6 @@ public class QuizLeaderboardController : MonoBehaviour
 
         return string.IsNullOrEmpty(value) ? fallback : value;
     }
-
     private string F(string key, string fallback, params object[] args)
     {
         string format = T(key, fallback);

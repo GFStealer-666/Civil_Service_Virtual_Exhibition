@@ -389,7 +389,7 @@ public class PSC_Repository : MonoBehaviour
             return;
         }
 
-        Debug.Log("[PSC_Repository] ===== Ministry Keys =====");
+        //Debug.Log("[PSC_Repository] ===== Ministry Keys =====");
 
         for (int i = 0; i < RawData.data.Length; i++)
         {
