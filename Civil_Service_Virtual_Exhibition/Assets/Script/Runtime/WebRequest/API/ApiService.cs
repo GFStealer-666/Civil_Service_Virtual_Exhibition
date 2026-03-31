@@ -19,7 +19,7 @@ public class ApiService : MonoBehaviour
     public string RegisterUrl => config != null ? config.RegisterUrl : string.Empty;
     public string AnonymousUrl => config != null ? config.AnonymousUrl : string.Empty;
     public string ResetPasswordUrl => config != null ? config.ResetPasswordUrl : string.Empty;
-
+    public string DeleteAccountUrl => config != null ? config.DeleteAccountUrl : string.Empty;
     public string GetQuizUrl => config != null ? config.GetQuizUrl : string.Empty;
     public string CheckQuizStatusUrl => config != null ? config.CheckQuizStatusUrl : string.Empty;
     public string QuizSubmitUrl => config != null ? config.QuizSubmitUrl : string.Empty;

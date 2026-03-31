@@ -15,6 +15,6 @@ public class UIPopupCursorBlock : MonoBehaviour
 
     public void _ForceHide()
     {
-        PlayerInput._ForceHide();
+        PlayerInput.ForceHide();
     }
 }

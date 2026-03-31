@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.Localization;
 using UnityEngine.Localization.Settings;
 
@@ -26,7 +27,9 @@ public class QuizLeaderboardController : MonoBehaviour
     [SerializeField] private LeaderboardEntryView top2Prefab;
     [SerializeField] private LeaderboardEntryView top3Prefab;
     [SerializeField] private LeaderboardEntryView top4To10RowPrefab;
-
+    [Header("Buttons")]
+    [SerializeField] private Button openButton;
+    [SerializeField] private Button closeButton;
     private readonly List<GameObject> _spawnedObjects = new List<GameObject>();
 
     private int _lastSubmittedCorrectCount;
@@ -41,7 +44,23 @@ public class QuizLeaderboardController : MonoBehaviour
     private string _lastLocalizedStatusKey;
     private string _lastLocalizedStatusFallback;
     private string _lastRawStatusText;
+    private void Awake()
+    {
+        if (openButton != null)
+            openButton.onClick.AddListener(OpenLeaderboard);
 
+        if (closeButton != null)
+            closeButton.onClick.AddListener(CloseLeaderboard);
+    }
+
+    private void OnDestroy()
+    {
+        if (openButton != null)
+            openButton.onClick.RemoveListener(OpenLeaderboard);
+
+        if (closeButton != null)
+            closeButton.onClick.RemoveListener(CloseLeaderboard);
+    }
     private void OnEnable()
     {
         LocalizationSettings.SelectedLocaleChanged += OnLocaleChanged;
@@ -190,19 +209,69 @@ public class QuizLeaderboardController : MonoBehaviour
     {
         SetStatusRaw(string.Empty);
 
-        if (data != null && data.top10 != null && data.top10.Length > 0)
+        if (data == null)
+        {
+            Debug.LogError("[QuizLeaderboard] data is null");
+            return;
+        }
+
+        if (data.top10 == null)
+        {
+            Debug.LogError("[QuizLeaderboard] data.top10 is null");
+            return;
+        }
+
+        Debug.Log($"[QuizLeaderboard] top10 count = {data.top10.Length}");
+
+        if (data.top10.Length > 0)
         {
             Array.Sort(data.top10, CompareByRank);
 
             for (int i = 0; i < data.top10.Length; i++)
             {
                 LeaderboardEntryDto entry = data.top10[i];
-                if (entry == null)
-                    continue;
 
+                if (entry == null)
+                {
+                    Debug.LogWarning($"[QuizLeaderboard] entry {i} is null");
+                    continue;
+                }
+
+                Debug.Log($"[QuizLeaderboard] spawning rank={entry.rank}, name={entry.characterName}, score={entry.totalScore}");
                 SpawnEntry(entry);
             }
         }
+    }
+
+    private void SpawnEntry(LeaderboardEntryDto entry)
+    {
+        if (entry == null)
+            return;
+
+        if (!TryGetPrefabAndParent(entry.rank, out LeaderboardEntryView prefab, out Transform parent))
+        {
+            Debug.LogWarning($"[QuizLeaderboard] No prefab/parent for rank {entry.rank}");
+            return;
+        }
+
+        if (prefab == null)
+        {
+            Debug.LogError($"[QuizLeaderboard] Prefab is null for rank {entry.rank}");
+            return;
+        }
+
+        if (parent == null)
+        {
+            Debug.LogError($"[QuizLeaderboard] Parent is null for rank {entry.rank}");
+            return;
+        }
+
+        LeaderboardEntryView view = Instantiate(prefab, parent);
+        view.transform.localScale = Vector3.one;
+        view.Bind(entry);
+
+        Debug.Log($"[QuizLeaderboard] Spawned {view.name} under {parent.name}");
+        _spawnedObjects.Add(view.gameObject);
     }
 
     private static int CompareByRank(LeaderboardEntryDto a, LeaderboardEntryDto b)
@@ -217,19 +286,6 @@ public class QuizLeaderboardController : MonoBehaviour
             return -1;
 
         return a.rank.CompareTo(b.rank);
-    }
-
-    private void SpawnEntry(LeaderboardEntryDto entry)
-    {
-        if (entry == null)
-            return;
-
-        if (!TryGetPrefabAndParent(entry.rank, out LeaderboardEntryView prefab, out Transform parent))
-            return;
-
-        LeaderboardEntryView view = Instantiate(prefab, parent);
-        view.Bind(entry);
-        _spawnedObjects.Add(view.gameObject);
     }
 
     private bool TryGetPrefabAndParent(

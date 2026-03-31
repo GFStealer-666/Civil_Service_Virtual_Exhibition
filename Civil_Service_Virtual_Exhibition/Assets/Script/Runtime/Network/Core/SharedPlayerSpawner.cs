@@ -13,6 +13,7 @@ public class SharedPlayerSpawner : MonoBehaviour, INetworkRunnerCallbacks
 
     public void OnPlayerJoined(NetworkRunner runner, PlayerRef player)
     {
+        NetworkDisconnectOverlayController.Instance?.RegisterRunner(runner);
         if (player != runner.LocalPlayer)
             return;
 

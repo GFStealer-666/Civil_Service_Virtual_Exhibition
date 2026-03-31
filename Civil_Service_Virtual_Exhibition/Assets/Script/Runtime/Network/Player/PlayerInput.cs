@@ -75,11 +75,11 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
         var networkEvents = runner.GetComponent<NetworkEvents>();
         if (networkEvents != null)
             networkEvents.OnInput.RemoveListener(OnInput);
+
         if (HasInputAuthority)
         {
             _uiBlockCount = 0;
             GameplayInputBlocked = false;
-            RefreshCursorState();
         }
     }
     public static void PushUIBlock()
@@ -118,12 +118,11 @@ public class PlayerInput : NetworkBehaviour, IBeforeUpdate
         Cursor.visible = unlockCursor;
     }
 
-    public static void _ForceHide()
+    public static void ForceHide()
     {
-        
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        _uiBlockCount = 0;
         GameplayInputBlocked = false;
+        RefreshCursorState();
     }
     void IBeforeUpdate.BeforeUpdate()
     {

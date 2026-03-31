@@ -12,7 +12,7 @@ public class ApiConfig : ScriptableObject
     [SerializeField] private string registerEndpoint = "/api/game/register";
     [SerializeField] private string anonymousEndpoint = "/api/game/anonymous";
     [SerializeField] private string resetPasswordEndpoint = "/api/auth/reset-password";
-
+    [SerializeField] private string deleteAccountEndpoint = "/api/game/me";
     [Header("Quiz")]
     [SerializeField] private string getQuizEndpoint = "/api/quiz/weekly";
     [SerializeField] private string checkQuizStatusEndpoint = "/api/game/quiz/check";
@@ -49,6 +49,8 @@ public class ApiConfig : ScriptableObject
     public string PublicServiceUrl => Build(publicServiceUrl);
     public string PublicServiceCenterUrl => Build(publicServiceCenterEndpoint);
     public string HallofHonorUrl => Build(hallofHonorUrl);
+    public string DeleteAccountUrl => Build(deleteAccountEndpoint);
+
     public string GetAgencyExhibitionTtsEngUrl(string projectId)
     {
         return BuildTemplate(agencyExhibitionTtsEngEndpoint, projectId);
@@ -127,6 +129,7 @@ public class ApiConfig : ScriptableObject
         registerEndpoint = NormalizeEndpoint(registerEndpoint);
         anonymousEndpoint = NormalizeEndpoint(anonymousEndpoint);
         resetPasswordEndpoint = NormalizeEndpoint(resetPasswordEndpoint);
+        deleteAccountEndpoint = NormalizeEndpoint(deleteAccountEndpoint);
 
         getQuizEndpoint = NormalizeEndpoint(getQuizEndpoint);
         checkQuizStatusEndpoint = NormalizeEndpoint(checkQuizStatusEndpoint);
