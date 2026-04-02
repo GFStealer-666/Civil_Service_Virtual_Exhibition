@@ -20,7 +20,27 @@ public class LoginData
 }
 
 [System.Serializable] public class ForgotPasswordRequestBody { public string email; }
-[System.Serializable] public class BaseResponse  { public bool success; public string message; }
+[System.Serializable]
+public class BaseResponse
+{
+    public bool success;
+    public string message;
+    public string error;
+
+    public string DisplayMessage
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(message))
+                return message;
+
+            if (!string.IsNullOrWhiteSpace(error))
+                return error;
+
+            return string.Empty;
+        }
+    }
+}
 [System.Serializable]
 public class LoginResponse : BaseResponse
 {

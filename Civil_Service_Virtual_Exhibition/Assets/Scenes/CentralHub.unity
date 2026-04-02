@@ -65256,7 +65256,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 
+  m_text: "\u0E02\u0E49\u0E32\u0E23\u0E32\u0E0A\u0E01\u0E32\u0E23\u0E43\u0E19\u0E2A\u0E31\u0E07\u0E01\u0E31\u0E14\u0E01\u0E23\u0E30\u0E17\u0E23\u0E27\u0E07"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: c4fb6bbb0de5a7b41a3740f1ced946be, type: 2}
   m_sharedMaterial: {fileID: -5387029399175791926, guid: c4fb6bbb0de5a7b41a3740f1ced946be, type: 2}
@@ -65283,7 +65283,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 50
+  m_fontSize: 63.05
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -65350,9 +65350,9 @@ MonoBehaviour:
   isTokenize: 1
   separator: 
   tmpText: {fileID: 1031521582}
-  lastKnownText: 
-  outputString: 
-  lastWordCount: 0
+  lastKnownText: "\u0E02\u0E49\u0E32\u0E23\u0E32\u0E0A\u0E01\u0E32\u0E23\u0E43\u0E19\u0E2A\u0E31\u0E07\u0E01\u0E31\u0E14\u0E01\u0E23\u0E30\u0E17\u0E23\u0E27\u0E07"
+  outputString: "\u0E02\u0E49\u0E32\u0E23\u0E32\u0E0A\u0E01\u0E32\u0E23\u200B\u0E43\u0E19\u0E2A\u0E31\u0E07\u0E01\u0E31\u0E14\u200B\u0E01\u0E23\u0E30\u0E17\u0E23\u0E27\u0E07"
+  lastWordCount: 3
   guiMode: 0
   guiColor: {r: 0, g: 0.5, b: 0.8, a: 1}
   isInitialized: 1

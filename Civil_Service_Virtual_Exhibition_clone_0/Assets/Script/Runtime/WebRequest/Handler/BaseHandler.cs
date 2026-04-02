@@ -72,13 +72,13 @@ public abstract class BaseHandler : MonoBehaviour
     }
 
     protected IEnumerator PostRequest(
-        string url,
-        string jsonBody,
-        Action<string> onSuccess,
-        Action<string> onError,
-        string bearerToken = null)
+    string url,
+    string jsonBody,
+    Action<string> onSuccess,
+    Action<string> onError,
+    string bearerToken = null)
     {
-         if (Api == null)
+        if (Api == null)
         {
             Debug.LogError("[BaseHandler] ApiService.Instance is null.");
             ShowFailedOverlay(L("ระบบ API ยังไม่พร้อมใช้งาน", "API service is not ready."));
@@ -99,7 +99,15 @@ public abstract class BaseHandler : MonoBehaviour
         using UnityWebRequest req = Api.PostJson(url, jsonBody, bearerToken);
         yield return req.SendWebRequest();
 
-        if (req.result != UnityWebRequest.Result.Success)
+        Debug.Log($"[PostRequest] url={url}");
+        Debug.Log($"[PostRequest] result={req.result}, code={req.responseCode}, error={req.error}");
+        Debug.Log($"[PostRequest] response={req.downloadHandler?.text}");
+        
+        bool isConnectionError =
+            req.result == UnityWebRequest.Result.ConnectionError ||
+            req.result == UnityWebRequest.Result.DataProcessingError;
+
+        if (isConnectionError)
         {
             ShowFailedOverlay(
                 L("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่",
@@ -109,7 +117,17 @@ public abstract class BaseHandler : MonoBehaviour
             yield break;
         }
 
-        onSuccess?.Invoke(req.downloadHandler.text);
+        string responseText = req.downloadHandler != null
+            ? req.downloadHandler.text
+            : string.Empty;
+
+        if (req.responseCode >= 400)
+        {
+            onSuccess?.Invoke(responseText);
+            yield break;
+        }
+
+        onSuccess?.Invoke(responseText);
     }
 
     protected void EnterMainScene(LoginData loginData)

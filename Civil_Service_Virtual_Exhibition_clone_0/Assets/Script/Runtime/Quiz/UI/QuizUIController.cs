@@ -259,7 +259,7 @@ public class QuizUIController : MonoBehaviour
    public void SetResult(float totalScore, float maxScore)
     {
         if (finalScoreText != null)
-            finalScoreText.text = $"{totalScore:F2}/{maxScore}";
+            finalScoreText.text = $"{totalScore:F3}/{maxScore}";
     }
     public void SetResult(int totalScore, int correctCount, int totalQuestions)
     {
@@ -385,7 +385,7 @@ public class QuizUIController : MonoBehaviour
         if (target == null)
             return;
 
-        target.text = value.HasValue ? value.Value.ToString() : "0";
+        target.text = value.HasValue ? value.Value.ToString("F3") : "0";
     }
 
     private void RefreshLocalizedStaticTexts()
