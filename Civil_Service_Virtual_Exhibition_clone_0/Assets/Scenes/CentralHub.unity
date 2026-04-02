@@ -6907,14 +6907,14 @@ RectTransform:
   m_GameObject: {fileID: 133067825}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.9142857, y: 0.9142857, z: 0.9142857}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 849841933}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 1050, y: 590.625}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &133067827
@@ -52601,7 +52601,6 @@ RectTransform:
   - {fileID: 1748663182}
   - {fileID: 244029540}
   - {fileID: 577620501}
-  - {fileID: 1799013269}
   - {fileID: 111952127}
   - {fileID: 305585495}
   - {fileID: 697919948}
@@ -52630,7 +52629,6 @@ RectTransform:
   - {fileID: 2026853545}
   - {fileID: 971164068}
   - {fileID: 2053161007}
-  - {fileID: 133067826}
   - {fileID: 353961990}
   - {fileID: 2102919662}
   - {fileID: 655586654}
@@ -52644,6 +52642,7 @@ RectTransform:
   - {fileID: 667119630}
   - {fileID: 1039772457}
   - {fileID: 1307031028}
+  - {fileID: 1799013269}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -57069,7 +57068,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 206.25, y: -79.99265}
+  m_AnchoredPosition: {x: 206.25, y: -79.992645}
   m_SizeDelta: {x: 350, y: 80}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &921567705
@@ -125645,8 +125644,8 @@ RectTransform:
   - {fileID: 1186413668}
   - {fileID: 442262236}
   - {fileID: 1048460941}
-  - {fileID: 1204961963}
   - {fileID: 1723797611}
+  - {fileID: 1204961963}
   m_Father: {fileID: 849841933}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -129035,7 +129034,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 593.75, y: -79.99265}
+  m_AnchoredPosition: {x: 593.75, y: -79.992645}
   m_SizeDelta: {x: 350, y: 80}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &1852781335
@@ -291639,6 +291638,7 @@ SceneRoots:
   - {fileID: 1252334485}
   - {fileID: 165439018}
   - {fileID: 1842601738}
+  - {fileID: 133067826}
   - {fileID: 1145965648}
   - {fileID: 13135451}
   - {fileID: 601340339}
