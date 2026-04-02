@@ -154,8 +154,8 @@ public class DeleteAccountPanelController : MonoBehaviour
                 statusOverlay.ShowFailed(
                     IsThaiLanguage() ? "ไม่พบสิทธิ์การเข้าใช้งาน" : "Access Denied",
                     IsThaiLanguage()
-                        ? "ไม่พบโทเคนสำหรับบัญชี"
-                        : "No token found for this account.",
+                        ? "ไม่สามารถลบบัญชีได้เนื่องจากคุณกำลังใช้งานในโหมดผู้เยี่ยมชม"
+                        : "Account deletion is not available for guest users.",
                     onDismissed: null,
                     showBlocker: false
                 );

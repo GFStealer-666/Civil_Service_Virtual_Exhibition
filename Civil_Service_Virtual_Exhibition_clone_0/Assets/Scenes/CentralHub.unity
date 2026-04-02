@@ -18651,7 +18651,7 @@ GameObject:
   - component: {fileID: 330104674}
   - component: {fileID: 330104675}
   m_Layer: 0
-  m_Name: NetworkDisconnect
+  m_Name: '[Singleton] NetworkDisconnectDetector'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -28936,11 +28936,11 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 40
+  m_fontSize: 33.05
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 40
+  m_fontSizeMin: 26
   m_fontSizeMax: 45
   m_fontStyle: 0
   m_HorizontalAlignment: 2
@@ -39137,7 +39137,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 298, y: -124}
+  m_AnchoredPosition: {x: 298, y: -131}
   m_SizeDelta: {x: 1187.4902, y: 120.45}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &642503875
@@ -42766,7 +42766,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 78}
+  m_AnchoredPosition: {x: 0, y: -34}
   m_SizeDelta: {x: 626.27, y: 700}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!1 &700210018
@@ -58984,12 +58984,12 @@ RectTransform:
   m_Children:
   - {fileID: 1352326346}
   - {fileID: 1949830689}
+  - {fileID: 1799013269}
   - {fileID: 1318846046}
   - {fileID: 1335973645}
   - {fileID: 298302428}
   - {fileID: 333903812}
   - {fileID: 159040600}
-  - {fileID: 1799013269}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -73086,7 +73086,7 @@ MonoBehaviour:
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 25
+  m_fontSizeMin: 26
   m_fontSizeMax: 35
   m_fontStyle: 0
   m_HorizontalAlignment: 2
@@ -73645,8 +73645,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -59.34259, y: 105.627426}
-  m_SizeDelta: {x: 1479.5334, y: 685.639}
+  m_AnchoredPosition: {x: -59.34259, y: -3.8475952}
+  m_SizeDelta: {x: 1479.5334, y: 904.5891}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1155716303
 MonoBehaviour:
@@ -76693,11 +76693,11 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 40
+  m_fontSize: 33.05
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 40
+  m_fontSizeMin: 26
   m_fontSizeMax: 47.7
   m_fontStyle: 0
   m_HorizontalAlignment: 2
@@ -79489,11 +79489,11 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 40
+  m_fontSize: 33.05
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 40
+  m_fontSizeMin: 26
   m_fontSizeMax: 45
   m_fontStyle: 0
   m_HorizontalAlignment: 2
@@ -88049,11 +88049,11 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 40
+  m_fontSize: 33.05
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 40
+  m_fontSizeMin: 26
   m_fontSizeMax: 45
   m_fontStyle: 0
   m_HorizontalAlignment: 2
@@ -101000,11 +101000,11 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 40
+  m_fontSize: 33.05
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 40
+  m_fontSizeMin: 26
   m_fontSizeMax: 45
   m_fontStyle: 0
   m_HorizontalAlignment: 2
@@ -102046,7 +102046,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 169342586}
   m_HandleRect: {fileID: 169342585}
   m_Direction: 2
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -291655,13 +291655,13 @@ SceneRoots:
   - {fileID: 1767034052}
   - {fileID: 718415226}
   - {fileID: 1525797438}
+  - {fileID: 330104674}
   - {fileID: 1351778213}
   - {fileID: 889454941}
   - {fileID: 683821937}
   - {fileID: 1196575304}
   - {fileID: 353738594}
   - {fileID: 1290570581}
-  - {fileID: 330104674}
   - {fileID: 589656208}
   - {fileID: 1448251845}
   - {fileID: 384055246}

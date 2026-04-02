@@ -8,7 +8,7 @@
   - Layers:
     - Default, TransparentFX, Ignore Raycast, Target, Water, UI, AvatarOnly, Agent, Projectile, FPV, AgentKCC, Interaction, Pickup, MapOnly
 - Active game object:
-  - Name: UtilitiesToolBar
+  - Name: [Singleton] NetworkDisconnectDetector
   - Tag: Untagged
-  - Layer: UI
+  - Layer: Default
 <!-- UNITY CODE ASSIST INSTRUCTIONS END -->

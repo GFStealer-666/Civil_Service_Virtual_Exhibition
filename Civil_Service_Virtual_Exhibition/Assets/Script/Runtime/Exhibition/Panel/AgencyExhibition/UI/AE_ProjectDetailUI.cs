@@ -252,29 +252,30 @@ public class AE_ProjectDetailUI : MonoBehaviour
     {
         ClearImageSlots();
 
-        if (_currentProject == null || _currentProject.imageUrls == null || _currentProject.imageUrls.Count == 0)
+        if (_currentProject == null || imageSlots == null || imageSlots.Count == 0)
+            return;
+
+        List<string> urls = _currentProject.imageUrls;
+        if (urls == null || urls.Count == 0)
         {
             Debug.Log("[AE_ProjectDetailUI] No images in current project.");
             return;
         }
 
-        int count = Mathf.Min(
-            MaxImageSlots,
-            Mathf.Min(imageSlots.Count, _currentProject.imageUrls.Count)
-        );
+        int visibleCount = Mathf.Min(MaxImageSlots, imageSlots.Count, urls.Count);
 
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < imageSlots.Count; i++)
         {
             Image slot = imageSlots[i];
             if (slot == null)
-            {
-                Debug.LogWarning($"[AE_ProjectDetailUI] Image slot {i} is null.");
                 continue;
-            }
 
-            string imageUrl = _currentProject.imageUrls[i];
+            bool shouldShow = i < visibleCount;
+            slot.gameObject.SetActive(shouldShow);
 
-            slot.gameObject.SetActive(true);
+            if (!shouldShow)
+                continue;
+
             slot.sprite = defaultImage;
             slot.preserveAspect = true;
 
@@ -282,9 +283,12 @@ public class AE_ProjectDetailUI : MonoBehaviour
             color.a = 1f;
             slot.color = color;
 
+            string imageUrl = urls[i];
+
             if (string.IsNullOrWhiteSpace(imageUrl))
             {
                 Debug.LogWarning($"[AE_ProjectDetailUI] Image slot {i} has empty image url.");
+                slot.gameObject.SetActive(false);
                 continue;
             }
 
