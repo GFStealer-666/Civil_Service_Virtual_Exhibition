@@ -374,6 +374,6 @@ public class RegisterHandler : BaseHandler
         if (string.IsNullOrWhiteSpace(value))
             return false;
 
-        return Regex.IsMatch(value.Trim(), @"^[\p{L}\s]+$");
+        return Regex.IsMatch(value.Trim(), @"^[a-zA-Z\u0E00-\u0E7F\s]+$");
     }
 }
