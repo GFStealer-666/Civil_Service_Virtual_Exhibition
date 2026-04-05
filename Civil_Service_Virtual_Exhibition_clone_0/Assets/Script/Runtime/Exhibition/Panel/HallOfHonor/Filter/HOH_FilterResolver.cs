@@ -15,7 +15,7 @@ public class HOH_FilterResolver : MonoBehaviour
                 return true;
 
             case "สังคม":
-            case "social":
+            case "society":
                 option = HOH_FilterOption.Social;
                 return true;
 
