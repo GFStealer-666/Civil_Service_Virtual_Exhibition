@@ -346,16 +346,16 @@ public class QuizLeaderboardController : MonoBehaviour
         if (data != null)
         {
             if (data.hasTotalScore)
-                scoreText = data.totalScore.ToString("F2");
+                scoreText = data.totalScore.ToString("F3");
             else if (_hasSessionResult)
-                scoreText = _lastFinalUiScore.ToString("F2");
+                scoreText = _lastFinalUiScore.ToString("F3");
 
             if (data.hasRank)
                 rankText = data.rank.ToString();
         }
         else if (_hasSessionResult)
         {
-            scoreText = _lastFinalUiScore.ToString("F2");
+            scoreText = _lastFinalUiScore.ToString("F3");
         }
         else if (_hasSessionResult)
         {
