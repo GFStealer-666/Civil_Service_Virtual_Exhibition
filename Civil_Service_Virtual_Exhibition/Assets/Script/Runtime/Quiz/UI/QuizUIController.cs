@@ -384,7 +384,7 @@ public class QuizUIController : MonoBehaviour
     {
         if (target == null)
             return;
-
+        Debug.Log(value);
         target.text = value.HasValue ? value.Value.ToString("F3") : "0";
     }
 

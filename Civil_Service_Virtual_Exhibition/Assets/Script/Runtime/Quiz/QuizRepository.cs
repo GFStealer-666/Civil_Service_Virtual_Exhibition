@@ -2,7 +2,7 @@ using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Networking;
-
+using System.Globalization;
 public enum QuizRequestErrorType
 {
     None,
@@ -743,7 +743,7 @@ public class QuizRepository : MonoBehaviour
         if (string.IsNullOrWhiteSpace(dataJson))
             return;
 
-        if (TryReadNullableIntProperty(dataJson, "\"totalScore\"", out int totalScore, out bool hasTotalScore))
+        if (TryReadNullableFloatProperty(dataJson, "\"totalScore\"", out float totalScore, out bool hasTotalScore))
         {
             dto.data.hasTotalScore = hasTotalScore;
             if (hasTotalScore)
@@ -771,21 +771,89 @@ public class QuizRepository : MonoBehaviour
         if (string.IsNullOrWhiteSpace(setScoresJson))
             return result;
 
-        if (TryReadNullableIntProperty(setScoresJson, "\"1\"", out int set1, out bool hasSet1) && hasSet1)
+        if (TryReadNullableFloatProperty(setScoresJson, "\"1\"", out float set1, out bool hasSet1) && hasSet1)
             result.set1 = set1;
 
-        if (TryReadNullableIntProperty(setScoresJson, "\"2\"", out int set2, out bool hasSet2) && hasSet2)
+        if (TryReadNullableFloatProperty(setScoresJson, "\"2\"", out float set2, out bool hasSet2) && hasSet2)
             result.set2 = set2;
 
-        if (TryReadNullableIntProperty(setScoresJson, "\"3\"", out int set3, out bool hasSet3) && hasSet3)
+        if (TryReadNullableFloatProperty(setScoresJson, "\"3\"", out float set3, out bool hasSet3) && hasSet3)
             result.set3 = set3;
 
-        if (TryReadNullableIntProperty(setScoresJson, "\"4\"", out int set4, out bool hasSet4) && hasSet4)
+        if (TryReadNullableFloatProperty(setScoresJson, "\"4\"", out float set4, out bool hasSet4) && hasSet4)
             result.set4 = set4;
 
         return result;
     }
 
+    private bool TryReadNullableFloatProperty(
+    string sourceJson,
+    string propertyName,
+    out float value,
+    out bool hasValue)
+    {
+        value = 0f;
+        hasValue = false;
+
+        if (string.IsNullOrWhiteSpace(sourceJson) || string.IsNullOrWhiteSpace(propertyName))
+            return false;
+
+        int propertyIndex = sourceJson.IndexOf(propertyName, StringComparison.Ordinal);
+        if (propertyIndex < 0)
+            return false;
+
+        int colonIndex = sourceJson.IndexOf(':', propertyIndex);
+        if (colonIndex < 0)
+            return false;
+
+        int cursor = colonIndex + 1;
+        while (cursor < sourceJson.Length && char.IsWhiteSpace(sourceJson[cursor]))
+            cursor++;
+
+        if (cursor >= sourceJson.Length)
+            return false;
+
+        if (sourceJson.IndexOf("null", cursor, StringComparison.Ordinal) == cursor)
+        {
+            hasValue = false;
+            return true;
+        }
+
+        int start = cursor;
+
+        if (sourceJson[cursor] == '-')
+            cursor++;
+
+        bool hasDigit = false;
+
+        while (cursor < sourceJson.Length && char.IsDigit(sourceJson[cursor]))
+        {
+            hasDigit = true;
+            cursor++;
+        }
+
+        if (cursor < sourceJson.Length && sourceJson[cursor] == '.')
+        {
+            cursor++;
+
+            while (cursor < sourceJson.Length && char.IsDigit(sourceJson[cursor]))
+            {
+                hasDigit = true;
+                cursor++;
+            }
+        }
+
+        if (!hasDigit)
+            return false;
+
+        string numberText = sourceJson.Substring(start, cursor - start);
+
+        if (!float.TryParse(numberText, NumberStyles.Float, CultureInfo.InvariantCulture, out value))
+            return false;
+
+        hasValue = true;
+        return true;
+    }
     private bool TryReadNullableIntProperty(
         string sourceJson,
         string propertyName,
@@ -836,7 +904,6 @@ public class QuizRepository : MonoBehaviour
         hasValue = true;
         return true;
     }
-
     private string ExtractObjectJson(string sourceJson, string propertyName)
     {
         if (string.IsNullOrWhiteSpace(sourceJson) || string.IsNullOrWhiteSpace(propertyName))

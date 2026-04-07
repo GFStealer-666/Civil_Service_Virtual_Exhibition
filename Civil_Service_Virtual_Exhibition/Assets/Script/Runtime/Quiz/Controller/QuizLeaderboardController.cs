@@ -95,7 +95,9 @@ public class QuizLeaderboardController : MonoBehaviour
     {
         if (uiController == null || data == null)
             return;
-
+        Debug.Log($"set1Score raw = {data?.set1Score}");
+        Debug.Log($"set2Score raw = {data?.set2Score}");
+        Debug.Log($"totalScore raw = {data?.totalScore}");
         uiController.SetPhaseScores(
             data.set1Score,
             data.set2Score,

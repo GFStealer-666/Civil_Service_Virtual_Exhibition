@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-
+using Newtonsoft.Json;
 [Serializable]
 public class QuizCurrentResponseDto
 {
@@ -174,11 +174,10 @@ public class QuizMeDataDto
     public int currentSetNumber;
     public QuizSetScoresDto setScores;
     public QuizPlaySessionDto[] sessions;
-    public float? set1Score => setScores != null ? setScores.set1 : null;
-    public float? set2Score => setScores != null ? setScores.set2 : null;
-    public float? set3Score => setScores != null ? setScores.set3 : null;
-    public float? set4Score => setScores != null ? setScores.set4 : null;
-
+    public float? set1Score => setScores?.set1;
+    public float? set2Score => setScores?.set2;
+    public float? set3Score => setScores?.set3;
+    public float? set4Score => setScores?.set4;
     public bool hasTotalScore;
     public bool hasRank;
 }
@@ -193,13 +192,9 @@ public class QuizPlaySessionDto
 [Serializable]
 public class QuizSetScoresDto
 {
-    public float set1 = 0;
-    public float set2 = 0;
-    public float set3 = 0;
-    public float set4 = 0;
+    [JsonProperty("1")] public float? set1;
+    [JsonProperty("2")] public float? set2;
+    [JsonProperty("3")] public float? set3;
+    [JsonProperty("4")] public float? set4;
 
-    public bool HasSet1 => set1 >= 0;
-    public bool HasSet2 => set2 >= 0;
-    public bool HasSet3 => set3 >= 0;
-    public bool HasSet4 => set4 >= 0;
 }
